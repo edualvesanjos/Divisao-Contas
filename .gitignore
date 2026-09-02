@@ -1,0 +1,18 @@
+# Dependências (caso o projeto passe a usar npm no futuro)
+node_modules/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Logs e temporários
+*.log
+.cache/
+
+# Variáveis de ambiente locais, se algum dia forem usadas
+.env
+.env.local
