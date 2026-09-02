@@ -37,7 +37,10 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 4. **Habilite confirmação de e-mail** (Authentication → Providers → Email) se
    quiser exigir verificação ao criar a conta, ou desative para testar mais rápido.
 
-5. **Teste localmente no StackBlitz** (ele já sobe um preview automático).
+5. **Teste localmente no StackBlitz**: com o `package.json` incluído, o StackBlitz
+   detecta o script `dev` e sobe um servidor estático (`serve`) sozinho ao abrir o
+   projeto — o preview aparece automaticamente. Se não abrir, veja a aba **Ports**
+   na barra lateral e clique na porta 3000.
 
 6. **Publique no GitHub Pages**: nas configurações do repositório, ative Pages
    apontando pra branch `main`. A cada push feito pelo StackBlitz, o site
