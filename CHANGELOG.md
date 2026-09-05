@@ -3,6 +3,11 @@
 Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 `x.x.x.x` para correções (hotfixes) dentro da mesma versão.
 
+## [0.1.0.2] — Hotfix
+
+- Credenciais reais do Supabase (URL/anon key) mantidas preenchidas em
+  `js/supabase-client.js` desde a geração do projeto
+
 ## [0.1.0.1] — Hotfix
 
 - Mensagem de erro clara na tela quando `SUPABASE_URL`/`SUPABASE_ANON_KEY`
