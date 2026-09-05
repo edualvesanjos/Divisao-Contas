@@ -169,6 +169,21 @@ button, input, select {
 .app-header-title {
   font-size: 1.3rem;
   font-weight: 700;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.app-version {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+}
+
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .status {
@@ -177,6 +192,20 @@ button, input, select {
   gap: 6px;
   font-size: 0.8rem;
   color: var(--color-ink-muted);
+}
+
+.btn-logout {
+  border: none;
+  background: none;
+  color: var(--color-ink-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.btn-logout:hover {
+  color: var(--color-alert);
 }
 
 .status-dot {

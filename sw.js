@@ -12,6 +12,7 @@ const APP_SHELL = [
   './js/sync.js',
   './js/supabase-client.js',
   './manifest.json',
+  './package.json',
 ];
 
 self.addEventListener('install', (event) => {

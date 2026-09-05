@@ -17,6 +17,7 @@ const els = {
   authToggle: document.getElementById('auth-toggle'),
 
   tabTitle: document.getElementById('tab-title'),
+  appVersion: document.getElementById('app-version'),
   tabButtons: document.querySelectorAll('.tab-btn'),
   tabPanels: {
     contas: document.getElementById('tab-contas'),
@@ -36,6 +37,7 @@ const els = {
 
   statusIndicator: document.getElementById('status-indicator'),
   statusLabel: document.getElementById('status-label'),
+  btnLogout: document.getElementById('btn-logout'),
 };
 
 let currentUser = null;
@@ -280,10 +282,33 @@ window.addEventListener('online', updateConnectionStatus);
 window.addEventListener('offline', updateConnectionStatus);
 
 // ---------------------------------------------------------
+// Logout
+// ---------------------------------------------------------
+
+els.btnLogout.addEventListener('click', async () => {
+  await signOut();
+  currentUser = null;
+  els.viewApp.hidden = true;
+  els.viewAuth.hidden = false;
+  els.formAuth.reset();
+});
+
+// ---------------------------------------------------------
 // Início
 // ---------------------------------------------------------
 
 checkExistingSession();
+loadAppVersion();
+
+async function loadAppVersion() {
+  try {
+    const res = await fetch('./package.json');
+    const pkg = await res.json();
+    els.appVersion.textContent = `v${pkg.version}`;
+  } catch (err) {
+    console.warn('Não foi possível carregar a versão do app:', err);
+  }
+}
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
