@@ -3,6 +3,14 @@
 Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 `x.x.x.x` para correções (hotfixes) dentro da mesma versão.
 
+## [0.1.0.1] — Hotfix
+
+- Mensagem de erro clara na tela quando `SUPABASE_URL`/`SUPABASE_ANON_KEY`
+  estão ausentes ou inválidas (antes travava tudo com erro só no console)
+- Toast visível de sucesso/erro ao entrar, independente da transição de tela
+- Blindagem contra falhas de sincronização/leitura local ao logar
+- Ícones do PWA (`icons/icon-192.png`, `icons/icon-512.png`) adicionados
+
 ## [0.1.0] — Etapa 1 (MVP)
 
 - Estrutura inicial do app (SPA/PWA em HTML/CSS/JS puro)
