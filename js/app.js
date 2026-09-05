@@ -68,18 +68,35 @@ els.formAuth.addEventListener('submit', async (event) => {
       : await signIn(email, password);
 
     if (session) {
+      showToast('Conectado com sucesso!');
       await enterApp(session.user);
     } else if (isSignUpMode) {
       els.authError.textContent = 'Conta criada! Verifique seu e-mail para confirmar o login.';
       els.authError.hidden = false;
     }
   } catch (err) {
-    els.authError.textContent = traduzErroAuth(err.message);
+    console.error('[auth] falha no login/cadastro:', err);
+    els.authError.textContent = traduzErroAuth(err.message || 'Erro desconhecido ao conectar.');
     els.authError.hidden = false;
   } finally {
     els.authSubmit.disabled = false;
   }
 });
+
+function showToast(message, type = 'success') {
+  let toast = document.getElementById('app-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'app-toast';
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.toggle('is-error', type === 'error');
+  toast.classList.add('is-visible');
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(() => toast.classList.remove('is-visible'), 2500);
+}
 
 function traduzErroAuth(message) {
   if (message.includes('Invalid login credentials')) return 'E-mail ou senha incorretos.';
@@ -93,9 +110,18 @@ async function enterApp(user) {
   els.viewApp.hidden = false;
 
   updateConnectionStatus();
-  await renderTab(activeTab);
 
-  syncAll(currentUser.id).then(() => renderTab(activeTab));
+  try {
+    await renderTab(activeTab);
+  } catch (err) {
+    console.error('[app] falha ao carregar lista local:', err);
+    showToast('Entrou, mas houve um erro ao carregar os dados locais.', 'error');
+  }
+
+  syncAll(currentUser.id)
+    .then(() => renderTab(activeTab))
+    .catch((err) => console.error('[sync] falha na sincronização inicial:', err));
+
   watchConnectivity(() => currentUser?.id, () => renderTab(activeTab));
 }
 

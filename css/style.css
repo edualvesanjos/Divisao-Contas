@@ -394,8 +394,34 @@ button, input, select {
 
 .modal-actions .btn { flex: 1; }
 
+.toast {
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%) translateY(-12px);
+  background: var(--color-paid);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.toast.is-error {
+  background: var(--color-alert);
+}
+
 @media (min-width: 480px) {
-  .modal { align-items: center; justify-content: center; }
   .modal-sheet {
     max-width: 420px;
     border-radius: var(--radius-lg);
