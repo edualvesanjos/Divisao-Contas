@@ -54,6 +54,12 @@
       </div>
     </header>
 
+    <div class="month-nav" id="month-nav">
+      <button class="month-nav-btn" id="btn-mes-anterior" aria-label="Mês anterior">‹</button>
+      <span class="month-nav-label" id="mes-ativo-label">—</span>
+      <button class="month-nav-btn" id="btn-mes-proximo" aria-label="Próximo mês">›</button>
+    </div>
+
     <main class="app-main">
 
       <!-- Aba: Contas de consumo -->
@@ -69,6 +75,35 @@
         <ul id="lista-combustivel" class="entry-list"></ul>
         <p id="lista-combustivel-vazia" class="empty-state" hidden>
           Nenhum abastecimento registrado ainda.<br />Toque em “+” para lançar o primeiro.
+        </p>
+      </section>
+
+      <!-- Aba: Resumo Mensal -->
+      <section id="tab-resumo" class="tab-panel" hidden>
+        <div class="resumo-grid">
+          <div class="resumo-card">
+            <span class="resumo-label">Total Contas de Consumo</span>
+            <span class="resumo-value" id="resumo-total-contas">R$ 0,00</span>
+          </div>
+          <div class="resumo-card">
+            <span class="resumo-label">Total Combustível</span>
+            <span class="resumo-value" id="resumo-total-combustivel">R$ 0,00</span>
+          </div>
+          <div class="resumo-card">
+            <span class="resumo-label">Combustível Rateado</span>
+            <span class="resumo-value" id="resumo-combustivel-rateado">R$ 0,00</span>
+          </div>
+          <div class="resumo-card">
+            <span class="resumo-label">Contas Rateadas</span>
+            <span class="resumo-value" id="resumo-contas-rateado">R$ 0,00</span>
+          </div>
+          <div class="resumo-card resumo-card-destaque">
+            <span class="resumo-label">Valor rateado a pagar (a outra pessoa te transferir)</span>
+            <span class="resumo-value" id="resumo-total-rateado">R$ 0,00</span>
+          </div>
+        </div>
+        <p class="empty-state" id="resumo-vazio" hidden>
+          Nenhum lançamento neste mês ainda.
         </p>
       </section>
 
@@ -110,6 +145,10 @@
       <button class="tab-btn" data-tab="combustivel">
         <span class="tab-icon" aria-hidden="true">⛽</span>
         <span>Combustível</span>
+      </button>
+      <button class="tab-btn" data-tab="resumo">
+        <span class="tab-icon" aria-hidden="true">📊</span>
+        <span>Resumo</span>
       </button>
       <button class="tab-btn" data-tab="config">
         <span class="tab-icon" aria-hidden="true">⚙️</span>

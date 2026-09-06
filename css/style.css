@@ -389,6 +389,72 @@ button, input, select {
   cursor: pointer;
 }
 
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 4px 20px 12px;
+}
+
+.month-nav-btn {
+  border: none;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+
+.month-nav-label {
+  font-weight: 600;
+  text-transform: capitalize;
+  min-width: 140px;
+  text-align: center;
+}
+
+.resumo-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.resumo-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resumo-label {
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+}
+
+.resumo-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.resumo-card-destaque {
+  background: var(--color-primary);
+}
+
+.resumo-card-destaque .resumo-label {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.resumo-card-destaque .resumo-value {
+  color: #fff;
+}
+
 .tab-bar {
   display: flex;
   border-top: 1px solid var(--color-border);

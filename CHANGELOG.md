@@ -3,6 +3,18 @@
 Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 `x.x.x.x` para correções (hotfixes) dentro da mesma versão.
 
+## [0.4.0] — Melhorias de UI: navegação por mês + Resumo Mensal
+
+- Navegador de mês (‹ Setembro 2026 ›) no topo do app, compartilhado entre
+  as abas Contas, Combustível e Resumo
+- Listas de Contas e Combustível agora filtram só os lançamentos do mês
+  selecionado
+- Nova aba **Resumo** com: Total Contas de Consumo, Total Combustível,
+  Contas Rateadas, Combustível Rateado, e "Valor rateado a pagar" (soma
+  do que a outra pessoa deve transferir naquele mês)
+- Definido: rateio sempre entre 2 participantes; percentual do Combustível
+  representa diretamente a parte da outra pessoa (sem necessidade de nome)
+
 ## [0.3.0.3] — Hotfix
 
 - Corrigida a causa raiz da falha de sincronização: o campo local

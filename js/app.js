@@ -22,8 +22,21 @@ const els = {
   tabPanels: {
     contas: document.getElementById('tab-contas'),
     combustivel: document.getElementById('tab-combustivel'),
+    resumo: document.getElementById('tab-resumo'),
     config: document.getElementById('tab-config'),
   },
+
+  monthNav: document.getElementById('month-nav'),
+  mesAtivoLabel: document.getElementById('mes-ativo-label'),
+  btnMesAnterior: document.getElementById('btn-mes-anterior'),
+  btnMesProximo: document.getElementById('btn-mes-proximo'),
+
+  resumoTotalContas: document.getElementById('resumo-total-contas'),
+  resumoTotalCombustivel: document.getElementById('resumo-total-combustivel'),
+  resumoCombustivelRateado: document.getElementById('resumo-combustivel-rateado'),
+  resumoContasRateado: document.getElementById('resumo-contas-rateado'),
+  resumoTotalRateado: document.getElementById('resumo-total-rateado'),
+  resumoVazio: document.getElementById('resumo-vazio'),
 
   listaContas: document.getElementById('lista-contas'),
   listaContasVazia: document.getElementById('lista-contas-vazia'),
@@ -55,6 +68,9 @@ let activeTab = 'contas';
 let isSignUpMode = false;
 let editingId = null;
 let settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50 };
+
+const hoje = new Date();
+let mesAtivo = { ano: hoje.getFullYear(), mes: hoje.getMonth() }; // mes: 0-11
 
 // ---------------------------------------------------------
 // Autenticação
@@ -125,17 +141,17 @@ async function enterApp(user) {
 
   try {
     await loadSettings();
-    await renderTab(activeTab);
+    await refreshActiveView();
   } catch (err) {
     console.error('[app] falha ao carregar lista local:', err);
     showToast('Entrou, mas houve um erro ao carregar os dados locais.', 'error');
   }
 
   syncAll(currentUser.id)
-    .then(() => renderTab(activeTab))
+    .then(() => refreshActiveView())
     .catch((err) => console.error('[sync] falha na sincronização inicial:', err));
 
-  watchConnectivity(() => currentUser?.id, () => renderTab(activeTab));
+  watchConnectivity(() => currentUser?.id, () => refreshActiveView());
 }
 
 async function loadSettings() {
@@ -181,7 +197,7 @@ els.btnForcarSync.addEventListener('click', async () => {
     await localDb.markAllForResync('abastecimentos');
     await localDb.markAllForResync('configuracoes');
     await syncAll(currentUser.id);
-    await renderTab(activeTab);
+    await refreshActiveView();
     showToast('Sincronização forçada concluída.');
   } catch (err) {
     console.error('[sync] falha ao forçar sincronização:', err);
@@ -219,7 +235,7 @@ els.tabButtons.forEach((btn) => {
 
 function switchTab(tab) {
   activeTab = tab;
-  const titles = { contas: 'Contas', combustivel: 'Combustível', config: 'Configurações' };
+  const titles = { contas: 'Contas', combustivel: 'Combustível', resumo: 'Resumo Mensal', config: 'Configurações' };
   els.tabTitle.textContent = titles[tab];
 
   els.tabButtons.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.tab === tab));
@@ -227,9 +243,14 @@ function switchTab(tab) {
     panel.hidden = name !== tab;
   });
 
-  els.btnNovo.hidden = tab === 'config';
+  els.btnNovo.hidden = tab === 'config' || tab === 'resumo';
+  els.monthNav.hidden = tab === 'config';
 
-  if (tab !== 'config') renderTab(tab);
+  if (tab === 'resumo') {
+    renderResumo();
+  } else if (tab !== 'config') {
+    renderTab(tab);
+  }
 }
 
 // ---------------------------------------------------------
@@ -241,18 +262,70 @@ const formatMoeda = (valor) =>
   valor == null ? '—' : Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const formatData = (iso) => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString('pt-BR') : '—');
 
+async function refreshActiveView() {
+  if (activeTab === 'resumo') {
+    await renderResumo();
+  } else if (activeTab !== 'config') {
+    await renderTab(activeTab);
+  }
+}
+
+function isNoMesAtivo(dataOrdenacao) {
+  if (!dataOrdenacao) return false;
+  const [ano, mes] = dataOrdenacao.split('-').map(Number);
+  return ano === mesAtivo.ano && mes === mesAtivo.mes + 1;
+}
+
+function atualizarLabelMes() {
+  const label = new Date(mesAtivo.ano, mesAtivo.mes, 1).toLocaleDateString('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+  });
+  els.mesAtivoLabel.textContent = label;
+}
+
+els.btnMesAnterior.addEventListener('click', () => mudarMes(-1));
+els.btnMesProximo.addEventListener('click', () => mudarMes(1));
+
+function mudarMes(delta) {
+  const data = new Date(mesAtivo.ano, mesAtivo.mes + delta, 1);
+  mesAtivo = { ano: data.getFullYear(), mes: data.getMonth() };
+  atualizarLabelMes();
+  refreshActiveView();
+}
+
 async function renderTab(tab) {
-  if (tab === 'config') return;
+  if (tab === 'config' || tab === 'resumo') return;
 
   if (tab === 'contas') {
-    const rows = await localDb.listAll('contas_consumo');
+    const rows = (await localDb.listAll('contas_consumo')).filter((r) => isNoMesAtivo(r.data_ordenacao));
     els.listaContasVazia.hidden = rows.length > 0;
     els.listaContas.innerHTML = rows.map(renderContaItem).join('');
   } else {
-    const rows = await localDb.listAll('abastecimentos');
+    const rows = (await localDb.listAll('abastecimentos')).filter((r) => isNoMesAtivo(r.data_ordenacao));
     els.listaCombustivelVazia.hidden = rows.length > 0;
     els.listaCombustivel.innerHTML = rows.map(renderCombustivelItem).join('');
   }
+}
+
+async function renderResumo() {
+  const contas = (await localDb.listAll('contas_consumo')).filter((r) => isNoMesAtivo(r.data_ordenacao));
+  const abastecimentos = (await localDb.listAll('abastecimentos')).filter((r) => isNoMesAtivo(r.data_ordenacao));
+
+  const somar = (rows, campo) => rows.reduce((acc, r) => acc + (Number(r[campo]) || 0), 0);
+
+  const totalContas = somar(contas, 'valor_total');
+  const totalCombustivel = somar(abastecimentos, 'valor_total');
+  const contasRateado = somar(contas, 'valor_rateado');
+  const combustivelRateado = somar(abastecimentos, 'valor_rateado');
+
+  els.resumoTotalContas.textContent = formatMoeda(totalContas);
+  els.resumoTotalCombustivel.textContent = formatMoeda(totalCombustivel);
+  els.resumoContasRateado.textContent = formatMoeda(contasRateado);
+  els.resumoCombustivelRateado.textContent = formatMoeda(combustivelRateado);
+  els.resumoTotalRateado.textContent = formatMoeda(contasRateado + combustivelRateado);
+
+  els.resumoVazio.hidden = contas.length + abastecimentos.length > 0;
 }
 
 function renderContaItem(c) {
@@ -414,7 +487,7 @@ async function excluirRegistro(storeName, id) {
   els.modalConta.hidden = true;
   els.modalCombustivel.hidden = true;
 
-  await renderTab(activeTab);
+  await refreshActiveView();
   triggerBackgroundSync();
   showToast('Lançamento excluído.');
 }
@@ -503,7 +576,7 @@ function parseOptionalText(id) {
 }
 
 function triggerBackgroundSync() {
-  if (currentUser) syncAll(currentUser.id).then(() => renderTab(activeTab));
+  if (currentUser) syncAll(currentUser.id).then(() => refreshActiveView());
 }
 
 // ---------------------------------------------------------
@@ -539,6 +612,7 @@ els.btnLogout.addEventListener('click', async () => {
 
 checkExistingSession();
 loadAppVersion();
+atualizarLabelMes();
 
 async function loadAppVersion() {
   try {
