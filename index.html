@@ -72,6 +72,23 @@
         </p>
       </section>
 
+      <!-- Aba: Configurações -->
+      <section id="tab-config" class="tab-panel" hidden>
+        <form id="form-config" class="config-form">
+          <label class="field">
+            <span class="field-label">Número de participantes padrão (Contas)</span>
+            <input type="number" id="config-participantes" min="1" step="1" required />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Percentual padrão do rateio (Combustível, %)</span>
+            <input type="number" id="config-percentual" min="0" max="100" step="0.01" required />
+          </label>
+
+          <button type="submit" class="btn btn-primary">Salvar configurações</button>
+        </form>
+      </section>
+
     </main>
 
     <button id="btn-novo" class="fab" aria-label="Novo registro">+</button>
@@ -84,6 +101,10 @@
       <button class="tab-btn" data-tab="combustivel">
         <span class="tab-icon" aria-hidden="true">⛽</span>
         <span>Combustível</span>
+      </button>
+      <button class="tab-btn" data-tab="config">
+        <span class="tab-icon" aria-hidden="true">⚙️</span>
+        <span>Config</span>
       </button>
     </nav>
   </div>
@@ -108,9 +129,11 @@
         </label>
 
         <label class="field">
-          <span class="field-label">Valor rateado (R$)</span>
-          <input type="number" id="conta-valor-rateado" step="0.01" min="0" inputmode="decimal" />
+          <span class="field-label">Número de participantes</span>
+          <input type="number" id="conta-participantes" min="1" step="1" required />
         </label>
+
+        <p class="computed-value">Rateio: <strong id="conta-valor-rateado-preview">—</strong></p>
 
         <label class="field">
           <span class="field-label">Vencimento</span>
@@ -157,9 +180,11 @@
         </label>
 
         <label class="field">
-          <span class="field-label">Valor rateado (R$)</span>
-          <input type="number" id="combustivel-valor-rateado" step="0.01" min="0" inputmode="decimal" />
+          <span class="field-label">Percentual rateado (%)</span>
+          <input type="number" id="combustivel-percentual" min="0" max="100" step="0.01" required />
         </label>
+
+        <p class="computed-value">Rateio: <strong id="combustivel-valor-rateado-preview">—</strong></p>
 
         <label class="field">
           <span class="field-label">Litros</span>

@@ -9,8 +9,8 @@
 // =========================================================
 
 const DB_NAME = 'contas-combustivel';
-const DB_VERSION = 1;
-const STORES = ['contas_consumo', 'abastecimentos'];
+const DB_VERSION = 2;
+const STORES = ['contas_consumo', 'abastecimentos', 'configuracoes'];
 
 let dbPromise = null;
 
@@ -89,6 +89,23 @@ export const localDb = {
       ...fields,
       updated_at: now,
       created_at: now,
+      deleted: false,
+      pending_sync: 1,
+    };
+    await withStore(storeName, 'readwrite', (store) => store.put(record));
+    return record;
+  },
+
+  /** Cria ou substitui um registro com um id definido por quem chama (ex: configurações, uma linha por usuário). */
+  async putWithId(storeName, id, fields) {
+    const now = new Date().toISOString();
+    const existing = await this.get(storeName, id);
+    const record = {
+      ...existing,
+      id,
+      ...fields,
+      updated_at: now,
+      created_at: existing?.created_at || now,
       deleted: false,
       pending_sync: 1,
     };

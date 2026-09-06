@@ -30,6 +30,8 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 3. **Crie o projeto no Supabase** (supabase.com, plano Free) e depois:
    - Vá em **SQL Editor** e rode o conteúdo de `supabase/schema.sql`
+   - Em seguida, rode `supabase/migrations/002_rateio_automatico.sql` (adiciona
+     a tabela de Configurações e os campos de rateio automático)
    - Vá em **Configurações → API** e copie a `Project URL` e a `anon public key`
    - Cole essas duas informações em `js/supabase-client.js`, nas constantes
      `SUPABASE_URL` e `SUPABASE_ANON_KEY`

@@ -331,6 +331,24 @@ button, input, select {
   color: var(--color-paid);
 }
 
+.computed-value {
+  margin: -4px 0 0;
+  font-size: 0.9rem;
+  color: var(--color-ink-muted);
+}
+
+.computed-value strong {
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 360px;
+}
+
 .empty-state {
   text-align: center;
   color: var(--color-ink-muted);

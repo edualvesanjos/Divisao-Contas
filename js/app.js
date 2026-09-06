@@ -22,6 +22,7 @@ const els = {
   tabPanels: {
     contas: document.getElementById('tab-contas'),
     combustivel: document.getElementById('tab-combustivel'),
+    config: document.getElementById('tab-config'),
   },
 
   listaContas: document.getElementById('lista-contas'),
@@ -42,12 +43,17 @@ const els = {
   statusIndicator: document.getElementById('status-indicator'),
   statusLabel: document.getElementById('status-label'),
   btnLogout: document.getElementById('btn-logout'),
+
+  formConfig: document.getElementById('form-config'),
+  configParticipantes: document.getElementById('config-participantes'),
+  configPercentual: document.getElementById('config-percentual'),
 };
 
 let currentUser = null;
 let activeTab = 'contas';
 let isSignUpMode = false;
 let editingId = null;
+let settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50 };
 
 // ---------------------------------------------------------
 // Autenticação
@@ -117,6 +123,7 @@ async function enterApp(user) {
   updateConnectionStatus();
 
   try {
+    await loadSettings();
     await renderTab(activeTab);
   } catch (err) {
     console.error('[app] falha ao carregar lista local:', err);
@@ -129,6 +136,39 @@ async function enterApp(user) {
 
   watchConnectivity(() => currentUser?.id, () => renderTab(activeTab));
 }
+
+async function loadSettings() {
+  if (!currentUser) return;
+  const record = await localDb.get('configuracoes', currentUser.id);
+  if (record) {
+    settings = {
+      numero_participantes_padrao: record.numero_participantes_padrao ?? 2,
+      percentual_combustivel_padrao: record.percentual_combustivel_padrao ?? 50,
+    };
+  } else {
+    settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50 };
+  }
+  els.configParticipantes.value = settings.numero_participantes_padrao;
+  els.configPercentual.value = settings.percentual_combustivel_padrao;
+}
+
+els.formConfig.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!currentUser) return;
+
+  settings = {
+    numero_participantes_padrao: Number(els.configParticipantes.value),
+    percentual_combustivel_padrao: Number(els.configPercentual.value),
+  };
+
+  await localDb.putWithId('configuracoes', currentUser.id, {
+    user_id: currentUser.id,
+    ...settings,
+  });
+
+  showToast('Configurações salvas.');
+  triggerBackgroundSync();
+});
 
 async function checkExistingSession() {
   const session = await getSession();
@@ -157,14 +197,17 @@ els.tabButtons.forEach((btn) => {
 
 function switchTab(tab) {
   activeTab = tab;
-  els.tabTitle.textContent = tab === 'contas' ? 'Contas' : 'Combustível';
+  const titles = { contas: 'Contas', combustivel: 'Combustível', config: 'Configurações' };
+  els.tabTitle.textContent = titles[tab];
 
   els.tabButtons.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.tab === tab));
   Object.entries(els.tabPanels).forEach(([name, panel]) => {
     panel.hidden = name !== tab;
   });
 
-  renderTab(tab);
+  els.btnNovo.hidden = tab === 'config';
+
+  if (tab !== 'config') renderTab(tab);
 }
 
 // ---------------------------------------------------------
@@ -177,6 +220,8 @@ const formatMoeda = (valor) =>
 const formatData = (iso) => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString('pt-BR') : '—');
 
 async function renderTab(tab) {
+  if (tab === 'config') return;
+
   if (tab === 'contas') {
     const rows = await localDb.listAll('contas_consumo');
     els.listaContasVazia.hidden = rows.length > 0;
@@ -236,11 +281,15 @@ els.btnNovo.addEventListener('click', () => {
   editingId = null;
   if (activeTab === 'contas') {
     els.formConta.reset();
+    document.getElementById('conta-participantes').value = settings.numero_participantes_padrao;
+    atualizarPreviewConta();
     els.modalContaTitle.textContent = 'Nova conta';
     els.btnExcluirConta.hidden = true;
     els.modalConta.hidden = false;
   } else {
     els.formCombustivel.reset();
+    document.getElementById('combustivel-percentual').value = settings.percentual_combustivel_padrao;
+    atualizarPreviewCombustivel();
     els.modalCombustivelTitle.textContent = 'Novo abastecimento';
     els.btnExcluirCombustivel.hidden = true;
     els.modalCombustivel.hidden = false;
@@ -273,6 +322,30 @@ async function handleListClick(event, storeName) {
   }
 }
 
+function atualizarPreviewConta() {
+  const valorTotal = Number(document.getElementById('conta-valor-total').value) || 0;
+  const participantes = Number(document.getElementById('conta-participantes').value) || 1;
+  const rateado = valorTotal / participantes;
+  document.getElementById('conta-valor-rateado-preview').textContent = formatMoeda(rateado);
+  return rateado;
+}
+
+function atualizarPreviewCombustivel() {
+  const valorTotal = Number(document.getElementById('combustivel-valor-total').value) || 0;
+  const percentual = Number(document.getElementById('combustivel-percentual').value) || 0;
+  const rateado = valorTotal * (percentual / 100);
+  document.getElementById('combustivel-valor-rateado-preview').textContent = formatMoeda(rateado);
+  return rateado;
+}
+
+['conta-valor-total', 'conta-participantes'].forEach((id) => {
+  document.getElementById(id).addEventListener('input', atualizarPreviewConta);
+});
+
+['combustivel-valor-total', 'combustivel-percentual'].forEach((id) => {
+  document.getElementById(id).addEventListener('input', atualizarPreviewCombustivel);
+});
+
 async function abrirEdicao(storeName, id) {
   const record = await localDb.get(storeName, id);
   if (!record) return;
@@ -282,11 +355,13 @@ async function abrirEdicao(storeName, id) {
   if (storeName === 'contas_consumo') {
     document.getElementById('conta-tipo').value = record.tipo;
     document.getElementById('conta-valor-total').value = record.valor_total ?? '';
-    document.getElementById('conta-valor-rateado').value = record.valor_rateado ?? '';
+    document.getElementById('conta-participantes').value =
+      record.numero_participantes ?? settings.numero_participantes_padrao;
     document.getElementById('conta-vencimento').value = record.data_vencimento ?? '';
     document.getElementById('conta-pago').checked = !!record.pago;
     document.getElementById('conta-data-pagamento').value = record.data_pagamento ?? '';
     document.getElementById('conta-data-rateio').value = record.data_transferencia_rateio ?? '';
+    atualizarPreviewConta();
 
     els.modalContaTitle.textContent = 'Editar conta';
     els.btnExcluirConta.hidden = false;
@@ -294,11 +369,13 @@ async function abrirEdicao(storeName, id) {
   } else {
     document.getElementById('combustivel-data').value = record.data ?? '';
     document.getElementById('combustivel-valor-total').value = record.valor_total ?? '';
-    document.getElementById('combustivel-valor-rateado').value = record.valor_rateado ?? '';
+    document.getElementById('combustivel-percentual').value =
+      record.percentual_rateado ?? settings.percentual_combustivel_padrao;
     document.getElementById('combustivel-litros').value = record.litros ?? '';
     document.getElementById('combustivel-km').value = record.km_atual ?? '';
     document.getElementById('combustivel-posto').value = record.posto ?? '';
     document.getElementById('combustivel-data-rateio').value = record.data_transferencia_rateio ?? '';
+    atualizarPreviewCombustivel();
 
     els.modalCombustivelTitle.textContent = 'Editar abastecimento';
     els.btnExcluirCombustivel.hidden = false;
@@ -332,11 +409,15 @@ els.formConta.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!currentUser) return;
 
+  const valorTotal = Number(document.getElementById('conta-valor-total').value);
+  const participantes = Number(document.getElementById('conta-participantes').value);
+
   const fields = {
     user_id: currentUser.id,
     tipo: document.getElementById('conta-tipo').value,
-    valor_total: Number(document.getElementById('conta-valor-total').value),
-    valor_rateado: parseOptionalNumber('conta-valor-rateado'),
+    valor_total: valorTotal,
+    numero_participantes: participantes,
+    valor_rateado: valorTotal / participantes,
     data_vencimento: parseOptionalText('conta-vencimento'),
     pago: document.getElementById('conta-pago').checked,
     data_pagamento: parseOptionalText('conta-data-pagamento'),
@@ -361,12 +442,15 @@ els.formCombustivel.addEventListener('submit', async (event) => {
   if (!currentUser) return;
 
   const data = document.getElementById('combustivel-data').value;
+  const valorTotal = Number(document.getElementById('combustivel-valor-total').value);
+  const percentual = Number(document.getElementById('combustivel-percentual').value);
 
   const fields = {
     user_id: currentUser.id,
     data,
-    valor_total: Number(document.getElementById('combustivel-valor-total').value),
-    valor_rateado: parseOptionalNumber('combustivel-valor-rateado'),
+    valor_total: valorTotal,
+    percentual_rateado: percentual,
+    valor_rateado: valorTotal * (percentual / 100),
     litros: parseOptionalNumber('combustivel-litros'),
     km_atual: parseOptionalNumber('combustivel-km'),
     posto: parseOptionalText('combustivel-posto'),

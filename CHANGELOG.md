@@ -3,6 +3,21 @@
 Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 `x.x.x.x` para correções (hotfixes) dentro da mesma versão.
 
+## [0.3.0] — Etapa 2 (parte 2): rateio automático + Configurações
+
+- Nova aba "Config" com nº de participantes padrão (Contas) e percentual
+  padrão (Combustível), salvos por usuário e sincronizados
+- Contas: campo de "valor rateado" trocado por "nº de participantes";
+  o rateio (valor total ÷ participantes) é calculado e exibido em tempo real
+- Combustível: campo de "valor rateado" trocado por "percentual rateado (%)";
+  o rateio (valor total × percentual) é calculado e exibido em tempo real
+- Ao editar um lançamento, participantes/percentual pré-preenchem com o
+  valor salvo naquele lançamento (ou o padrão, se não houver)
+- Nova tabela `configuracoes` no Supabase (migração
+  `supabase/migrations/002_rateio_automatico.sql`) e novas colunas
+  `numero_participantes` (contas_consumo) e `percentual_rateado` (abastecimentos)
+- IndexedDB local subiu para versão 2 (nova store `configuracoes`)
+
 ## [0.2.0] — Etapa 2 (parte 1): editar e excluir lançamentos
 
 - Botões de editar (✏️) e excluir (🗑️) em cada lançamento das listas de
