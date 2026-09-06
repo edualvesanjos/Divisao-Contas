@@ -91,7 +91,7 @@
   <!-- Modal: novo/editar registro de conta -->
   <div id="modal-conta" class="modal" hidden>
     <div class="modal-sheet">
-      <h2 class="modal-title">Nova conta</h2>
+      <h2 class="modal-title" id="modal-conta-title">Nova conta</h2>
       <form id="form-conta" novalidate>
         <label class="field">
           <span class="field-label">Tipo</span>
@@ -133,6 +133,7 @@
         </label>
 
         <div class="modal-actions">
+          <button type="button" class="btn btn-danger" id="btn-excluir-conta" hidden>Excluir</button>
           <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
           <button type="submit" class="btn btn-primary">Salvar</button>
         </div>
@@ -143,7 +144,7 @@
   <!-- Modal: novo/editar abastecimento -->
   <div id="modal-combustivel" class="modal" hidden>
     <div class="modal-sheet">
-      <h2 class="modal-title">Novo abastecimento</h2>
+      <h2 class="modal-title" id="modal-combustivel-title">Novo abastecimento</h2>
       <form id="form-combustivel" novalidate>
         <label class="field">
           <span class="field-label">Data</span>
@@ -181,6 +182,7 @@
         </label>
 
         <div class="modal-actions">
+          <button type="button" class="btn btn-danger" id="btn-excluir-combustivel" hidden>Excluir</button>
           <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
           <button type="submit" class="btn btn-primary">Salvar</button>
         </div>

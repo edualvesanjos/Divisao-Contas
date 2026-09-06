@@ -241,6 +241,12 @@ button, input, select {
   gap: 10px;
 }
 
+.btn-danger {
+  background: transparent;
+  color: var(--color-alert);
+  margin-right: auto;
+}
+
 .entry-card {
   background: var(--color-surface);
   border-radius: var(--radius-md);
@@ -250,6 +256,30 @@ button, input, select {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+.entry-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.entry-action-btn {
+  border: none;
+  background: none;
+  color: var(--color-ink-muted);
+  font-size: 1rem;
+  padding: 6px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.entry-action-btn:hover {
+  background: var(--color-bg);
+}
+
+.entry-action-btn.is-danger:hover {
+  color: var(--color-alert);
 }
 
 .entry-main {

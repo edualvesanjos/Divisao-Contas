@@ -53,6 +53,17 @@ async function withStore(storeName, mode, callback) {
 }
 
 export const localDb = {
+  /** Busca um único registro pelo id. */
+  async get(storeName, id) {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readonly');
+      const request = tx.objectStore(storeName).get(id);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+  },
+
   /** Lista todos os registros não excluídos de uma tabela, mais recentes primeiro. */
   async listAll(storeName) {
     const db = await openDb();

@@ -32,8 +32,12 @@ const els = {
   btnNovo: document.getElementById('btn-novo'),
   modalConta: document.getElementById('modal-conta'),
   modalCombustivel: document.getElementById('modal-combustivel'),
+  modalContaTitle: document.getElementById('modal-conta-title'),
+  modalCombustivelTitle: document.getElementById('modal-combustivel-title'),
   formConta: document.getElementById('form-conta'),
   formCombustivel: document.getElementById('form-combustivel'),
+  btnExcluirConta: document.getElementById('btn-excluir-conta'),
+  btnExcluirCombustivel: document.getElementById('btn-excluir-combustivel'),
 
   statusIndicator: document.getElementById('status-indicator'),
   statusLabel: document.getElementById('status-label'),
@@ -43,6 +47,7 @@ const els = {
 let currentUser = null;
 let activeTab = 'contas';
 let isSignUpMode = false;
+let editingId = null;
 
 // ---------------------------------------------------------
 // Autenticação
@@ -198,6 +203,10 @@ function renderContaItem(c) {
         <div class="entry-value-total">${formatMoeda(c.valor_total)}</div>
         <div class="entry-value-rateado">rateado ${formatMoeda(c.valor_rateado)}</div>
       </div>
+      <div class="entry-actions">
+        <button class="entry-action-btn" data-action="edit" data-store="contas_consumo" data-id="${c.id}" aria-label="Editar">✏️</button>
+        <button class="entry-action-btn is-danger" data-action="delete" data-store="contas_consumo" data-id="${c.id}" aria-label="Excluir">🗑️</button>
+      </div>
     </li>`;
 }
 
@@ -212,35 +221,118 @@ function renderCombustivelItem(a) {
         <div class="entry-value-total">${formatMoeda(a.valor_total)}</div>
         <div class="entry-value-rateado">rateado ${formatMoeda(a.valor_rateado)}</div>
       </div>
+      <div class="entry-actions">
+        <button class="entry-action-btn" data-action="edit" data-store="abastecimentos" data-id="${a.id}" aria-label="Editar">✏️</button>
+        <button class="entry-action-btn is-danger" data-action="delete" data-store="abastecimentos" data-id="${a.id}" aria-label="Excluir">🗑️</button>
+      </div>
     </li>`;
 }
 
 // ---------------------------------------------------------
-// Modais de criação
+// Modais de criação/edição
 // ---------------------------------------------------------
 
 els.btnNovo.addEventListener('click', () => {
+  editingId = null;
   if (activeTab === 'contas') {
     els.formConta.reset();
+    els.modalContaTitle.textContent = 'Nova conta';
+    els.btnExcluirConta.hidden = true;
     els.modalConta.hidden = false;
   } else {
     els.formCombustivel.reset();
+    els.modalCombustivelTitle.textContent = 'Novo abastecimento';
+    els.btnExcluirCombustivel.hidden = true;
     els.modalCombustivel.hidden = false;
   }
 });
 
 document.querySelectorAll('[data-close-modal]').forEach((btn) => {
   btn.addEventListener('click', () => {
+    editingId = null;
     els.modalConta.hidden = true;
     els.modalCombustivel.hidden = true;
   });
+});
+
+// Delegação de clique nas listas: editar ou excluir um lançamento existente
+els.listaContas.addEventListener('click', (event) => handleListClick(event, 'contas_consumo'));
+els.listaCombustivel.addEventListener('click', (event) => handleListClick(event, 'abastecimentos'));
+
+async function handleListClick(event, storeName) {
+  const btn = event.target.closest('.entry-action-btn');
+  if (!btn) return;
+
+  const id = btn.dataset.id;
+  const action = btn.dataset.action;
+
+  if (action === 'edit') {
+    await abrirEdicao(storeName, id);
+  } else if (action === 'delete') {
+    await excluirRegistro(storeName, id);
+  }
+}
+
+async function abrirEdicao(storeName, id) {
+  const record = await localDb.get(storeName, id);
+  if (!record) return;
+
+  editingId = id;
+
+  if (storeName === 'contas_consumo') {
+    document.getElementById('conta-tipo').value = record.tipo;
+    document.getElementById('conta-valor-total').value = record.valor_total ?? '';
+    document.getElementById('conta-valor-rateado').value = record.valor_rateado ?? '';
+    document.getElementById('conta-vencimento').value = record.data_vencimento ?? '';
+    document.getElementById('conta-pago').checked = !!record.pago;
+    document.getElementById('conta-data-pagamento').value = record.data_pagamento ?? '';
+    document.getElementById('conta-data-rateio').value = record.data_transferencia_rateio ?? '';
+
+    els.modalContaTitle.textContent = 'Editar conta';
+    els.btnExcluirConta.hidden = false;
+    els.modalConta.hidden = false;
+  } else {
+    document.getElementById('combustivel-data').value = record.data ?? '';
+    document.getElementById('combustivel-valor-total').value = record.valor_total ?? '';
+    document.getElementById('combustivel-valor-rateado').value = record.valor_rateado ?? '';
+    document.getElementById('combustivel-litros').value = record.litros ?? '';
+    document.getElementById('combustivel-km').value = record.km_atual ?? '';
+    document.getElementById('combustivel-posto').value = record.posto ?? '';
+    document.getElementById('combustivel-data-rateio').value = record.data_transferencia_rateio ?? '';
+
+    els.modalCombustivelTitle.textContent = 'Editar abastecimento';
+    els.btnExcluirCombustivel.hidden = false;
+    els.modalCombustivel.hidden = false;
+  }
+}
+
+async function excluirRegistro(storeName, id) {
+  const confirmado = window.confirm('Tem certeza que deseja excluir este lançamento?');
+  if (!confirmado) return;
+
+  await localDb.remove(storeName, id);
+  editingId = null;
+  els.modalConta.hidden = true;
+  els.modalCombustivel.hidden = true;
+
+  await renderTab(activeTab);
+  triggerBackgroundSync();
+  showToast('Lançamento excluído.');
+}
+
+els.btnExcluirConta.addEventListener('click', () => {
+  if (editingId) excluirRegistro('contas_consumo', editingId);
+});
+
+els.btnExcluirCombustivel.addEventListener('click', () => {
+  if (editingId) excluirRegistro('abastecimentos', editingId);
 });
 
 els.formConta.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!currentUser) return;
 
-  await localDb.create('contas_consumo', {
+  const fields = {
     user_id: currentUser.id,
     tipo: document.getElementById('conta-tipo').value,
     valor_total: Number(document.getElementById('conta-valor-total').value),
@@ -250,8 +342,15 @@ els.formConta.addEventListener('submit', async (event) => {
     data_pagamento: parseOptionalText('conta-data-pagamento'),
     data_transferencia_rateio: parseOptionalText('conta-data-rateio'),
     data_ordenacao: parseOptionalText('conta-vencimento') || new Date().toISOString().slice(0, 10),
-  });
+  };
 
+  if (editingId) {
+    await localDb.update('contas_consumo', editingId, fields);
+  } else {
+    await localDb.create('contas_consumo', fields);
+  }
+
+  editingId = null;
   els.modalConta.hidden = true;
   await renderTab('contas');
   triggerBackgroundSync();
@@ -263,7 +362,7 @@ els.formCombustivel.addEventListener('submit', async (event) => {
 
   const data = document.getElementById('combustivel-data').value;
 
-  await localDb.create('abastecimentos', {
+  const fields = {
     user_id: currentUser.id,
     data,
     valor_total: Number(document.getElementById('combustivel-valor-total').value),
@@ -273,8 +372,15 @@ els.formCombustivel.addEventListener('submit', async (event) => {
     posto: parseOptionalText('combustivel-posto'),
     data_transferencia_rateio: parseOptionalText('combustivel-data-rateio'),
     data_ordenacao: data,
-  });
+  };
 
+  if (editingId) {
+    await localDb.update('abastecimentos', editingId, fields);
+  } else {
+    await localDb.create('abastecimentos', fields);
+  }
+
+  editingId = null;
   els.modalCombustivel.hidden = true;
   await renderTab('combustivel');
   triggerBackgroundSync();

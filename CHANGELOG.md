@@ -3,6 +3,16 @@
 Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 `x.x.x.x` para correções (hotfixes) dentro da mesma versão.
 
+## [0.2.0] — Etapa 2 (parte 1): editar e excluir lançamentos
+
+- Botões de editar (✏️) e excluir (🗑️) em cada lançamento das listas de
+  Contas e Combustível
+- Modal de cadastro agora funciona também como edição, pré-preenchendo
+  os campos do lançamento selecionado
+- Botão "Excluir" dentro do modal, visível apenas ao editar
+- Confirmação antes de excluir um lançamento
+- Novo método `localDb.get()` para buscar um registro local pelo id
+
 ## [0.1.0.3] — Hotfix
 
 - Corrigido bug de CSS que fazia a tela de login e a tela do app ficarem
