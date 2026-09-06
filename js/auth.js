@@ -22,7 +22,7 @@ export async function signUp(email, password) {
 }
 
 export async function signOut() {
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: 'local' });
 }
 
 export function onAuthChange(callback) {

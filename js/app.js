@@ -312,11 +312,13 @@ window.addEventListener('offline', updateConnectionStatus);
 // ---------------------------------------------------------
 
 els.btnLogout.addEventListener('click', async () => {
-  await signOut();
-  currentUser = null;
-  els.viewApp.hidden = true;
-  els.viewAuth.hidden = false;
-  els.formAuth.reset();
+  try {
+    await signOut();
+  } catch (err) {
+    console.error('[auth] falha ao sair:', err);
+  } finally {
+    window.location.reload();
+  }
 });
 
 // ---------------------------------------------------------

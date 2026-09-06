@@ -3,6 +3,14 @@
 Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 `x.x.x.x` para correções (hotfixes) dentro da mesma versão.
 
+## [0.1.0.3] — Hotfix
+
+- Corrigido bug de CSS que fazia a tela de login e a tela do app ficarem
+  sobrepostas (o atributo `hidden` não estava vencendo regras de `display`
+  mais específicas)
+- Logout agora limpa a sessão local e recarrega a página, evitando login
+  persistente ao reabrir o site
+
 ## [0.1.0.2] — Hotfix
 
 - Credenciais reais do Supabase (URL/anon key) mantidas preenchidas em
