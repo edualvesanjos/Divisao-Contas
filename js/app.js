@@ -47,6 +47,7 @@ const els = {
   formConfig: document.getElementById('form-config'),
   configParticipantes: document.getElementById('config-participantes'),
   configPercentual: document.getElementById('config-percentual'),
+  btnForcarSync: document.getElementById('btn-forcar-sync'),
 };
 
 let currentUser = null;
@@ -168,6 +169,27 @@ els.formConfig.addEventListener('submit', async (event) => {
 
   showToast('Configurações salvas.');
   triggerBackgroundSync();
+});
+
+els.btnForcarSync.addEventListener('click', async () => {
+  if (!currentUser) return;
+  els.btnForcarSync.disabled = true;
+  els.btnForcarSync.textContent = 'Sincronizando...';
+
+  try {
+    await localDb.markAllForResync('contas_consumo');
+    await localDb.markAllForResync('abastecimentos');
+    await localDb.markAllForResync('configuracoes');
+    await syncAll(currentUser.id);
+    await renderTab(activeTab);
+    showToast('Sincronização forçada concluída.');
+  } catch (err) {
+    console.error('[sync] falha ao forçar sincronização:', err);
+    showToast('Falha ao forçar sincronização — veja o console.', 'error');
+  } finally {
+    els.btnForcarSync.disabled = false;
+    els.btnForcarSync.textContent = 'Forçar sincronização de tudo';
+  }
 });
 
 async function checkExistingSession() {

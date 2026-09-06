@@ -139,6 +139,24 @@ export const localDb = {
     return this.update(storeName, id, { deleted: true });
   },
 
+  /** Marca TODOS os registros (não só os pendentes) para reenvio — usado para forçar uma ressincronização completa. */
+  async markAllForResync(storeName) {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      const request = store.getAll();
+      request.onsuccess = () => {
+        for (const row of request.result) {
+          store.put({ ...row, pending_sync: 1 });
+        }
+      };
+      request.onerror = () => reject(request.error);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  },
+
   /** Retorna todos os registros pendentes de envio ao Supabase. */
   async listPendingSync(storeName) {
     const db = await openDb();

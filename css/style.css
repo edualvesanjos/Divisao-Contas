@@ -349,6 +349,20 @@ button, input, select {
   max-width: 360px;
 }
 
+.config-divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 24px 0 16px;
+  max-width: 360px;
+}
+
+.config-hint {
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+  max-width: 360px;
+  margin-top: 6px;
+}
+
 .empty-state {
   text-align: center;
   color: var(--color-ink-muted);

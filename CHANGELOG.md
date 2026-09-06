@@ -3,6 +3,14 @@
 Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 `x.x.x.x` para correções (hotfixes) dentro da mesma versão.
 
+## [0.3.0.2] — Hotfix
+
+- Botão "Forçar sincronização de tudo" na aba Config, para reenviar
+  registros que ficaram presos localmente (ex: marcados como sincronizados
+  pelo bug do hotfix anterior, sem nunca terem chegado ao Supabase)
+- Novo método `localDb.markAllForResync()` que remarca todos os registros
+  de uma tabela local como pendentes, independente do estado atual
+
 ## [0.3.0.1] — Hotfix
 
 - Corrigido bug crítico de sincronização: `sync.js` não verificava o `error`
