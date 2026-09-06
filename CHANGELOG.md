@@ -3,6 +3,14 @@
 Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 `x.x.x.x` para correções (hotfixes) dentro da mesma versão.
 
+## [0.3.0.1] — Hotfix
+
+- Corrigido bug crítico de sincronização: `sync.js` não verificava o `error`
+  retornado pelo Supabase, então falhas de envio (RLS, coluna incompatível,
+  etc.) eram silenciosas — o app marcava o registro como sincronizado sem
+  ele ter chegado ao banco. Agora o erro é logado (`[sync] Supabase recusou...`)
+  e o registro continua pendente até sincronizar de verdade.
+
 ## [0.3.0] — Etapa 2 (parte 2): rateio automático + Configurações
 
 - Nova aba "Config" com nº de participantes padrão (Contas) e percentual

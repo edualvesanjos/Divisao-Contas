@@ -23,10 +23,13 @@ async function pushPending(storeName) {
   for (const record of pending) {
     const { pending_sync, ...payload } = record;
 
-    if (payload.deleted) {
-      await supabase.from(storeName).delete().eq('id', payload.id);
-    } else {
-      await supabase.from(storeName).upsert(payload);
+    const { error } = payload.deleted
+      ? await supabase.from(storeName).delete().eq('id', payload.id)
+      : await supabase.from(storeName).upsert(payload);
+
+    if (error) {
+      console.error(`[sync] Supabase recusou ${storeName}/${payload.id}:`, error.message, error);
+      continue; // não limpa o pending_sync — tenta de novo no próximo ciclo
     }
 
     await localDb.clearPendingFlag(storeName, record.id);
