@@ -21,7 +21,10 @@ export function isOnline() {
 async function pushPending(storeName) {
   const pending = await localDb.listPendingSync(storeName);
   for (const record of pending) {
-    const { pending_sync, ...payload } = record;
+    // pending_sync e data_ordenacao são campos só do IndexedDB local —
+    // o Supabase não tem essas colunas, então precisam ser removidos
+    // antes de qualquer insert/update remoto.
+    const { pending_sync, data_ordenacao, ...payload } = record;
 
     const { error } = payload.deleted
       ? await supabase.from(storeName).delete().eq('id', payload.id)
@@ -49,7 +52,12 @@ async function pullRemote(storeName, userId) {
   }
 
   for (const record of data) {
-    await localDb.upsertFromRemote(storeName, record);
+    const dataOrdenacao =
+      storeName === 'contas_consumo'
+        ? record.data_vencimento || record.created_at?.slice(0, 10)
+        : record.data || record.created_at?.slice(0, 10);
+
+    await localDb.upsertFromRemote(storeName, { ...record, data_ordenacao: dataOrdenacao });
   }
 }
 

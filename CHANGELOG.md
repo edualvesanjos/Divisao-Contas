@@ -3,6 +3,16 @@
 Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 `x.x.x.x` para correções (hotfixes) dentro da mesma versão.
 
+## [0.3.0.3] — Hotfix
+
+- Corrigida a causa raiz da falha de sincronização: o campo local
+  `data_ordenacao` (usado só para ordenar a lista no navegador) estava
+  sendo enviado ao Supabase, que rejeitava com erro 400
+  ("Could not find the 'data_ordenacao' column"). Agora esse campo é
+  removido do payload antes do envio.
+- Registros baixados do Supabase (que não têm `data_ordenacao`) agora
+  recebem esse campo derivado localmente, mantendo a ordenação da lista correta.
+
 ## [0.3.0.2] — Hotfix
 
 - Botão "Forçar sincronização de tudo" na aba Config, para reenviar
