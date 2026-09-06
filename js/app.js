@@ -37,6 +37,16 @@ const els = {
   resumoContasRateado: document.getElementById('resumo-contas-rateado'),
   resumoTotalRateado: document.getElementById('resumo-total-rateado'),
   resumoVazio: document.getElementById('resumo-vazio'),
+  resumoTotalLitros: document.getElementById('resumo-total-litros'),
+  resumoLitrosPorTipo: document.getElementById('resumo-litros-por-tipo'),
+
+  formFechamento: document.getElementById('form-fechamento'),
+  fechamentoContasPago: document.getElementById('fechamento-contas-pago'),
+  fechamentoContasDataPagamento: document.getElementById('fechamento-contas-data-pagamento'),
+  fechamentoContasDataRateio: document.getElementById('fechamento-contas-data-rateio'),
+  fechamentoCombustivelDataRateio: document.getElementById('fechamento-combustivel-data-rateio'),
+
+  listaPostos: document.getElementById('lista-postos'),
 
   listaContas: document.getElementById('lista-contas'),
   listaContasVazia: document.getElementById('lista-contas-vazia'),
@@ -142,6 +152,7 @@ async function enterApp(user) {
   try {
     await loadSettings();
     await refreshActiveView();
+    await atualizarListaPostos();
   } catch (err) {
     console.error('[app] falha ao carregar lista local:', err);
     showToast('Entrou, mas houve um erro ao carregar os dados locais.', 'error');
@@ -270,10 +281,25 @@ async function refreshActiveView() {
   }
 }
 
-function isNoMesAtivo(dataOrdenacao) {
+async function atualizarListaPostos() {
+  const rows = await localDb.listAll('abastecimentos');
+  const postos = [...new Set(rows.map((r) => r.posto).filter(Boolean))].sort();
+  els.listaPostos.innerHTML = postos.map((p) => `<option value="${p}"></option>`).join('');
+}
+
+function isNoMes(dataOrdenacao, ano, mes) {
   if (!dataOrdenacao) return false;
-  const [ano, mes] = dataOrdenacao.split('-').map(Number);
-  return ano === mesAtivo.ano && mes === mesAtivo.mes + 1;
+  const [anoData, mesData] = dataOrdenacao.split('-').map(Number);
+  return anoData === ano && mesData === mes + 1;
+}
+
+function isNoMesAtivo(dataOrdenacao) {
+  return isNoMes(dataOrdenacao, mesAtivo.ano, mesAtivo.mes);
+}
+
+function mesAnterior({ ano, mes }) {
+  const data = new Date(ano, mes - 1, 1);
+  return { ano: data.getFullYear(), mes: data.getMonth() };
 }
 
 function atualizarLabelMes() {
@@ -309,8 +335,12 @@ async function renderTab(tab) {
 }
 
 async function renderResumo() {
+  const mesCombustivel = mesAnterior(mesAtivo);
+
   const contas = (await localDb.listAll('contas_consumo')).filter((r) => isNoMesAtivo(r.data_ordenacao));
-  const abastecimentos = (await localDb.listAll('abastecimentos')).filter((r) => isNoMesAtivo(r.data_ordenacao));
+  const abastecimentos = (await localDb.listAll('abastecimentos')).filter((r) =>
+    isNoMes(r.data_ordenacao, mesCombustivel.ano, mesCombustivel.mes)
+  );
 
   const somar = (rows, campo) => rows.reduce((acc, r) => acc + (Number(r[campo]) || 0), 0);
 
@@ -318,26 +348,70 @@ async function renderResumo() {
   const totalCombustivel = somar(abastecimentos, 'valor_total');
   const contasRateado = somar(contas, 'valor_rateado');
   const combustivelRateado = somar(abastecimentos, 'valor_rateado');
+  const totalLitros = somar(abastecimentos, 'litros');
+  const litrosGasolina = somar(
+    abastecimentos.filter((a) => a.tipo_combustivel === 'gasolina'),
+    'litros'
+  );
+  const litrosEtanol = somar(
+    abastecimentos.filter((a) => a.tipo_combustivel === 'etanol'),
+    'litros'
+  );
 
   els.resumoTotalContas.textContent = formatMoeda(totalContas);
   els.resumoTotalCombustivel.textContent = formatMoeda(totalCombustivel);
   els.resumoContasRateado.textContent = formatMoeda(contasRateado);
   els.resumoCombustivelRateado.textContent = formatMoeda(combustivelRateado);
   els.resumoTotalRateado.textContent = formatMoeda(contasRateado + combustivelRateado);
+  els.resumoTotalLitros.textContent = `${totalLitros.toLocaleString('pt-BR')} L`;
+  els.resumoLitrosPorTipo.textContent = `${litrosGasolina.toLocaleString('pt-BR')} L / ${litrosEtanol.toLocaleString('pt-BR')} L`;
 
   els.resumoVazio.hidden = contas.length + abastecimentos.length > 0;
+
+  await loadFechamentoMes();
 }
 
+function fechamentoId(userId, ano, mes) {
+  return `${userId}::${ano}-${String(mes + 1).padStart(2, '0')}`;
+}
+
+async function loadFechamentoMes() {
+  if (!currentUser) return;
+  const id = fechamentoId(currentUser.id, mesAtivo.ano, mesAtivo.mes);
+  const record = await localDb.get('fechamentos_mensais', id);
+
+  els.fechamentoContasPago.checked = record?.contas_pago ?? false;
+  els.fechamentoContasDataPagamento.value = record?.contas_data_pagamento ?? '';
+  els.fechamentoContasDataRateio.value = record?.contas_data_rateio ?? '';
+  els.fechamentoCombustivelDataRateio.value = record?.combustivel_data_rateio ?? '';
+}
+
+els.formFechamento.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!currentUser) return;
+
+  const id = fechamentoId(currentUser.id, mesAtivo.ano, mesAtivo.mes);
+
+  await localDb.putWithId('fechamentos_mensais', id, {
+    user_id: currentUser.id,
+    ano: mesAtivo.ano,
+    mes: mesAtivo.mes + 1,
+    contas_pago: els.fechamentoContasPago.checked,
+    contas_data_pagamento: els.fechamentoContasDataPagamento.value || null,
+    contas_data_rateio: els.fechamentoContasDataRateio.value || null,
+    combustivel_data_rateio: els.fechamentoCombustivelDataRateio.value || null,
+  });
+
+  showToast('Fechamento do mês salvo.');
+  triggerBackgroundSync();
+});
+
 function renderContaItem(c) {
-  const flag = c.pago
-    ? '<span class="entry-flag is-pago">paga</span>'
-    : '<span class="entry-flag is-pendente">pendente</span>';
   return `
     <li class="entry-card">
       <div class="entry-main">
         <span class="entry-title">${TIPO_LABEL[c.tipo] || c.tipo}</span>
         <span class="entry-meta">Vence em ${formatData(c.data_vencimento)}</span>
-        ${flag}
       </div>
       <div class="entry-values">
         <div class="entry-value-total">${formatMoeda(c.valor_total)}</div>
@@ -351,11 +425,12 @@ function renderContaItem(c) {
 }
 
 function renderCombustivelItem(a) {
+  const tipoLabel = a.tipo_combustivel === 'etanol' ? 'Etanol' : 'Gasolina';
   return `
     <li class="entry-card">
       <div class="entry-main">
         <span class="entry-title">${a.posto || 'Abastecimento'}</span>
-        <span class="entry-meta">${formatData(a.data)}${a.litros ? ` · ${a.litros} L` : ''}</span>
+        <span class="entry-meta">${formatData(a.data)} · ${tipoLabel}${a.litros ? ` · ${a.litros} L` : ''}</span>
       </div>
       <div class="entry-values">
         <div class="entry-value-total">${formatMoeda(a.valor_total)}</div>
@@ -453,9 +528,6 @@ async function abrirEdicao(storeName, id) {
     document.getElementById('conta-participantes').value =
       record.numero_participantes ?? settings.numero_participantes_padrao;
     document.getElementById('conta-vencimento').value = record.data_vencimento ?? '';
-    document.getElementById('conta-pago').checked = !!record.pago;
-    document.getElementById('conta-data-pagamento').value = record.data_pagamento ?? '';
-    document.getElementById('conta-data-rateio').value = record.data_transferencia_rateio ?? '';
     atualizarPreviewConta();
 
     els.modalContaTitle.textContent = 'Editar conta';
@@ -467,9 +539,8 @@ async function abrirEdicao(storeName, id) {
     document.getElementById('combustivel-percentual').value =
       record.percentual_rateado ?? settings.percentual_combustivel_padrao;
     document.getElementById('combustivel-litros').value = record.litros ?? '';
-    document.getElementById('combustivel-km').value = record.km_atual ?? '';
+    document.getElementById('combustivel-tipo').value = record.tipo_combustivel ?? 'gasolina';
     document.getElementById('combustivel-posto').value = record.posto ?? '';
-    document.getElementById('combustivel-data-rateio').value = record.data_transferencia_rateio ?? '';
     atualizarPreviewCombustivel();
 
     els.modalCombustivelTitle.textContent = 'Editar abastecimento';
@@ -514,9 +585,6 @@ els.formConta.addEventListener('submit', async (event) => {
     numero_participantes: participantes,
     valor_rateado: valorTotal / participantes,
     data_vencimento: parseOptionalText('conta-vencimento'),
-    pago: document.getElementById('conta-pago').checked,
-    data_pagamento: parseOptionalText('conta-data-pagamento'),
-    data_transferencia_rateio: parseOptionalText('conta-data-rateio'),
     data_ordenacao: parseOptionalText('conta-vencimento') || new Date().toISOString().slice(0, 10),
   };
 
@@ -528,7 +596,7 @@ els.formConta.addEventListener('submit', async (event) => {
 
   editingId = null;
   els.modalConta.hidden = true;
-  await renderTab('contas');
+  await refreshActiveView();
   triggerBackgroundSync();
 });
 
@@ -547,9 +615,8 @@ els.formCombustivel.addEventListener('submit', async (event) => {
     percentual_rateado: percentual,
     valor_rateado: valorTotal * (percentual / 100),
     litros: parseOptionalNumber('combustivel-litros'),
-    km_atual: parseOptionalNumber('combustivel-km'),
+    tipo_combustivel: document.getElementById('combustivel-tipo').value,
     posto: parseOptionalText('combustivel-posto'),
-    data_transferencia_rateio: parseOptionalText('combustivel-data-rateio'),
     data_ordenacao: data,
   };
 
@@ -561,8 +628,9 @@ els.formCombustivel.addEventListener('submit', async (event) => {
 
   editingId = null;
   els.modalCombustivel.hidden = true;
-  await renderTab('combustivel');
+  await refreshActiveView();
   triggerBackgroundSync();
+  atualizarListaPostos();
 });
 
 function parseOptionalNumber(id) {

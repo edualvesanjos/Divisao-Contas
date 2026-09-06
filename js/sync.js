@@ -11,7 +11,7 @@
 import { supabase } from './supabase-client.js';
 import { localDb } from './db-local.js';
 
-const TABLES = ['contas_consumo', 'abastecimentos', 'configuracoes'];
+const TABLES = ['contas_consumo', 'abastecimentos', 'configuracoes', 'fechamentos_mensais'];
 
 export function isOnline() {
   return navigator.onLine;

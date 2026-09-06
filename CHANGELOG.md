@@ -3,6 +3,26 @@
 Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 `x.x.x.x` para correções (hotfixes) dentro da mesma versão.
 
+## [0.5.0] — Fechamento mensal, combustível defasado e ajustes de formulário
+
+- **Contas**: removidos do formulário os campos "Já paga", "Data de
+  pagamento" e "Data de transferência do rateio" — agora são controlados
+  uma vez por mês, na aba Resumo ("Fechamento do mês")
+- **Combustível**: campo "Km atual" trocado por "Tipo de combustível"
+  (Gasolina/Etanol); "Data de transferência do rateio" também migrou pro
+  Fechamento do mês; campo "Posto" agora sugere postos já digitados antes
+  (autocomplete)
+- **Resumo**: os totais de Combustível/Combustível Rateado/Litros agora
+  usam o mês ANTERIOR ao mês exibido (lançou em agosto → conta em
+  setembro); Contas continua usando o mês exibido normalmente. A aba
+  Combustível continua listando pelo mês real do lançamento.
+- **Resumo**: adicionados Total de Litros e Litros por tipo
+  (Gasolina/Etanol)
+- Nova tabela `fechamentos_mensais` no Supabase (migração
+  `supabase/migrations/003_fechamento_mensal.sql`), um registro por
+  usuário/ano/mês
+- IndexedDB local subiu para versão 3 (nova store `fechamentos_mensais`)
+
 ## [0.4.0] — Melhorias de UI: navegação por mês + Resumo Mensal
 
 - Navegador de mês (‹ Setembro 2026 ›) no topo do app, compartilhado entre

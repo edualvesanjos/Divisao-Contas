@@ -342,6 +342,11 @@ button, input, select {
   font-variant-numeric: tabular-nums;
 }
 
+.resumo-subtitulo {
+  font-size: 1rem;
+  margin: 0 0 12px;
+}
+
 .config-form {
   display: flex;
   flex-direction: column;

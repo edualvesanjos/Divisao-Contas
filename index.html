@@ -94,6 +94,14 @@
             <span class="resumo-value" id="resumo-combustivel-rateado">R$ 0,00</span>
           </div>
           <div class="resumo-card">
+            <span class="resumo-label">Total de Litros</span>
+            <span class="resumo-value" id="resumo-total-litros">0 L</span>
+          </div>
+          <div class="resumo-card">
+            <span class="resumo-label">Litros — Gasolina / Etanol</span>
+            <span class="resumo-value" id="resumo-litros-por-tipo">0 L / 0 L</span>
+          </div>
+          <div class="resumo-card">
             <span class="resumo-label">Contas Rateadas</span>
             <span class="resumo-value" id="resumo-contas-rateado">R$ 0,00</span>
           </div>
@@ -105,6 +113,33 @@
         <p class="empty-state" id="resumo-vazio" hidden>
           Nenhum lançamento neste mês ainda.
         </p>
+
+        <hr class="config-divider" />
+
+        <h3 class="resumo-subtitulo">Fechamento do mês</h3>
+        <form id="form-fechamento" class="config-form">
+          <label class="field field-checkbox">
+            <input type="checkbox" id="fechamento-contas-pago" />
+            <span class="field-label">Contas pagas neste mês</span>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Data de pagamento das contas</span>
+            <input type="date" id="fechamento-contas-data-pagamento" />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Data de transferência do rateio (Contas)</span>
+            <input type="date" id="fechamento-contas-data-rateio" />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Data de transferência do rateio (Combustível)</span>
+            <input type="date" id="fechamento-combustivel-data-rateio" />
+          </label>
+
+          <button type="submit" class="btn btn-primary">Salvar fechamento do mês</button>
+        </form>
       </section>
 
       <!-- Aba: Configurações -->
@@ -188,21 +223,6 @@
           <input type="date" id="conta-vencimento" />
         </label>
 
-        <label class="field field-checkbox">
-          <input type="checkbox" id="conta-pago" />
-          <span class="field-label">Já paga</span>
-        </label>
-
-        <label class="field">
-          <span class="field-label">Data de pagamento</span>
-          <input type="date" id="conta-data-pagamento" />
-        </label>
-
-        <label class="field">
-          <span class="field-label">Data de transferência do rateio</span>
-          <input type="date" id="conta-data-rateio" />
-        </label>
-
         <div class="modal-actions">
           <button type="button" class="btn btn-danger" id="btn-excluir-conta" hidden>Excluir</button>
           <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
@@ -240,18 +260,17 @@
         </label>
 
         <label class="field">
-          <span class="field-label">Km atual</span>
-          <input type="number" id="combustivel-km" step="0.1" min="0" inputmode="decimal" />
+          <span class="field-label">Tipo de combustível</span>
+          <select id="combustivel-tipo">
+            <option value="gasolina">Gasolina</option>
+            <option value="etanol">Etanol</option>
+          </select>
         </label>
 
         <label class="field">
           <span class="field-label">Posto</span>
-          <input type="text" id="combustivel-posto" />
-        </label>
-
-        <label class="field">
-          <span class="field-label">Data de transferência do rateio</span>
-          <input type="date" id="combustivel-data-rateio" />
+          <input type="text" id="combustivel-posto" list="lista-postos" autocomplete="off" />
+          <datalist id="lista-postos"></datalist>
         </label>
 
         <div class="modal-actions">

@@ -32,6 +32,8 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
    - Vá em **SQL Editor** e rode o conteúdo de `supabase/schema.sql`
    - Em seguida, rode `supabase/migrations/002_rateio_automatico.sql` (adiciona
      a tabela de Configurações e os campos de rateio automático)
+   - Depois, rode `supabase/migrations/003_fechamento_mensal.sql` (adiciona
+     a tabela de Fechamento Mensal e o tipo de combustível)
    - Vá em **Configurações → API** e copie a `Project URL` e a `anon public key`
    - Cole essas duas informações em `js/supabase-client.js`, nas constantes
      `SUPABASE_URL` e `SUPABASE_ANON_KEY`

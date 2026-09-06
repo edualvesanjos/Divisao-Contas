@@ -9,8 +9,8 @@
 // =========================================================
 
 const DB_NAME = 'contas-combustivel';
-const DB_VERSION = 2;
-const STORES = ['contas_consumo', 'abastecimentos', 'configuracoes'];
+const DB_VERSION = 3;
+const STORES = ['contas_consumo', 'abastecimentos', 'configuracoes', 'fechamentos_mensais'];
 
 let dbPromise = null;
 
