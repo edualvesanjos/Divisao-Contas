@@ -6,7 +6,11 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 ## Versão atual
 
-- **v0.5.0.3** — ajustes no fechamento mensal, preservação do percentual histórico e modais centralizados.
+- **v0.8.0 DEV** — pré-visualização e validação detalhadas da importação XLSX, com resumo por ano e conferência separada de contas, combustível e fechamentos.
+- **v0.7.0.1 DEV** — correções do mapeamento histórico, pagamentos e limpeza seletiva dos dados importados.
+- **v0.6.2 DEV** — padronização visual completa dos indicadores mensais e identificação do mês de referência do combustível no Resumo.
+- **v0.6.1 DEV** — seleção direta de mês/ano e padronização visual dos subtotais; mantém os indicadores mensais da v0.6.0.
+- **v0.5.0.3** — última versão estável de produção antes da série 0.6.x.
 - **v0.5.0.1 DEV** — estabilização da sincronização offline-first.
 
 
@@ -20,6 +24,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 │   ├── auth.js               # login/cadastro/sessão (Supabase Auth)
 │   ├── db-local.js           # IndexedDB (fonte de dados local)
 │   ├── sync.js                # sincroniza IndexedDB <-> Supabase
+│   ├── import-xlsx.js         # análise e importação histórica XLSX
 │   └── supabase-client.js     # config da conexão com o Supabase
 ├── manifest.json            # PWA (instalar no celular)
 ├── sw.js                    # cache do app shell p/ abrir offline
@@ -57,7 +62,6 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 ## O que fica para depois (fora da Etapa 1)
 
-- Importação do histórico da planilha (2021–2026)
 - Relatórios e gráficos de gastos
 - Suporte a mais tipos de conta além de Água/Luz/Internet
 - Ícones reais do PWA (os caminhos em `manifest.json` estão previstos, mas os
@@ -84,3 +88,30 @@ A seleção do banco fica centralizada em `js/environment.js`.
 - o badge `DEV` aparece somente no ambiente de desenvolvimento;
 - se as credenciais do ambiente ativo estiverem ausentes, o app interrompe a inicialização e informa a configuração pendente;
 - use apenas a **publishable/anon key** no frontend. Nunca use `service_role`.
+## Importação histórica XLSX (v0.7.0.1.1 DEV)
+
+Antes do primeiro teste de importação, execute no **Supabase DEV**:
+
+`supabase/migrations/004_competencia_importacao.sql`
+
+A importação fica em **Config → Importar histórico da planilha**. O fluxo é: selecionar arquivo → analisar → conferir prévia/avisos → importar.
+
+O perfil desta versão reconhece as abas `Contas Consumo AAAA` e `Combustivel AAAA` da planilha histórica utilizada no projeto. As contas importadas usam uma competência mensal própria; portanto, quando a planilha não possui vencimento real, o app exibe **Referência mês/ano** em vez de inventar uma data.
+
+Nos abastecimentos históricos, o percentual mensal é inferido pela relação entre `TOTAL RATEADO` e `TOTAL`. Litros, posto e tipo de combustível permanecem não informados quando não existirem no arquivo de origem.
+
+A leitura XLSX usa SheetJS CE 0.20.3 carregado no momento da página; por isso, a análise de uma planilha requer conexão disponível para carregar a biblioteca caso ela ainda não esteja no navegador.
+
+
+
+### v0.7.0.1 DEV
+- Importa “Nivel 6 Mercado Livre” em 2023/2024.
+- Usa “Dt pg vl rateado” para pagamento das contas e transferência do rateio.
+- Internet ausente em anos antigos deixa de gerar aviso.
+- Inclui exclusão seletiva dos dados importados para repetição segura dos testes.
+- Requer migration 005 no Supabase DEV.
+
+### Ajuste DEV da v0.8.0
+Antes do novo teste de importação, execute `supabase/migrations/006_reparo_tipo_contas_importacao.sql` no Supabase DEV. A exclusão seletiva de dados XLSX agora remove os registros remotos por ID e só então limpa o cache local.
+
+- **v0.8.0 PROD** — versão estável com Visão Anual e Comparativos Históricos.

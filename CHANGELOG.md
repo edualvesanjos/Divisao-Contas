@@ -1,3 +1,117 @@
+## v0.8.0 PROD
+
+- Versão de produção fechada a partir da **v0.8.0.1 DEV validada**.
+- Publica a nova **Visão Anual e Comparativos Históricos**.
+- Inclui seleção de ano, consolidação mensal/anual, comparação com o ano anterior, evolução mensal, totais rateados e indicadores históricos.
+- Incorpora a correção validada do carregamento da visão anual.
+- Ambiente alterado para **production**, utilizando a configuração de Supabase PROD.
+- Não requer nova migration no Supabase.
+- Nenhuma alteração funcional adicional foi introduzida no fechamento de produção.
+
+## v0.8.0.1 DEV
+
+- Corrige erro de sintaxe no `app.js` causado pela declaração duplicada da função `somarCampo`.
+- Restaura o carregamento normal da interface e da nova aba **Anual**.
+- Mantém integralmente as funcionalidades previstas na v0.8.0 DEV.
+- Não requer nova migration no Supabase.
+
+## v0.8.0 DEV
+
+- Inicia a série de **Visão Anual e Comparativos Históricos**.
+- Adiciona nova aba **Anual** com seleção direta do ano disponível na base.
+- Consolida totais anuais de Contas, Combustível, Total Rateado e Total Geral.
+- Compara automaticamente o ano selecionado com o ano imediatamente anterior.
+- Adiciona evolução mensal visual para Contas e Combustível.
+- Adiciona tabela mensal com Contas, Combustível, Total e Rateado.
+- Adiciona médias mensais anuais calculadas somente sobre meses que possuem lançamentos.
+- Exibe maior mês do ano e quantidade de meses com lançamentos.
+- A visão anual usa o mês real de cada lançamento de combustível; a regra especial de mês anterior permanece exclusiva do Resumo Mensal.
+- Não altera registros históricos nem requer nova migration no Supabase.
+- Cache do PWA atualizado para v0.8.0.
+
+## v0.7.3 DEV
+
+- Consolida o fluxo de importação histórica XLSX após a validação da v0.7.2.
+- Corrige o contador principal para mostrar **registros analisados**, incluindo contas, abastecimentos e fechamentos.
+- Adiciona detalhamento da classificação por grupo: Contas, Combustível e Fechamentos.
+- Quando não há registros novos, a análise informa que a base já contém os itens e desabilita a importação desnecessária.
+- Fechamentos passam a acompanhar corretamente a seleção de **Contas de consumo**; ao desmarcar Contas, fechamentos deixam de ser considerados/importados.
+- Mantém duplicados e conflitos preservados sem sobrescrita.
+- Não requer nova migration no Supabase.
+- Cache do PWA atualizado para v0.7.3.
+
+## v0.7.2 DEV
+
+- Adiciona classificação preventiva da reimportação em **Novo**, **Duplicado** e **Conflito**.
+- Contas são comparadas por tipo + competência; valor idêntico é duplicado e valor diferente na mesma competência é conflito.
+- Abastecimentos idênticos por data + valor são ignorados por ocorrência; alterações em registros XLSX já importados são preservadas como conflito.
+- Fechamentos mensais existentes deixam de ser sobrescritos automaticamente; diferenças são sinalizadas para conferência.
+- A importação grava somente registros classificados como novos.
+- A pré-visualização mostra status por registro, contadores e detalhes dos conflitos.
+- Não requer nova migration no Supabase.
+- Mantém as migrations 004, 005 e 006 como base de dados da série 0.7.x.
+- Cache do PWA atualizado para v0.7.2.
+
+## v0.7.1 DEV
+
+- Corrige a exclusão de dados XLSX: exclusão remota por ID + remoção definitiva do cache local, evitando reidratação dos registros.
+- Adiciona migration 006 idempotente para garantir o tipo histórico `mercado_livre` no constraint de `contas_consumo`.
+- Evolui a pré-visualização da importação histórica XLSX.
+- Adiciona status claro de validação: pronto, com avisos ou bloqueado por erro.
+- Adiciona resumo por ano com quantidades de contas, abastecimentos e fechamentos reconhecidos.
+- Separa a prévia em tabelas de Contas, Combustível e Meses pagos/Fechamentos.
+- Exibe origem, competência/data, valores, rateio, percentual histórico e situação de pagamento para conferência.
+- Erros estruturais passam a bloquear o botão de importação; avisos continuam permitindo importação após conferência.
+- Não requer nova migration ou alteração no Supabase.
+- Cache do PWA atualizado para v0.7.1.
+
+## v0.7.0.1 DEV
+
+- Corrige mapeamento histórico de contas e pagamentos.
+- Reconhece Nivel 6 Mercado Livre.
+- Interpreta Dt pg vl rateado como pagamento/transferência do mês.
+- Adiciona exclusão seletiva dos dados importados.
+- Remove aviso para Internet opcional ausente.
+- Adiciona migration 005.
+
+## v0.7.0 — DEV
+
+- Início da série de importação histórica XLSX.
+- Adicionado perfil para reconhecer abas `Contas Consumo AAAA` e `Combustivel AAAA`.
+- Importação de contas usa `competencia` mensal, sem inventar data de vencimento para registros históricos.
+- Importação de combustível preserva datas e infere o percentual histórico a partir de `TOTAL RATEADO / TOTAL`.
+- Dados ausentes na planilha (tipo de combustível, litros e posto) são mantidos como não informados.
+- Adicionada pré-visualização antes da gravação, seleção entre Contas/Combustível e avisos de inconsistência.
+- Proteção inicial contra importação duplicada de registros equivalentes.
+- Nova migration `004_competencia_importacao.sql` para competência e origem de importação.
+- Cache do PWA atualizado para v0.7.0.
+
+## v0.6.2 — DEV
+
+- Contas e Combustível: os cards “Variação vs. mês anterior” e “Média mensal no ano” passam a usar o mesmo fundo e borda dos cards de subtotal e do aviso de mês fechado.
+- Resumo: “Total Combustível” agora informa entre parênteses o mês/ano de referência efetivamente usado no cálculo, que corresponde ao mês anterior ao período selecionado.
+- Alteração apenas visual/informativa; sem mudanças na lógica de cálculo ou no banco de dados.
+- Cache do PWA atualizado para v0.6.2.
+- Sem alterações de schema ou migrations no Supabase.
+
+## v0.6.1 — DEV
+
+- Navegação mensal: o nome do mês/ano no topo agora é clicável e abre um seletor direto de mês e ano.
+- As setas de mês anterior/próximo foram preservadas para navegação rápida.
+- O seletor de período pode ser fechado por Cancelar, clique fora ou tecla Esc; Enter no campo de ano aplica a seleção.
+- Contas e Combustível: os cards de subtotal passaram a usar o mesmo fundo e borda do aviso de mês fechado, mantendo o padrão visual da interface.
+- Cache do PWA atualizado para v0.6.1.
+- Sem alterações de schema ou migrations no Supabase.
+
+## v0.6.0 — DEV
+
+- Contas e Combustível: adicionados subtotais mensais de valor total e valor rateado para conferência.
+- Contas e Combustível: adicionada variação percentual do valor total em relação ao mês imediatamente anterior.
+- Contas e Combustível: adicionada média mensal do valor total no ano selecionado, calculada somente sobre meses com lançamentos.
+- Indicadores são atualizados ao trocar o mês, criar, editar ou excluir lançamentos.
+- Ambiente alterado para desenvolvimento e cache do PWA atualizado para v0.6.0.
+- Sem alterações de schema ou migrations no Supabase.
+
 ## v0.5.0.3 — Produção
 
 - Configurado ambiente de produção com Supabase dedicado.

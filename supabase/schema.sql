@@ -13,7 +13,7 @@ create table if not exists public.contas_consumo (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
 
-  tipo text not null check (tipo in ('agua', 'luz', 'internet')),
+  tipo text not null check (tipo in ('agua', 'luz', 'internet', 'mercado_livre')),
 
   valor_total numeric(10,2) not null check (valor_total >= 0),
   valor_rateado numeric(10,2) check (valor_rateado >= 0),

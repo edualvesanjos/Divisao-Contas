@@ -54,7 +54,7 @@ async function pullRemote(storeName, userId) {
   for (const record of data) {
     const dataOrdenacao =
       storeName === 'contas_consumo'
-        ? record.data_vencimento || record.created_at?.slice(0, 10)
+        ? record.competencia || record.data_vencimento || record.created_at?.slice(0, 10)
         : record.data || record.created_at?.slice(0, 10);
 
     await localDb.upsertFromRemote(storeName, { ...record, data_ordenacao: dataOrdenacao });

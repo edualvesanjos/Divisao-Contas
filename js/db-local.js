@@ -96,6 +96,30 @@ export const localDb = {
     return record;
   },
 
+  /** Cria vários registros em uma única transação — usado na importação histórica. */
+  async createMany(storeName, rows) {
+    if (!Array.isArray(rows) || rows.length === 0) return [];
+    const db = await openDb();
+    const now = new Date().toISOString();
+    const records = rows.map((fields) => ({
+      id: uuid(),
+      ...fields,
+      updated_at: now,
+      created_at: now,
+      deleted: false,
+      pending_sync: 1,
+    }));
+
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      for (const record of records) store.put(record);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    return records;
+  },
+
   /** Cria ou substitui um registro com um id definido por quem chama (ex: configurações, uma linha por usuário). */
   async putWithId(storeName, id, fields) {
     const now = new Date().toISOString();
@@ -137,6 +161,18 @@ export const localDb = {
   /** Marca como excluído (soft delete) e agenda a exclusão remota. */
   async remove(storeName, id) {
     return this.update(storeName, id, { deleted: true });
+  },
+
+  /** Remove definitivamente apenas do cache local, após exclusão remota confirmada. */
+  async hardDelete(storeName, id) {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readwrite');
+      const request = tx.objectStore(storeName).delete(id);
+      request.onerror = () => reject(request.error);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
   },
 
   /** Marca TODOS os registros (não só os pendentes) para reenvio — usado para forçar uma ressincronização completa. */
