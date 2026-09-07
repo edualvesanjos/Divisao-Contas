@@ -4,7 +4,6 @@
 
 import { getSession, signIn, signUp, signOut, onAuthChange } from './auth.js';
 import { localDb } from './db-local.js';
-import { supabase } from './supabase-client.js';
 import { syncAll, watchConnectivity, isOnline } from './sync.js';
 import { APP_ENVIRONMENT, isDevelopment } from './environment.js';
 import { analisarPlanilhaHistorica } from './import-xlsx.js';
@@ -500,53 +499,22 @@ if (els.btnImportarXlsx) {
 
 async function excluirDadosImportados() {
   if (!currentUser) return;
-
   const stores = ['contas_consumo', 'abastecimentos', 'fechamentos_mensais'];
   let removidos = 0;
-
   for (const store of stores) {
     const rows = await localDb.listAll(store);
-    const importados = rows.filter(
-      (row) => row.user_id === currentUser.id && row.origem_importacao === 'xlsx_historico'
-    );
-
-    if (!importados.length) continue;
-
-    // Exclui por ID no Supabase. Assim a limpeza funciona inclusive para registros
-    // importados em versões anteriores e não depende do campo origem_importacao
-    // existir/estar preenchido remotamente.
-    const ids = importados.map((row) => row.id).filter(Boolean);
-    if (ids.length && isOnline()) {
-      const { error } = await supabase
-        .from(store)
-        .delete()
-        .eq('user_id', currentUser.id)
-        .in('id', ids);
-
-      if (error) {
-        throw new Error(`Falha ao excluir ${store} no Supabase: ${error.message}`);
-      }
-    }
-
-    // Só remove definitivamente do IndexedDB depois da exclusão remota.
-    // Se estiver offline, preserva o fluxo de soft delete para sincronização posterior.
-    for (const row of importados) {
-      if (isOnline()) {
-        await localDb.hardDelete(store, row.id);
-      } else {
+    for (const row of rows) {
+      if (row.user_id === currentUser.id && row.origem_importacao === 'xlsx_historico') {
         await localDb.remove(store, row.id);
+        removidos += 1;
       }
-      removidos += 1;
     }
-  }
-
-  if (isOnline()) {
-    await syncAll(currentUser.id);
   }
   await refreshActiveView();
-  atualizarListaPostos();
-  showToast(`${removidos} registro(s) importado(s) excluído(s).`);
+  triggerBackgroundSync();
+  showToast(`${removidos} registro(s) importado(s) marcado(s) para exclusão.`);
 }
+
 if (els.btnExcluirImportados) {
   els.btnExcluirImportados.addEventListener('click', async () => {
     const confirmado = window.confirm('Excluir somente os dados originados da importação XLSX? Lançamentos manuais serão preservados.');

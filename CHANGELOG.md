@@ -1,7 +1,5 @@
 ## v0.7.1 DEV
 
-- Corrige a exclusão de dados XLSX: exclusão remota por ID + remoção definitiva do cache local, evitando reidratação dos registros.
-- Adiciona migration 006 idempotente para garantir o tipo histórico `mercado_livre` no constraint de `contas_consumo`.
 - Evolui a pré-visualização da importação histórica XLSX.
 - Adiciona status claro de validação: pronto, com avisos ou bloqueado por erro.
 - Adiciona resumo por ano com quantidades de contas, abastecimentos e fechamentos reconhecidos.

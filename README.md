@@ -110,6 +110,3 @@ A leitura XLSX usa SheetJS CE 0.20.3 carregado no momento da página; por isso, 
 - Internet ausente em anos antigos deixa de gerar aviso.
 - Inclui exclusão seletiva dos dados importados para repetição segura dos testes.
 - Requer migration 005 no Supabase DEV.
-
-### Ajuste DEV da v0.7.1
-Antes do novo teste de importação, execute `supabase/migrations/006_reparo_tipo_contas_importacao.sql` no Supabase DEV. A exclusão seletiva de dados XLSX agora remove os registros remotos por ID e só então limpa o cache local.

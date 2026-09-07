@@ -163,18 +163,6 @@ export const localDb = {
     return this.update(storeName, id, { deleted: true });
   },
 
-  /** Remove definitivamente apenas do cache local, após exclusão remota confirmada. */
-  async hardDelete(storeName, id) {
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readwrite');
-      const request = tx.objectStore(storeName).delete(id);
-      request.onerror = () => reject(request.error);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  },
-
   /** Marca TODOS os registros (não só os pendentes) para reenvio — usado para forçar uma ressincronização completa. */
   async markAllForResync(storeName) {
     const db = await openDb();
