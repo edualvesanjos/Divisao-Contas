@@ -65,6 +65,26 @@
 
       <!-- Aba: Contas de consumo -->
       <section id="tab-contas" class="tab-panel">
+        <div class="month-check-grid" aria-label="Conferência mensal de contas">
+          <div class="month-check-card">
+            <span class="month-check-label">Subtotal das contas</span>
+            <strong class="month-check-value" id="contas-subtotal">R$ 0,00</strong>
+          </div>
+          <div class="month-check-card">
+            <span class="month-check-label">Subtotal rateado</span>
+            <strong class="month-check-value" id="contas-subtotal-rateado">R$ 0,00</strong>
+          </div>
+          <div class="month-check-card">
+            <span class="month-check-label">Variação vs. mês anterior</span>
+            <strong class="month-check-value" id="contas-variacao">—</strong>
+            <span class="month-check-note" id="contas-variacao-note"></span>
+          </div>
+          <div class="month-check-card">
+            <span class="month-check-label">Média mensal no ano</span>
+            <strong class="month-check-value" id="contas-media-ano">R$ 0,00</strong>
+            <span class="month-check-note" id="contas-media-ano-note"></span>
+          </div>
+        </div>
         <ul id="lista-contas" class="entry-list"></ul>
         <p id="lista-contas-vazia" class="empty-state" hidden>
           Nenhuma conta registrada ainda.<br />Toque em “+” para lançar a primeira.
@@ -73,6 +93,26 @@
 
       <!-- Aba: Combustível -->
       <section id="tab-combustivel" class="tab-panel" hidden>
+        <div class="month-check-grid" aria-label="Conferência mensal de combustível">
+          <div class="month-check-card">
+            <span class="month-check-label">Subtotal combustível</span>
+            <strong class="month-check-value" id="combustivel-subtotal">R$ 0,00</strong>
+          </div>
+          <div class="month-check-card">
+            <span class="month-check-label">Subtotal rateado</span>
+            <strong class="month-check-value" id="combustivel-subtotal-rateado">R$ 0,00</strong>
+          </div>
+          <div class="month-check-card">
+            <span class="month-check-label">Variação vs. mês anterior</span>
+            <strong class="month-check-value" id="combustivel-variacao">—</strong>
+            <span class="month-check-note" id="combustivel-variacao-note"></span>
+          </div>
+          <div class="month-check-card">
+            <span class="month-check-label">Média mensal no ano</span>
+            <strong class="month-check-value" id="combustivel-media-ano">R$ 0,00</strong>
+            <span class="month-check-note" id="combustivel-media-ano-note"></span>
+          </div>
+        </div>
         <ul id="lista-combustivel" class="entry-list"></ul>
         <p id="lista-combustivel-vazia" class="empty-state" hidden>
           Nenhum abastecimento registrado ainda.<br />Toque em “+” para lançar o primeiro.

@@ -1,7 +1,7 @@
 // Service worker mínimo: cacheia o "app shell" para abrir offline.
 // A sincronização de dados em si é feita por js/sync.js, não aqui.
 
-const CACHE_NAME = 'contas-combustivel-v0.5.0.3';
+const CACHE_NAME = 'contas-combustivel-v0.6.0';
 const APP_SHELL = [
   './',
   './index.html',

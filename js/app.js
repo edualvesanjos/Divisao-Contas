@@ -33,6 +33,19 @@ const els = {
   btnMesAnterior: document.getElementById('btn-mes-anterior'),
   btnMesProximo: document.getElementById('btn-mes-proximo'),
 
+  contasSubtotal: document.getElementById('contas-subtotal'),
+  contasSubtotalRateado: document.getElementById('contas-subtotal-rateado'),
+  contasVariacao: document.getElementById('contas-variacao'),
+  contasVariacaoNote: document.getElementById('contas-variacao-note'),
+  contasMediaAno: document.getElementById('contas-media-ano'),
+  contasMediaAnoNote: document.getElementById('contas-media-ano-note'),
+  combustivelSubtotal: document.getElementById('combustivel-subtotal'),
+  combustivelSubtotalRateado: document.getElementById('combustivel-subtotal-rateado'),
+  combustivelVariacao: document.getElementById('combustivel-variacao'),
+  combustivelVariacaoNote: document.getElementById('combustivel-variacao-note'),
+  combustivelMediaAno: document.getElementById('combustivel-media-ano'),
+  combustivelMediaAnoNote: document.getElementById('combustivel-media-ano-note'),
+
   resumoTotalContas: document.getElementById('resumo-total-contas'),
   resumoTotalCombustivel: document.getElementById('resumo-total-combustivel'),
   resumoCombustivelRateado: document.getElementById('resumo-combustivel-rateado'),
@@ -329,15 +342,83 @@ function mudarMes(delta) {
   refreshActiveView();
 }
 
+function somarCampo(rows, campo) {
+  return rows.reduce((acc, row) => acc + (Number(row[campo]) || 0), 0);
+}
+
+function calcularVariacaoPercentual(atual, anterior) {
+  if (anterior === 0) return null;
+  return ((atual - anterior) / anterior) * 100;
+}
+
+function aplicarVariacao(elemento, nota, atual, anterior) {
+  elemento.classList.remove('is-positive', 'is-negative');
+
+  const variacao = calcularVariacaoPercentual(atual, anterior);
+  if (variacao == null) {
+    elemento.textContent = '—';
+    nota.textContent = atual > 0 ? 'Mês anterior sem valor para comparação' : 'Sem base de comparação';
+    return;
+  }
+
+  const sinal = variacao > 0 ? '+' : '';
+  elemento.textContent = `${sinal}${variacao.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+  if (variacao > 0) elemento.classList.add('is-positive');
+  if (variacao < 0) elemento.classList.add('is-negative');
+  nota.textContent = `Anterior: ${formatMoeda(anterior)}`;
+}
+
+function calcularMediaMensalAno(rows, ano, campo = 'valor_total') {
+  const totaisPorMes = new Map();
+
+  rows.forEach((row) => {
+    if (!row.data_ordenacao) return;
+    const [anoRow, mesRow] = row.data_ordenacao.split('-').map(Number);
+    if (anoRow !== ano || !mesRow) return;
+    totaisPorMes.set(mesRow, (totaisPorMes.get(mesRow) || 0) + (Number(row[campo]) || 0));
+  });
+
+  if (totaisPorMes.size === 0) return { media: 0, meses: 0 };
+  const totalAno = [...totaisPorMes.values()].reduce((acc, valor) => acc + valor, 0);
+  return { media: totalAno / totaisPorMes.size, meses: totaisPorMes.size };
+}
+
+function renderIndicadoresMensais(prefixo, rows) {
+  const rowsMes = rows.filter((row) => isNoMesAtivo(row.data_ordenacao));
+  const anterior = mesAnterior(mesAtivo);
+  const rowsAnterior = rows.filter((row) => isNoMes(row.data_ordenacao, anterior.ano, anterior.mes));
+
+  const subtotal = somarCampo(rowsMes, 'valor_total');
+  const subtotalRateado = somarCampo(rowsMes, 'valor_rateado');
+  const totalAnterior = somarCampo(rowsAnterior, 'valor_total');
+  const mediaAno = calcularMediaMensalAno(rows, mesAtivo.ano);
+
+  const ids = prefixo === 'contas'
+    ? { subtotal: els.contasSubtotal, rateado: els.contasSubtotalRateado, variacao: els.contasVariacao, variacaoNote: els.contasVariacaoNote, media: els.contasMediaAno, mediaNote: els.contasMediaAnoNote }
+    : { subtotal: els.combustivelSubtotal, rateado: els.combustivelSubtotalRateado, variacao: els.combustivelVariacao, variacaoNote: els.combustivelVariacaoNote, media: els.combustivelMediaAno, mediaNote: els.combustivelMediaAnoNote };
+
+  ids.subtotal.textContent = formatMoeda(subtotal);
+  ids.rateado.textContent = formatMoeda(subtotalRateado);
+  aplicarVariacao(ids.variacao, ids.variacaoNote, subtotal, totalAnterior);
+  ids.media.textContent = formatMoeda(mediaAno.media);
+  ids.mediaNote.textContent = mediaAno.meses === 0
+    ? `Sem lançamentos em ${mesAtivo.ano}`
+    : `Base: ${mediaAno.meses} ${mediaAno.meses === 1 ? 'mês' : 'meses'} com lançamentos em ${mesAtivo.ano}`;
+}
+
 async function renderTab(tab) {
   if (tab === 'config' || tab === 'resumo') return;
 
   if (tab === 'contas') {
-    const rows = (await localDb.listAll('contas_consumo')).filter((r) => isNoMesAtivo(r.data_ordenacao));
+    const allRows = await localDb.listAll('contas_consumo');
+    const rows = allRows.filter((r) => isNoMesAtivo(r.data_ordenacao));
+    renderIndicadoresMensais('contas', allRows);
     els.listaContasVazia.hidden = rows.length > 0;
     els.listaContas.innerHTML = rows.map(renderContaItem).join('');
   } else {
-    const rows = (await localDb.listAll('abastecimentos')).filter((r) => isNoMesAtivo(r.data_ordenacao));
+    const allRows = await localDb.listAll('abastecimentos');
+    const rows = allRows.filter((r) => isNoMesAtivo(r.data_ordenacao));
+    renderIndicadoresMensais('combustivel', allRows);
     els.listaCombustivelVazia.hidden = rows.length > 0;
     els.listaCombustivel.innerHTML = rows.map(renderCombustivelItem).join('');
   }

@@ -1,3 +1,12 @@
+## v0.6.0 — DEV
+
+- Contas e Combustível: adicionados subtotais mensais de valor total e valor rateado para conferência.
+- Contas e Combustível: adicionada variação percentual do valor total em relação ao mês imediatamente anterior.
+- Contas e Combustível: adicionada média mensal do valor total no ano selecionado, calculada somente sobre meses com lançamentos.
+- Indicadores são atualizados ao trocar o mês, criar, editar ou excluir lançamentos.
+- Ambiente alterado para desenvolvimento e cache do PWA atualizado para v0.6.0.
+- Sem alterações de schema ou migrations no Supabase.
+
 ## v0.5.0.3 — Produção
 
 - Configurado ambiente de produção com Supabase dedicado.

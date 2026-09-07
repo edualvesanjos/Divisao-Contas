@@ -422,6 +422,52 @@ button, input, select {
   text-align: center;
 }
 
+
+.month-check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.month-check-card {
+  min-width: 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.month-check-label {
+  color: var(--color-ink-muted);
+  font-size: 0.74rem;
+  line-height: 1.25;
+}
+
+.month-check-value {
+  font-size: 1.05rem;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.month-check-value.is-positive { color: #b42318; }
+.month-check-value.is-negative { color: #14804a; }
+
+.month-check-note {
+  min-height: 1em;
+  color: var(--color-ink-muted);
+  font-size: 0.68rem;
+  line-height: 1.25;
+}
+
+@media (max-width: 380px) {
+  .month-check-grid { grid-template-columns: 1fr; }
+}
+
 .resumo-grid {
   display: flex;
   flex-direction: column;
