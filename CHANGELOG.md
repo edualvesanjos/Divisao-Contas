@@ -1,3 +1,23 @@
+## v0.5.0.3 — Produção
+
+- Configurado ambiente de produção com Supabase dedicado.
+- Ambiente padrão alterado para `production`; badge DEV não é exibido.
+- Mantida separação entre credenciais DEV e PROD.
+
+## v0.5.0.3
+
+- Separação explícita dos ambientes `development` e `production` em `js/environment.js`
+- Banco atual preservado como ambiente DEV
+- Configuração de produção preparada para receber Project URL e publishable key próprias
+- Badge visual `DEV` exibido somente no ambiente de desenvolvimento
+- Bloqueio preventivo quando o ambiente ativo estiver sem credenciais válidas
+- Cache do PWA atualizado para v0.5.0.3
+
+## v0.5.0.2 — Produção
+
+- Versão DEV validada em testes e promovida para produção.
+- Consolida os ajustes de fechamento mensal, percentual histórico, data única de transferência e centralização dos modais.
+
 # Changelog
 
 Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,

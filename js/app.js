@@ -5,6 +5,7 @@
 import { getSession, signIn, signUp, signOut, onAuthChange } from './auth.js';
 import { localDb } from './db-local.js';
 import { syncAll, watchConnectivity, isOnline } from './sync.js';
+import { APP_ENVIRONMENT, isDevelopment } from './environment.js';
 
 const els = {
   viewAuth: document.getElementById('view-auth'),
@@ -18,6 +19,7 @@ const els = {
 
   tabTitle: document.getElementById('tab-title'),
   appVersion: document.getElementById('app-version'),
+  environmentBadge: document.getElementById('environment-badge'),
   tabButtons: document.querySelectorAll('.tab-btn'),
   tabPanels: {
     contas: document.getElementById('tab-contas'),
@@ -79,6 +81,11 @@ let activeTab = 'contas';
 let isSignUpMode = false;
 let editingId = null;
 let settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50 };
+
+if (els.environmentBadge) {
+  els.environmentBadge.hidden = !isDevelopment;
+  els.environmentBadge.title = `Ambiente: ${APP_ENVIRONMENT}`;
+}
 
 const hoje = new Date();
 let mesAtivo = { ano: hoje.getFullYear(), mes: hoje.getMonth() }; // mes: 0-11

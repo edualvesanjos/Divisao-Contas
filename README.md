@@ -6,7 +6,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 ## Versão atual
 
-- **v0.5.0.2 DEV** — ajustes no fechamento mensal, preservação do percentual histórico e modais centralizados.
+- **v0.5.0.3** — ajustes no fechamento mensal, preservação do percentual histórico e modais centralizados.
 - **v0.5.0.1 DEV** — estabilização da sincronização offline-first.
 
 
@@ -41,8 +41,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
    - Depois, rode `supabase/migrations/003_fechamento_mensal.sql` (adiciona
      a tabela de Fechamento Mensal e o tipo de combustível)
    - Vá em **Configurações → API** e copie a `Project URL` e a `anon public key`
-   - Cole essas duas informações em `js/supabase-client.js`, nas constantes
-     `SUPABASE_URL` e `SUPABASE_ANON_KEY`
+   - Cadastre essas informações em `js/environment.js`, no bloco do ambiente correspondente (`development` ou `production`)
 
 4. **Habilite confirmação de e-mail** (Authentication → Providers → Email) se
    quiser exigir verificação ao criar a conta, ou desative para testar mais rápido.
@@ -74,3 +73,14 @@ e baixa o que estiver no servidor. Registros com alteração local ainda pendent
 não são sobrescritos pelo download remoto. Quando não há pendência local, o
 `updated_at` impede que um registro remoto mais antigo substitua uma versão local
 mais recente.
+
+
+## Ambientes DEV e PROD
+
+A seleção do banco fica centralizada em `js/environment.js`.
+
+- branch `develop`: use `APP_ENVIRONMENT = 'development'`;
+- branch `main`: use `APP_ENVIRONMENT = 'production'`;
+- o badge `DEV` aparece somente no ambiente de desenvolvimento;
+- se as credenciais do ambiente ativo estiverem ausentes, o app interrompe a inicialização e informa a configuração pendente;
+- use apenas a **publishable/anon key** no frontend. Nunca use `service_role`.
