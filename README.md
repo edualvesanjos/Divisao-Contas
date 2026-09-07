@@ -6,6 +6,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 ## Versão atual
 
+- **v0.6.2 DEV** — padronização visual completa dos indicadores mensais e identificação do mês de referência do combustível no Resumo.
 - **v0.6.1 DEV** — seleção direta de mês/ano e padronização visual dos subtotais; mantém os indicadores mensais da v0.6.0.
 - **v0.5.0.3** — última versão estável de produção antes da série 0.6.x.
 - **v0.5.0.1 DEV** — estabilização da sincronização offline-first.

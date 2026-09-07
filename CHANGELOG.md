@@ -1,3 +1,11 @@
+## v0.6.2 — DEV
+
+- Contas e Combustível: os cards “Variação vs. mês anterior” e “Média mensal no ano” passam a usar o mesmo fundo e borda dos cards de subtotal e do aviso de mês fechado.
+- Resumo: “Total Combustível” agora informa entre parênteses o mês/ano de referência efetivamente usado no cálculo, que corresponde ao mês anterior ao período selecionado.
+- Alteração apenas visual/informativa; sem mudanças na lógica de cálculo ou no banco de dados.
+- Cache do PWA atualizado para v0.6.2.
+- Sem alterações de schema ou migrations no Supabase.
+
 ## v0.6.1 — DEV
 
 - Navegação mensal: o nome do mês/ano no topo agora é clicável e abre um seletor direto de mês e ano.

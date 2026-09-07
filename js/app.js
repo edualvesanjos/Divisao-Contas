@@ -53,6 +53,7 @@ const els = {
 
   resumoTotalContas: document.getElementById('resumo-total-contas'),
   resumoTotalCombustivel: document.getElementById('resumo-total-combustivel'),
+  resumoTotalCombustivelLabel: document.getElementById('resumo-total-combustivel-label'),
   resumoCombustivelRateado: document.getElementById('resumo-combustivel-rateado'),
   resumoContasRateado: document.getElementById('resumo-contas-rateado'),
   resumoTotalRateado: document.getElementById('resumo-total-rateado'),
@@ -502,6 +503,11 @@ async function renderResumo() {
 
   const totalContas = somar(contas, 'valor_total');
   const totalCombustivel = somar(abastecimentos, 'valor_total');
+
+  if (els.resumoTotalCombustivelLabel) {
+    const referenciaCombustivel = `${NOMES_MESES[mesCombustivel.mes]}/${mesCombustivel.ano}`;
+    els.resumoTotalCombustivelLabel.textContent = `Total Combustível (${referenciaCombustivel})`;
+  }
   const contasRateado = somar(contas, 'valor_rateado');
   const combustivelRateado = somar(abastecimentos, 'valor_rateado');
   const totalLitros = somar(abastecimentos, 'litros');
