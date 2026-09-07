@@ -1033,9 +1033,6 @@ function mesDoAbastecimento(row) {
   return mes >= 1 && mes <= 12 ? mes - 1 : null;
 }
 
-function somarCampo(rows, campo) {
-  return rows.reduce((acc, row) => acc + (Number(row[campo]) || 0), 0);
-}
 
 function variacaoPercentual(atual, anterior) {
   const a = Number(atual) || 0;

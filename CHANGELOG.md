@@ -1,3 +1,10 @@
+## v0.8.0.1 DEV
+
+- Corrige erro de sintaxe no `app.js` causado pela declaração duplicada da função `somarCampo`.
+- Restaura o carregamento normal da interface e da nova aba **Anual**.
+- Mantém integralmente as funcionalidades previstas na v0.8.0 DEV.
+- Não requer nova migration no Supabase.
+
 ## v0.8.0 DEV
 
 - Inicia a série de **Visão Anual e Comparativos Históricos**.
