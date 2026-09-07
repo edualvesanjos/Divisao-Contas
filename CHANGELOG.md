@@ -1,3 +1,13 @@
+## v0.8.0 PROD
+
+- Versão de produção fechada a partir da **v0.8.0.1 DEV validada**.
+- Publica a nova **Visão Anual e Comparativos Históricos**.
+- Inclui seleção de ano, consolidação mensal/anual, comparação com o ano anterior, evolução mensal, totais rateados e indicadores históricos.
+- Incorpora a correção validada do carregamento da visão anual.
+- Ambiente alterado para **production**, utilizando a configuração de Supabase PROD.
+- Não requer nova migration no Supabase.
+- Nenhuma alteração funcional adicional foi introduzida no fechamento de produção.
+
 ## v0.8.0.1 DEV
 
 - Corrige erro de sintaxe no `app.js` causado pela declaração duplicada da função `somarCampo`.
