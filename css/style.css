@@ -415,11 +415,72 @@ button, input, select {
   box-shadow: var(--shadow-card);
 }
 
+.month-nav-center {
+  position: relative;
+}
+
 .month-nav-label {
+  border: none;
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
   font-weight: 600;
   text-transform: capitalize;
   min-width: 140px;
   text-align: center;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.month-nav-label:hover,
+.month-nav-label:focus-visible {
+  background: var(--color-primary-soft);
+  outline: none;
+}
+
+.month-picker {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(300px, calc(100vw - 32px));
+  padding: 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+.month-picker[hidden] { display: none; }
+
+.month-picker-field {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.month-picker-field span {
+  color: var(--color-ink-muted);
+  font-size: 0.74rem;
+}
+
+.month-picker-field select {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+}
+
+.month-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 
@@ -439,6 +500,15 @@ button, input, select {
   display: flex;
   flex-direction: column;
   gap: 3px;
+}
+
+.month-check-card-subtotal {
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-primary);
+}
+
+.month-check-card-subtotal .month-check-value {
+  color: var(--color-primary);
 }
 
 .month-check-label {

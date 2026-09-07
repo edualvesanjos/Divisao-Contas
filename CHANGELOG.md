@@ -1,3 +1,12 @@
+## v0.6.1 — DEV
+
+- Navegação mensal: o nome do mês/ano no topo agora é clicável e abre um seletor direto de mês e ano.
+- As setas de mês anterior/próximo foram preservadas para navegação rápida.
+- O seletor de período pode ser fechado por Cancelar, clique fora ou tecla Esc; Enter no campo de ano aplica a seleção.
+- Contas e Combustível: os cards de subtotal passaram a usar o mesmo fundo e borda do aviso de mês fechado, mantendo o padrão visual da interface.
+- Cache do PWA atualizado para v0.6.1.
+- Sem alterações de schema ou migrations no Supabase.
+
 ## v0.6.0 — DEV
 
 - Contas e Combustível: adicionados subtotais mensais de valor total e valor rateado para conferência.

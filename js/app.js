@@ -32,6 +32,11 @@ const els = {
   mesAtivoLabel: document.getElementById('mes-ativo-label'),
   btnMesAnterior: document.getElementById('btn-mes-anterior'),
   btnMesProximo: document.getElementById('btn-mes-proximo'),
+  monthPicker: document.getElementById('month-picker'),
+  monthPickerMonth: document.getElementById('month-picker-month'),
+  monthPickerYear: document.getElementById('month-picker-year'),
+  monthPickerCancel: document.getElementById('month-picker-cancel'),
+  monthPickerApply: document.getElementById('month-picker-apply'),
 
   contasSubtotal: document.getElementById('contas-subtotal'),
   contasSubtotalRateado: document.getElementById('contas-subtotal-rateado'),
@@ -332,8 +337,69 @@ function atualizarLabelMes() {
   els.mesAtivoLabel.textContent = label;
 }
 
+const NOMES_MESES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+function preencherSeletorPeriodo() {
+  if (!els.monthPickerMonth || !els.monthPickerYear) return;
+
+  els.monthPickerMonth.innerHTML = NOMES_MESES
+    .map((nome, indice) => `<option value="${indice}">${nome}</option>`)
+    .join('');
+
+  const anoAtual = new Date().getFullYear();
+  const primeiroAno = Math.min(2020, mesAtivo.ano);
+  const ultimoAno = Math.max(anoAtual + 2, mesAtivo.ano);
+  const anos = [];
+  for (let ano = ultimoAno; ano >= primeiroAno; ano -= 1) anos.push(ano);
+  els.monthPickerYear.innerHTML = anos.map((ano) => `<option value="${ano}">${ano}</option>`).join('');
+}
+
+function abrirSeletorPeriodo() {
+  preencherSeletorPeriodo();
+  els.monthPickerMonth.value = String(mesAtivo.mes);
+  els.monthPickerYear.value = String(mesAtivo.ano);
+  els.monthPicker.hidden = false;
+  els.mesAtivoLabel.setAttribute('aria-expanded', 'true');
+  els.monthPickerMonth.focus();
+}
+
+function fecharSeletorPeriodo() {
+  els.monthPicker.hidden = true;
+  els.mesAtivoLabel.setAttribute('aria-expanded', 'false');
+}
+
+function aplicarPeriodoSelecionado() {
+  const mes = Number(els.monthPickerMonth.value);
+  const ano = Number(els.monthPickerYear.value);
+  if (!Number.isInteger(mes) || mes < 0 || mes > 11 || !Number.isInteger(ano)) return;
+
+  mesAtivo = { ano, mes };
+  atualizarLabelMes();
+  fecharSeletorPeriodo();
+  refreshActiveView();
+}
+
 els.btnMesAnterior.addEventListener('click', () => mudarMes(-1));
 els.btnMesProximo.addEventListener('click', () => mudarMes(1));
+els.mesAtivoLabel.addEventListener('click', (event) => {
+  event.stopPropagation();
+  if (els.monthPicker.hidden) abrirSeletorPeriodo();
+  else fecharSeletorPeriodo();
+});
+els.monthPicker.addEventListener('click', (event) => event.stopPropagation());
+els.monthPickerCancel.addEventListener('click', fecharSeletorPeriodo);
+els.monthPickerApply.addEventListener('click', aplicarPeriodoSelecionado);
+els.monthPickerMonth.addEventListener('change', () => els.monthPickerYear.focus());
+els.monthPickerYear.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') aplicarPeriodoSelecionado();
+});
+document.addEventListener('click', fecharSeletorPeriodo);
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !els.monthPicker.hidden) fecharSeletorPeriodo();
+});
 
 function mudarMes(delta) {
   const data = new Date(mesAtivo.ano, mesAtivo.mes + delta, 1);
