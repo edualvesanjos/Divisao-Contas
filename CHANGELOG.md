@@ -1,3 +1,15 @@
+## v0.7.0 — DEV
+
+- Início da série de importação histórica XLSX.
+- Adicionado perfil para reconhecer abas `Contas Consumo AAAA` e `Combustivel AAAA`.
+- Importação de contas usa `competencia` mensal, sem inventar data de vencimento para registros históricos.
+- Importação de combustível preserva datas e infere o percentual histórico a partir de `TOTAL RATEADO / TOTAL`.
+- Dados ausentes na planilha (tipo de combustível, litros e posto) são mantidos como não informados.
+- Adicionada pré-visualização antes da gravação, seleção entre Contas/Combustível e avisos de inconsistência.
+- Proteção inicial contra importação duplicada de registros equivalentes.
+- Nova migration `004_competencia_importacao.sql` para competência e origem de importação.
+- Cache do PWA atualizado para v0.7.0.
+
 ## v0.6.2 — DEV
 
 - Contas e Combustível: os cards “Variação vs. mês anterior” e “Média mensal no ano” passam a usar o mesmo fundo e borda dos cards de subtotal e do aviso de mês fechado.

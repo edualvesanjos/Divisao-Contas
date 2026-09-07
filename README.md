@@ -6,6 +6,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 ## Versão atual
 
+- **v0.7.0 DEV** — importação histórica XLSX com pré-visualização, competência mensal nas contas e preservação do percentual histórico do combustível.
 - **v0.6.2 DEV** — padronização visual completa dos indicadores mensais e identificação do mês de referência do combustível no Resumo.
 - **v0.6.1 DEV** — seleção direta de mês/ano e padronização visual dos subtotais; mantém os indicadores mensais da v0.6.0.
 - **v0.5.0.3** — última versão estável de produção antes da série 0.6.x.
@@ -86,3 +87,17 @@ A seleção do banco fica centralizada em `js/environment.js`.
 - o badge `DEV` aparece somente no ambiente de desenvolvimento;
 - se as credenciais do ambiente ativo estiverem ausentes, o app interrompe a inicialização e informa a configuração pendente;
 - use apenas a **publishable/anon key** no frontend. Nunca use `service_role`.
+## Importação histórica XLSX (v0.7.0 DEV)
+
+Antes do primeiro teste de importação, execute no **Supabase DEV**:
+
+`supabase/migrations/004_competencia_importacao.sql`
+
+A importação fica em **Config → Importar histórico da planilha**. O fluxo é: selecionar arquivo → analisar → conferir prévia/avisos → importar.
+
+O perfil desta versão reconhece as abas `Contas Consumo AAAA` e `Combustivel AAAA` da planilha histórica utilizada no projeto. As contas importadas usam uma competência mensal própria; portanto, quando a planilha não possui vencimento real, o app exibe **Referência mês/ano** em vez de inventar uma data.
+
+Nos abastecimentos históricos, o percentual mensal é inferido pela relação entre `TOTAL RATEADO` e `TOTAL`. Litros, posto e tipo de combustível permanecem não informados quando não existirem no arquivo de origem.
+
+A leitura XLSX usa SheetJS CE 0.20.3 carregado no momento da página; por isso, a análise de uma planilha requer conexão disponível para carregar a biblioteca caso ela ainda não esteja no navegador.
+

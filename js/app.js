@@ -6,6 +6,7 @@ import { getSession, signIn, signUp, signOut, onAuthChange } from './auth.js';
 import { localDb } from './db-local.js';
 import { syncAll, watchConnectivity, isOnline } from './sync.js';
 import { APP_ENVIRONMENT, isDevelopment } from './environment.js';
+import { analisarPlanilhaHistorica } from './import-xlsx.js';
 
 const els = {
   viewAuth: document.getElementById('view-auth'),
@@ -93,6 +94,16 @@ const els = {
   configParticipantes: document.getElementById('config-participantes'),
   configPercentual: document.getElementById('config-percentual'),
   btnForcarSync: document.getElementById('btn-forcar-sync'),
+
+  importXlsxFile: document.getElementById('import-xlsx-file'),
+  importContas: document.getElementById('import-contas'),
+  importCombustivel: document.getElementById('import-combustivel'),
+  btnAnalisarXlsx: document.getElementById('btn-analisar-xlsx'),
+  btnImportarXlsx: document.getElementById('btn-importar-xlsx'),
+  importXlsxResult: document.getElementById('import-xlsx-result'),
+  importXlsxSummary: document.getElementById('import-xlsx-summary'),
+  importXlsxWarnings: document.getElementById('import-xlsx-warnings'),
+  importXlsxPreview: document.getElementById('import-xlsx-preview'),
 };
 
 let currentUser = null;
@@ -100,6 +111,7 @@ let activeTab = 'contas';
 let isSignUpMode = false;
 let editingId = null;
 let settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50 };
+let importAnalysis = null;
 
 if (els.environmentBadge) {
   els.environmentBadge.hidden = !isDevelopment;
@@ -246,6 +258,154 @@ els.btnForcarSync.addEventListener('click', async () => {
     els.btnForcarSync.textContent = 'Forçar sincronização de tudo';
   }
 });
+
+
+function formatCompetencia(iso) {
+  if (!iso) return '—';
+  const [ano, mes] = iso.split('-').map(Number);
+  if (!ano || !mes) return '—';
+  return new Date(ano, mes - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function resetImportAnalysis() {
+  importAnalysis = null;
+  if (els.btnImportarXlsx) els.btnImportarXlsx.disabled = true;
+  if (els.importXlsxResult) els.importXlsxResult.hidden = true;
+}
+
+function renderImportAnalysis(result) {
+  const contasAtivas = els.importContas?.checked ?? true;
+  const combustivelAtivo = els.importCombustivel?.checked ?? true;
+  const contas = contasAtivas ? result.contas : [];
+  const combustivel = combustivelAtivo ? result.combustivel : [];
+  const total = contas.length + combustivel.length;
+
+  els.importXlsxSummary.innerHTML = `
+    <div class="import-summary-card"><strong>${contas.length}</strong><span>contas</span></div>
+    <div class="import-summary-card"><strong>${combustivel.length}</strong><span>abastecimentos</span></div>
+    <div class="import-summary-card"><strong>${total}</strong><span>registros selecionados</span></div>`;
+
+  if (result.warnings.length) {
+    const shown = result.warnings.slice(0, 8);
+    els.importXlsxWarnings.innerHTML = `<strong>Avisos da análise:</strong><br>${shown.map((w) => `• ${escapeHtml(w)}`).join('<br>')}${result.warnings.length > shown.length ? `<br>• +${result.warnings.length - shown.length} aviso(s)` : ''}`;
+    els.importXlsxWarnings.hidden = false;
+  } else {
+    els.importXlsxWarnings.hidden = true;
+    els.importXlsxWarnings.innerHTML = '';
+  }
+
+  const previewRows = [
+    ...contas.slice(0, 4).map((r) => ({ tipo: TIPO_LABEL[r.tipo] || r.tipo, data: formatCompetencia(r.competencia), valor: r.valor_total, rateio: r.valor_rateado })),
+    ...combustivel.slice(0, 4).map((r) => ({ tipo: 'Combustível', data: formatData(r.data), valor: r.valor_total, rateio: r.valor_rateado })),
+  ];
+
+  els.importXlsxPreview.innerHTML = previewRows.length
+    ? `<table><thead><tr><th>Tipo</th><th>Referência/Data</th><th>Valor</th><th>Rateado</th></tr></thead><tbody>${previewRows.map((r) => `<tr><td>${escapeHtml(r.tipo)}</td><td>${escapeHtml(r.data)}</td><td>${formatMoeda(r.valor)}</td><td>${formatMoeda(r.rateio)}</td></tr>`).join('')}</tbody></table>`
+    : '<p class="config-hint">Nenhum registro selecionado para importação.</p>';
+
+  els.importXlsxResult.hidden = false;
+  els.btnImportarXlsx.disabled = total === 0;
+}
+
+function accountImportKey(r) {
+  const competencia = r.competencia || (r.data_vencimento ? `${r.data_vencimento.slice(0, 7)}-01` : '');
+  return `${r.tipo}|${competencia}|${Number(r.valor_total).toFixed(2)}`;
+}
+
+function fuelImportKey(r) {
+  return `${r.data || ''}|${Number(r.valor_total).toFixed(2)}`;
+}
+
+async function importarDadosAnalisados() {
+  if (!currentUser || !importAnalysis) return;
+  const selectedAccounts = els.importContas.checked ? importAnalysis.contas : [];
+  const selectedFuel = els.importCombustivel.checked ? importAnalysis.combustivel : [];
+
+  const [existingAccounts, existingFuel] = await Promise.all([
+    localDb.listAll('contas_consumo'),
+    localDb.listAll('abastecimentos'),
+  ]);
+  const accountKeys = new Set(existingAccounts.map(accountImportKey));
+  const fuelKeys = new Set(existingFuel.map(fuelImportKey));
+
+  const accountsToCreate = selectedAccounts
+    .filter((r) => !accountKeys.has(accountImportKey(r)))
+    .map(({ source, ...r }) => ({ ...r, user_id: currentUser.id }));
+  const fuelToCreate = selectedFuel
+    .filter((r) => !fuelKeys.has(fuelImportKey(r)))
+    .map(({ source, ...r }) => ({ ...r, user_id: currentUser.id }));
+
+  const skipped = (selectedAccounts.length - accountsToCreate.length) + (selectedFuel.length - fuelToCreate.length);
+  await localDb.createMany('contas_consumo', accountsToCreate);
+  await localDb.createMany('abastecimentos', fuelToCreate);
+
+  showToast(`${accountsToCreate.length + fuelToCreate.length} registro(s) importado(s)${skipped ? `; ${skipped} duplicado(s) ignorado(s)` : ''}.`);
+  await refreshActiveView();
+  triggerBackgroundSync();
+  atualizarListaPostos();
+}
+
+if (els.importXlsxFile) els.importXlsxFile.addEventListener('change', resetImportAnalysis);
+if (els.importContas) els.importContas.addEventListener('change', () => importAnalysis && renderImportAnalysis(importAnalysis));
+if (els.importCombustivel) els.importCombustivel.addEventListener('change', () => importAnalysis && renderImportAnalysis(importAnalysis));
+
+if (els.btnAnalisarXlsx) {
+  els.btnAnalisarXlsx.addEventListener('click', async () => {
+    const file = els.importXlsxFile?.files?.[0];
+    if (!file) {
+      showToast('Selecione primeiro uma planilha XLSX.', 'error');
+      return;
+    }
+
+    els.btnAnalisarXlsx.disabled = true;
+    els.btnAnalisarXlsx.textContent = 'Analisando...';
+    try {
+      importAnalysis = await analisarPlanilhaHistorica(file, {
+        participantesPadrao: settings.numero_participantes_padrao,
+        percentualPadrao: settings.percentual_combustivel_padrao,
+      });
+      renderImportAnalysis(importAnalysis);
+      showToast('Planilha analisada. Confira a pré-visualização antes de importar.');
+    } catch (err) {
+      console.error('[import] falha ao analisar XLSX:', err);
+      resetImportAnalysis();
+      showToast(err.message || 'Não foi possível analisar a planilha.', 'error');
+    } finally {
+      els.btnAnalisarXlsx.disabled = false;
+      els.btnAnalisarXlsx.textContent = 'Analisar planilha';
+    }
+  });
+}
+
+if (els.btnImportarXlsx) {
+  els.btnImportarXlsx.addEventListener('click', async () => {
+    if (!importAnalysis) return;
+    const confirmado = window.confirm('Importar os registros analisados para este usuário? Registros equivalentes já existentes serão ignorados.');
+    if (!confirmado) return;
+    els.btnImportarXlsx.disabled = true;
+    els.btnImportarXlsx.textContent = 'Importando...';
+    try {
+      await importarDadosAnalisados();
+      resetImportAnalysis();
+      if (els.importXlsxFile) els.importXlsxFile.value = '';
+    } catch (err) {
+      console.error('[import] falha ao importar XLSX:', err);
+      showToast('Falha ao importar. Confirme se a migration 004 foi aplicada no Supabase DEV.', 'error');
+      els.btnImportarXlsx.disabled = false;
+    } finally {
+      els.btnImportarXlsx.textContent = 'Importar dados analisados';
+    }
+  });
+}
 
 async function checkExistingSession() {
   const session = await getSession();
@@ -605,7 +765,7 @@ function renderContaItem(c) {
     <li class="entry-card">
       <div class="entry-main">
         <span class="entry-title">${TIPO_LABEL[c.tipo] || c.tipo}</span>
-        <span class="entry-meta">Vence em ${formatData(c.data_vencimento)}</span>
+        <span class="entry-meta">${c.data_vencimento ? `Vence em ${formatData(c.data_vencimento)}` : `Referência ${formatCompetencia(c.competencia)}`}</span>
       </div>
       <div class="entry-values">
         <div class="entry-value-total">${formatMoeda(c.valor_total)}</div>
@@ -619,7 +779,7 @@ function renderContaItem(c) {
 }
 
 function renderCombustivelItem(a) {
-  const tipoLabel = a.tipo_combustivel === 'etanol' ? 'Etanol' : 'Gasolina';
+  const tipoLabel = a.tipo_combustivel === 'etanol' ? 'Etanol' : a.tipo_combustivel === 'gasolina' ? 'Gasolina' : 'Não informado';
   return `
     <li class="entry-card">
       <div class="entry-main">
@@ -772,14 +932,18 @@ els.formConta.addEventListener('submit', async (event) => {
   const valorTotal = Number(document.getElementById('conta-valor-total').value);
   const participantes = Number(document.getElementById('conta-participantes').value);
 
+  const dataVencimento = parseOptionalText('conta-vencimento');
+  const competencia = `${mesAtivo.ano}-${String(mesAtivo.mes + 1).padStart(2, '0')}-01`;
   const fields = {
     user_id: currentUser.id,
     tipo: document.getElementById('conta-tipo').value,
     valor_total: valorTotal,
     numero_participantes: participantes,
     valor_rateado: valorTotal / participantes,
-    data_vencimento: parseOptionalText('conta-vencimento'),
-    data_ordenacao: parseOptionalText('conta-vencimento') || new Date().toISOString().slice(0, 10),
+    data_vencimento: dataVencimento,
+    competencia,
+    origem_importacao: null,
+    data_ordenacao: competencia,
   };
 
   if (editingId) {
