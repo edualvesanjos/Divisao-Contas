@@ -885,3 +885,29 @@ button, input, select {
   font-size: 0.72rem;
 }
 .import-preview-group + .import-preview-group { margin-top: 1rem; }
+
+
+.import-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 68px;
+  padding: 0.18rem 0.42rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.import-badge.is-new {
+  background: #eefaf2;
+  border-color: #acd9b9;
+}
+.import-badge.is-duplicate {
+  background: #f2f3f5;
+  border-color: #cfd3d8;
+}
+.import-badge.is-conflict {
+  background: #fff7dd;
+  border-color: #e6cf7a;
+}

@@ -4,6 +4,7 @@
 
 import { getSession, signIn, signUp, signOut, onAuthChange } from './auth.js';
 import { localDb } from './db-local.js';
+import { supabase } from './supabase-client.js';
 import { syncAll, watchConnectivity, isOnline } from './sync.js';
 import { APP_ENVIRONMENT, isDevelopment } from './environment.js';
 import { analisarPlanilhaHistorica } from './import-xlsx.js';
@@ -286,6 +287,13 @@ function resetImportAnalysis() {
   if (els.importXlsxResult) els.importXlsxResult.hidden = true;
 }
 
+function importStatusLabel(row) {
+  const status = row?._importStatus || 'novo';
+  if (status === 'duplicado') return '<span class="import-badge is-duplicate">Duplicado</span>';
+  if (status === 'conflito') return '<span class="import-badge is-conflict">Conflito</span>';
+  return '<span class="import-badge is-new">Novo</span>';
+}
+
 function renderImportAnalysis(result) {
   const contasAtivas = els.importContas?.checked ?? true;
   const combustivelAtivo = els.importCombustivel?.checked ?? true;
@@ -294,20 +302,28 @@ function renderImportAnalysis(result) {
   const total = contas.length + combustivel.length;
   const validation = result.validation || { errors: [], warnings: result.warnings || [], ready: true };
 
+  const linhasSelecionadas = [...contas, ...combustivel, ...(result.fechamentos || [])];
+  const novos = linhasSelecionadas.filter((r) => (r._importStatus || 'novo') === 'novo').length;
+  const duplicados = linhasSelecionadas.filter((r) => r._importStatus === 'duplicado').length;
+  const conflitos = linhasSelecionadas.filter((r) => r._importStatus === 'conflito').length;
+
   els.importXlsxSummary.innerHTML = `
-    <div class="import-summary-card"><strong>${contas.length}</strong><span>contas</span></div>
-    <div class="import-summary-card"><strong>${combustivel.length}</strong><span>abastecimentos</span></div>
-    <div class="import-summary-card"><strong>${result.fechamentos?.length || 0}</strong><span>meses pagos/fechamentos</span></div>
-    <div class="import-summary-card"><strong>${result.recognizedSheets?.length || 0}</strong><span>abas reconhecidas</span></div>`;
+    <div class="import-summary-card"><strong>${novos}</strong><span>novos</span></div>
+    <div class="import-summary-card"><strong>${duplicados}</strong><span>duplicados</span></div>
+    <div class="import-summary-card"><strong>${conflitos}</strong><span>conflitos</span></div>
+    <div class="import-summary-card"><strong>${contas.length + combustivel.length}</strong><span>lançamentos analisados</span></div>`;
 
   if (els.importXlsxStatus) {
     const hasWarnings = (result.warnings || []).length > 0;
     const ready = validation.ready && total > 0;
-    els.importXlsxStatus.className = `import-status ${ready ? (hasWarnings ? 'is-warning' : 'is-ready') : 'is-error'}`;
+    const hasConflicts = conflitos > 0;
+    els.importXlsxStatus.className = `import-status ${ready ? ((hasWarnings || hasConflicts) ? 'is-warning' : 'is-ready') : 'is-error'}`;
     els.importXlsxStatus.innerHTML = ready
-      ? (hasWarnings
-          ? '<strong>Análise concluída com avisos.</strong><span>Confira os itens destacados antes de importar.</span>'
-          : '<strong>Pronto para importar.</strong><span>Nenhuma inconsistência bloqueante foi encontrada.</span>')
+      ? (hasConflicts
+          ? '<strong>Análise concluída com conflitos preservados.</strong><span>Somente registros novos serão importados. Duplicados e conflitos não serão sobrescritos.</span>'
+          : hasWarnings
+            ? '<strong>Análise concluída com avisos.</strong><span>Confira os itens destacados antes de importar.</span>'
+            : '<strong>Pronto para importar.</strong><span>Nenhuma inconsistência bloqueante foi encontrada.</span>')
       : '<strong>Importação bloqueada.</strong><span>Corrija os erros indicados e analise a planilha novamente.</span>';
   }
 
@@ -344,6 +360,16 @@ function renderImportAnalysis(result) {
     els.importXlsxWarnings.innerHTML = '';
   }
 
+  const conflictRows = [...contas, ...combustivel, ...(result.fechamentos || [])]
+    .filter((r) => r._importStatus === 'conflito' && r._conflictReason);
+  if (conflictRows.length) {
+    const details = conflictRows.slice(0, 10)
+      .map((r) => `• ${escapeHtml(r._conflictReason)}`)
+      .join('<br>');
+    els.importXlsxWarnings.innerHTML += `${els.importXlsxWarnings.hidden ? '' : '<br><br>'}<strong>Conflitos preservados:</strong><br>${details}${conflictRows.length > 10 ? `<br>• +${conflictRows.length - 10} conflito(s)` : ''}`;
+    els.importXlsxWarnings.hidden = false;
+  }
+
   const contasPreview = contas.slice(0, 10);
   const fuelPreview = combustivel.slice(0, 10);
   const fechamentoPreview = (result.fechamentos || []).slice(0, 8);
@@ -351,8 +377,9 @@ function renderImportAnalysis(result) {
   const contaTable = contasPreview.length ? `
     <section class="import-preview-group">
       <h3>Contas — prévia</h3>
-      <table><thead><tr><th>Tipo</th><th>Competência</th><th>Valor</th><th>Rateado</th><th>Pago</th><th>Origem</th></tr></thead>
-      <tbody>${contasPreview.map((r) => `<tr>
+      <table><thead><tr><th>Status</th><th>Tipo</th><th>Competência</th><th>Valor</th><th>Rateado</th><th>Pago</th><th>Origem</th></tr></thead>
+      <tbody>${contasPreview.map((r) => `<tr title="${escapeHtml(r._conflictReason || '')}">
+        <td>${importStatusLabel(r)}</td>
         <td>${escapeHtml(TIPO_LABEL[r.tipo] || r.tipo)}</td>
         <td>${escapeHtml(formatCompetencia(r.competencia))}</td>
         <td>${formatMoeda(r.valor_total)}</td>
@@ -366,8 +393,9 @@ function renderImportAnalysis(result) {
   const fuelTable = fuelPreview.length ? `
     <section class="import-preview-group">
       <h3>Combustível — prévia</h3>
-      <table><thead><tr><th>Data</th><th>Valor</th><th>% histórica</th><th>Rateado</th><th>Origem</th></tr></thead>
-      <tbody>${fuelPreview.map((r) => `<tr>
+      <table><thead><tr><th>Status</th><th>Data</th><th>Valor</th><th>% histórica</th><th>Rateado</th><th>Origem</th></tr></thead>
+      <tbody>${fuelPreview.map((r) => `<tr title="${escapeHtml(r._conflictReason || '')}">
+        <td>${importStatusLabel(r)}</td>
         <td>${escapeHtml(formatData(r.data))}</td>
         <td>${formatMoeda(r.valor_total)}</td>
         <td>${Number(r.percentual_rateado || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</td>
@@ -380,8 +408,9 @@ function renderImportAnalysis(result) {
   const fechamentoTable = fechamentoPreview.length ? `
     <section class="import-preview-group">
       <h3>Meses pagos / fechamentos — prévia</h3>
-      <table><thead><tr><th>Período</th><th>Data de pagamento</th><th>Origem</th></tr></thead>
-      <tbody>${fechamentoPreview.map((r) => `<tr>
+      <table><thead><tr><th>Status</th><th>Período</th><th>Data de pagamento</th><th>Origem</th></tr></thead>
+      <tbody>${fechamentoPreview.map((r) => `<tr title="${escapeHtml(r._conflictReason || '')}">
+        <td>${importStatusLabel(r)}</td>
         <td>${String(r.mes).padStart(2, '0')}/${r.ano}</td>
         <td>${escapeHtml(formatData(r.contas_data_pagamento))}</td>
         <td>${escapeHtml(r.source || '—')}</td>
@@ -401,44 +430,178 @@ function accountImportKey(r) {
   return `${r.tipo}|${competencia}|${Number(r.valor_total).toFixed(2)}`;
 }
 
+function accountLogicalKey(r) {
+  const competencia = r.competencia || (r.data_vencimento ? `${r.data_vencimento.slice(0, 7)}-01` : '');
+  return `${r.tipo}|${competencia}`;
+}
+
 function fuelImportKey(r) {
   return `${r.data || ''}|${Number(r.valor_total).toFixed(2)}`;
 }
 
-async function importarDadosAnalisados() {
-  if (!currentUser || !importAnalysis) return;
-  const selectedAccounts = els.importContas.checked ? importAnalysis.contas : [];
-  const selectedFuel = els.importCombustivel.checked ? importAnalysis.combustivel : [];
+function moneyEquals(a, b) {
+  return Math.abs(Number(a || 0) - Number(b || 0)) < 0.005;
+}
 
-  const [existingAccounts, existingFuel] = await Promise.all([
+function nullableEquals(a, b) {
+  return (a ?? null) === (b ?? null);
+}
+
+function fechamentoEquals(existing, incoming) {
+  return Boolean(existing?.contas_pago) === Boolean(incoming?.contas_pago)
+    && nullableEquals(existing?.contas_data_pagamento, incoming?.contas_data_pagamento)
+    && nullableEquals(existing?.contas_data_rateio, incoming?.contas_data_rateio)
+    && nullableEquals(existing?.combustivel_data_rateio, incoming?.combustivel_data_rateio);
+}
+
+function contarStatus(rows) {
+  return rows.reduce((acc, row) => {
+    const status = row._importStatus || 'novo';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, { novo: 0, duplicado: 0, conflito: 0 });
+}
+
+async function classificarImportacao(result) {
+  if (!currentUser) return result;
+
+  const [existingAccountsRaw, existingFuelRaw, existingClosingsRaw] = await Promise.all([
     localDb.listAll('contas_consumo'),
     localDb.listAll('abastecimentos'),
+    localDb.listAll('fechamentos_mensais'),
   ]);
-  const accountKeys = new Set(existingAccounts.map(accountImportKey));
-  const fuelKeys = new Set(existingFuel.map(fuelImportKey));
+
+  const existingAccounts = existingAccountsRaw.filter((r) => r.user_id === currentUser.id && !r.deleted);
+  const existingFuel = existingFuelRaw.filter((r) => r.user_id === currentUser.id && !r.deleted);
+  const existingClosings = existingClosingsRaw.filter((r) => r.user_id === currentUser.id && !r.deleted);
+
+  const accountsExact = new Map();
+  const accountsLogical = new Map();
+  for (const row of existingAccounts) {
+    accountsExact.set(accountImportKey(row), row);
+    const logical = accountLogicalKey(row);
+    if (!accountsLogical.has(logical)) accountsLogical.set(logical, []);
+    accountsLogical.get(logical).push(row);
+  }
+
+  const fuelExactCounts = new Map();
+  const fuelByDate = new Map();
+  for (const row of existingFuel) {
+    const exact = fuelImportKey(row);
+    fuelExactCounts.set(exact, (fuelExactCounts.get(exact) || 0) + 1);
+    const date = row.data || '';
+    if (!fuelByDate.has(date)) fuelByDate.set(date, []);
+    fuelByDate.get(date).push(row);
+  }
+
+  // Consome duplicados exatos por ocorrência. Isso evita que dois abastecimentos
+  // iguais no mesmo dia sejam tratados como um único registro.
+  const consumedFuelExact = new Map();
+
+  const contas = result.contas.map((row) => {
+    const exact = accountsExact.get(accountImportKey(row));
+    if (exact) {
+      return { ...row, _importStatus: 'duplicado', _existingId: exact.id };
+    }
+
+    const logicalMatches = accountsLogical.get(accountLogicalKey(row)) || [];
+    if (logicalMatches.length) {
+      const current = logicalMatches[0];
+      return {
+        ...row,
+        _importStatus: 'conflito',
+        _existingId: current.id,
+        _conflictReason: `Já existe ${TIPO_LABEL[row.tipo] || row.tipo} em ${formatCompetencia(row.competencia)} com valor ${formatMoeda(current.valor_total)}.`,
+      };
+    }
+    return { ...row, _importStatus: 'novo' };
+  });
+
+  const combustivel = result.combustivel.map((row) => {
+    const exactKey = fuelImportKey(row);
+    const availableExact = fuelExactCounts.get(exactKey) || 0;
+    const usedExact = consumedFuelExact.get(exactKey) || 0;
+    if (usedExact < availableExact) {
+      consumedFuelExact.set(exactKey, usedExact + 1);
+      return { ...row, _importStatus: 'duplicado' };
+    }
+
+    const sameDate = fuelByDate.get(row.data || '') || [];
+    // Para histórico XLSX, um valor diferente numa data já importada é sinalizado
+    // para conferência em vez de gerar silenciosamente um novo abastecimento.
+    const importedSameDate = sameDate.filter((r) => r.origem_importacao === 'xlsx_historico');
+    if (importedSameDate.length) {
+      return {
+        ...row,
+        _importStatus: 'conflito',
+        _existingId: importedSameDate[0].id,
+        _conflictReason: `Já existe abastecimento importado em ${formatData(row.data)} com valor diferente (${formatMoeda(importedSameDate[0].valor_total)}).`,
+      };
+    }
+
+    return { ...row, _importStatus: 'novo' };
+  });
+
+  const existingClosingMap = new Map(existingClosings.map((r) => [`${r.ano}-${String(r.mes).padStart(2, '0')}`, r]));
+  const fechamentos = (result.fechamentos || []).map((row) => {
+    const existing = existingClosingMap.get(`${row.ano}-${String(row.mes).padStart(2, '0')}`);
+    if (!existing) return { ...row, _importStatus: 'novo' };
+    if (fechamentoEquals(existing, row)) {
+      return { ...row, _importStatus: 'duplicado', _existingId: existing.id };
+    }
+    return {
+      ...row,
+      _importStatus: 'conflito',
+      _existingId: existing.id,
+      _conflictReason: `O fechamento ${String(row.mes).padStart(2, '0')}/${row.ano} já existe com dados diferentes e será preservado.`,
+    };
+  });
+
+  return {
+    ...result,
+    contas,
+    combustivel,
+    fechamentos,
+    comparison: {
+      contas: contarStatus(contas),
+      combustivel: contarStatus(combustivel),
+      fechamentos: contarStatus(fechamentos),
+    },
+  };
+}
+
+async function importarDadosAnalisados() {
+  if (!currentUser || !importAnalysis) return;
+
+  const selectedAccounts = els.importContas.checked ? importAnalysis.contas : [];
+  const selectedFuel = els.importCombustivel.checked ? importAnalysis.combustivel : [];
+  const selectedClosings = importAnalysis.fechamentos || [];
 
   const accountsToCreate = selectedAccounts
-    .filter((r) => !accountKeys.has(accountImportKey(r)))
-    .map(({ source, ...r }) => ({ ...r, user_id: currentUser.id }));
-  const fuelToCreate = selectedFuel
-    .filter((r) => !fuelKeys.has(fuelImportKey(r)))
-    .map(({ source, ...r }) => ({ ...r, user_id: currentUser.id }));
+    .filter((r) => r._importStatus === 'novo')
+    .map(({ source, _importStatus, _existingId, _conflictReason, ...r }) => ({ ...r, user_id: currentUser.id }));
 
-  const skipped = (selectedAccounts.length - accountsToCreate.length) + (selectedFuel.length - fuelToCreate.length);
+  const fuelToCreate = selectedFuel
+    .filter((r) => r._importStatus === 'novo')
+    .map(({ source, _importStatus, _existingId, _conflictReason, ...r }) => ({ ...r, user_id: currentUser.id }));
+
   await localDb.createMany('contas_consumo', accountsToCreate);
   await localDb.createMany('abastecimentos', fuelToCreate);
 
   let fechamentosCriados = 0;
-  for (const fechamento of (importAnalysis.fechamentos || [])) {
+  for (const fechamento of selectedClosings.filter((r) => r._importStatus === 'novo')) {
     const id = fechamentoId(currentUser.id, fechamento.ano, fechamento.mes - 1);
-    const existing = await localDb.get('fechamentos_mensais', id);
-    if (existing && !existing.deleted && existing.origem_importacao !== 'xlsx_historico') continue;
-    const { source, ...fields } = fechamento;
+    const { source, _importStatus, _existingId, _conflictReason, ...fields } = fechamento;
     await localDb.putWithId('fechamentos_mensais', id, { ...fields, user_id: currentUser.id });
     fechamentosCriados += 1;
   }
 
-  showToast(`${accountsToCreate.length + fuelToCreate.length} registro(s) importado(s)${fechamentosCriados ? `; ${fechamentosCriados} fechamento(s) histórico(s)` : ''}${skipped ? `; ${skipped} duplicado(s) ignorado(s)` : ''}.`);
+  const selected = [...selectedAccounts, ...selectedFuel, ...selectedClosings];
+  const duplicados = selected.filter((r) => r._importStatus === 'duplicado').length;
+  const conflitos = selected.filter((r) => r._importStatus === 'conflito').length;
+  const novos = accountsToCreate.length + fuelToCreate.length + fechamentosCriados;
+
+  showToast(`${novos} novo(s) importado(s); ${duplicados} duplicado(s) ignorado(s); ${conflitos} conflito(s) preservado(s).`);
   await refreshActiveView();
   triggerBackgroundSync();
   atualizarListaPostos();
@@ -463,6 +626,7 @@ if (els.btnAnalisarXlsx) {
         participantesPadrao: settings.numero_participantes_padrao,
         percentualPadrao: settings.percentual_combustivel_padrao,
       });
+      importAnalysis = await classificarImportacao(importAnalysis);
       renderImportAnalysis(importAnalysis);
       showToast('Planilha analisada. Confira a pré-visualização antes de importar.');
     } catch (err) {
@@ -479,7 +643,7 @@ if (els.btnAnalisarXlsx) {
 if (els.btnImportarXlsx) {
   els.btnImportarXlsx.addEventListener('click', async () => {
     if (!importAnalysis) return;
-    const confirmado = window.confirm('Importar os registros analisados para este usuário? Registros equivalentes já existentes serão ignorados.');
+    const confirmado = window.confirm('Importar somente os registros classificados como novos? Duplicados e conflitos serão preservados sem sobrescrita.');
     if (!confirmado) return;
     els.btnImportarXlsx.disabled = true;
     els.btnImportarXlsx.textContent = 'Importando...';
@@ -499,22 +663,53 @@ if (els.btnImportarXlsx) {
 
 async function excluirDadosImportados() {
   if (!currentUser) return;
+
   const stores = ['contas_consumo', 'abastecimentos', 'fechamentos_mensais'];
   let removidos = 0;
+
   for (const store of stores) {
     const rows = await localDb.listAll(store);
-    for (const row of rows) {
-      if (row.user_id === currentUser.id && row.origem_importacao === 'xlsx_historico') {
-        await localDb.remove(store, row.id);
-        removidos += 1;
+    const importados = rows.filter(
+      (row) => row.user_id === currentUser.id && row.origem_importacao === 'xlsx_historico'
+    );
+
+    if (!importados.length) continue;
+
+    // Exclui por ID no Supabase. Assim a limpeza funciona inclusive para registros
+    // importados em versões anteriores e não depende do campo origem_importacao
+    // existir/estar preenchido remotamente.
+    const ids = importados.map((row) => row.id).filter(Boolean);
+    if (ids.length && isOnline()) {
+      const { error } = await supabase
+        .from(store)
+        .delete()
+        .eq('user_id', currentUser.id)
+        .in('id', ids);
+
+      if (error) {
+        throw new Error(`Falha ao excluir ${store} no Supabase: ${error.message}`);
       }
     }
+
+    // Só remove definitivamente do IndexedDB depois da exclusão remota.
+    // Se estiver offline, preserva o fluxo de soft delete para sincronização posterior.
+    for (const row of importados) {
+      if (isOnline()) {
+        await localDb.hardDelete(store, row.id);
+      } else {
+        await localDb.remove(store, row.id);
+      }
+      removidos += 1;
+    }
+  }
+
+  if (isOnline()) {
+    await syncAll(currentUser.id);
   }
   await refreshActiveView();
-  triggerBackgroundSync();
-  showToast(`${removidos} registro(s) importado(s) marcado(s) para exclusão.`);
+  atualizarListaPostos();
+  showToast(`${removidos} registro(s) importado(s) excluído(s).`);
 }
-
 if (els.btnExcluirImportados) {
   els.btnExcluirImportados.addEventListener('click', async () => {
     const confirmado = window.confirm('Excluir somente os dados originados da importação XLSX? Lançamentos manuais serão preservados.');

@@ -1,5 +1,19 @@
+## v0.7.2 DEV
+
+- Adiciona classificação preventiva da reimportação em **Novo**, **Duplicado** e **Conflito**.
+- Contas são comparadas por tipo + competência; valor idêntico é duplicado e valor diferente na mesma competência é conflito.
+- Abastecimentos idênticos por data + valor são ignorados por ocorrência; alterações em registros XLSX já importados são preservadas como conflito.
+- Fechamentos mensais existentes deixam de ser sobrescritos automaticamente; diferenças são sinalizadas para conferência.
+- A importação grava somente registros classificados como novos.
+- A pré-visualização mostra status por registro, contadores e detalhes dos conflitos.
+- Não requer nova migration no Supabase.
+- Mantém as migrations 004, 005 e 006 como base de dados da série 0.7.x.
+- Cache do PWA atualizado para v0.7.2.
+
 ## v0.7.1 DEV
 
+- Corrige a exclusão de dados XLSX: exclusão remota por ID + remoção definitiva do cache local, evitando reidratação dos registros.
+- Adiciona migration 006 idempotente para garantir o tipo histórico `mercado_livre` no constraint de `contas_consumo`.
 - Evolui a pré-visualização da importação histórica XLSX.
 - Adiciona status claro de validação: pronto, com avisos ou bloqueado por erro.
 - Adiciona resumo por ano com quantidades de contas, abastecimentos e fechamentos reconhecidos.
