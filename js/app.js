@@ -4,6 +4,7 @@
 
 import { getSession, signIn, signUp, signOut, onAuthChange } from './auth.js';
 import { localDb } from './db-local.js';
+import { supabase } from './supabase-client.js';
 import { syncAll, watchConnectivity, isOnline } from './sync.js';
 import { APP_ENVIRONMENT, isDevelopment } from './environment.js';
 import { analisarPlanilhaHistorica } from './import-xlsx.js';
@@ -103,6 +104,9 @@ const els = {
   btnExcluirImportados: document.getElementById('btn-excluir-importados'),
   importXlsxResult: document.getElementById('import-xlsx-result'),
   importXlsxSummary: document.getElementById('import-xlsx-summary'),
+  importXlsxStatus: document.getElementById('import-xlsx-status'),
+  importXlsxYears: document.getElementById('import-xlsx-years'),
+  importXlsxErrors: document.getElementById('import-xlsx-errors'),
   importXlsxWarnings: document.getElementById('import-xlsx-warnings'),
   importXlsxPreview: document.getElementById('import-xlsx-preview'),
 };
@@ -289,14 +293,51 @@ function renderImportAnalysis(result) {
   const contas = contasAtivas ? result.contas : [];
   const combustivel = combustivelAtivo ? result.combustivel : [];
   const total = contas.length + combustivel.length;
+  const validation = result.validation || { errors: [], warnings: result.warnings || [], ready: true };
 
   els.importXlsxSummary.innerHTML = `
     <div class="import-summary-card"><strong>${contas.length}</strong><span>contas</span></div>
     <div class="import-summary-card"><strong>${combustivel.length}</strong><span>abastecimentos</span></div>
-    <div class="import-summary-card"><strong>${total}</strong><span>registros selecionados</span></div>`;
+    <div class="import-summary-card"><strong>${result.fechamentos?.length || 0}</strong><span>meses pagos/fechamentos</span></div>
+    <div class="import-summary-card"><strong>${result.recognizedSheets?.length || 0}</strong><span>abas reconhecidas</span></div>`;
+
+  if (els.importXlsxStatus) {
+    const hasWarnings = (result.warnings || []).length > 0;
+    const ready = validation.ready && total > 0;
+    els.importXlsxStatus.className = `import-status ${ready ? (hasWarnings ? 'is-warning' : 'is-ready') : 'is-error'}`;
+    els.importXlsxStatus.innerHTML = ready
+      ? (hasWarnings
+          ? '<strong>Análise concluída com avisos.</strong><span>Confira os itens destacados antes de importar.</span>'
+          : '<strong>Pronto para importar.</strong><span>Nenhuma inconsistência bloqueante foi encontrada.</span>')
+      : '<strong>Importação bloqueada.</strong><span>Corrija os erros indicados e analise a planilha novamente.</span>';
+  }
+
+  if (els.importXlsxYears) {
+    const rows = (result.porAno || []).filter((r) =>
+      (contasAtivas && r.contas) || (combustivelAtivo && r.combustivel) || r.fechamentos
+    );
+    els.importXlsxYears.innerHTML = rows.length
+      ? `<h3>Resumo por ano</h3><div class="import-years-grid">${rows.map((r) => `
+          <div class="import-year-card">
+            <strong>${r.ano}</strong>
+            <span>${contasAtivas ? `${r.contas} conta(s)` : ''}${contasAtivas && combustivelAtivo ? ' · ' : ''}${combustivelAtivo ? `${r.combustivel} abastecimento(s)` : ''}${r.fechamentos ? ` · ${r.fechamentos} fechamento(s)` : ''}</span>
+          </div>`).join('')}</div>`
+      : '';
+  }
+
+  const errors = validation.errors || [];
+  if (els.importXlsxErrors) {
+    if (errors.length) {
+      els.importXlsxErrors.innerHTML = `<strong>Erros que impedem a importação:</strong><br>${errors.map((w) => `• ${escapeHtml(w)}`).join('<br>')}`;
+      els.importXlsxErrors.hidden = false;
+    } else {
+      els.importXlsxErrors.hidden = true;
+      els.importXlsxErrors.innerHTML = '';
+    }
+  }
 
   if (result.warnings.length) {
-    const shown = result.warnings.slice(0, 8);
+    const shown = result.warnings.slice(0, 12);
     els.importXlsxWarnings.innerHTML = `<strong>Avisos da análise:</strong><br>${shown.map((w) => `• ${escapeHtml(w)}`).join('<br>')}${result.warnings.length > shown.length ? `<br>• +${result.warnings.length - shown.length} aviso(s)` : ''}`;
     els.importXlsxWarnings.hidden = false;
   } else {
@@ -304,19 +345,58 @@ function renderImportAnalysis(result) {
     els.importXlsxWarnings.innerHTML = '';
   }
 
-  const previewRows = [
-    ...contas.slice(0, 4).map((r) => ({ tipo: TIPO_LABEL[r.tipo] || r.tipo, data: formatCompetencia(r.competencia), valor: r.valor_total, rateio: r.valor_rateado })),
-    ...combustivel.slice(0, 4).map((r) => ({ tipo: 'Combustível', data: formatData(r.data), valor: r.valor_total, rateio: r.valor_rateado })),
-  ];
+  const contasPreview = contas.slice(0, 10);
+  const fuelPreview = combustivel.slice(0, 10);
+  const fechamentoPreview = (result.fechamentos || []).slice(0, 8);
 
-  els.importXlsxPreview.innerHTML = previewRows.length
-    ? `<table><thead><tr><th>Tipo</th><th>Referência/Data</th><th>Valor</th><th>Rateado</th></tr></thead><tbody>${previewRows.map((r) => `<tr><td>${escapeHtml(r.tipo)}</td><td>${escapeHtml(r.data)}</td><td>${formatMoeda(r.valor)}</td><td>${formatMoeda(r.rateio)}</td></tr>`).join('')}</tbody></table>`
+  const contaTable = contasPreview.length ? `
+    <section class="import-preview-group">
+      <h3>Contas — prévia</h3>
+      <table><thead><tr><th>Tipo</th><th>Competência</th><th>Valor</th><th>Rateado</th><th>Pago</th><th>Origem</th></tr></thead>
+      <tbody>${contasPreview.map((r) => `<tr>
+        <td>${escapeHtml(TIPO_LABEL[r.tipo] || r.tipo)}</td>
+        <td>${escapeHtml(formatCompetencia(r.competencia))}</td>
+        <td>${formatMoeda(r.valor_total)}</td>
+        <td>${formatMoeda(r.valor_rateado)}</td>
+        <td>${r.pago ? escapeHtml(formatData(r.data_pagamento)) : 'Não'}</td>
+        <td>${escapeHtml(r.source || '—')}</td>
+      </tr>`).join('')}</tbody></table>
+      ${contas.length > contasPreview.length ? `<p class="config-hint">Exibindo ${contasPreview.length} de ${contas.length} contas selecionadas.</p>` : ''}
+    </section>` : '';
+
+  const fuelTable = fuelPreview.length ? `
+    <section class="import-preview-group">
+      <h3>Combustível — prévia</h3>
+      <table><thead><tr><th>Data</th><th>Valor</th><th>% histórica</th><th>Rateado</th><th>Origem</th></tr></thead>
+      <tbody>${fuelPreview.map((r) => `<tr>
+        <td>${escapeHtml(formatData(r.data))}</td>
+        <td>${formatMoeda(r.valor_total)}</td>
+        <td>${Number(r.percentual_rateado || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%</td>
+        <td>${formatMoeda(r.valor_rateado)}</td>
+        <td>${escapeHtml(r.source || '—')}</td>
+      </tr>`).join('')}</tbody></table>
+      ${combustivel.length > fuelPreview.length ? `<p class="config-hint">Exibindo ${fuelPreview.length} de ${combustivel.length} abastecimentos selecionados.</p>` : ''}
+    </section>` : '';
+
+  const fechamentoTable = fechamentoPreview.length ? `
+    <section class="import-preview-group">
+      <h3>Meses pagos / fechamentos — prévia</h3>
+      <table><thead><tr><th>Período</th><th>Data de pagamento</th><th>Origem</th></tr></thead>
+      <tbody>${fechamentoPreview.map((r) => `<tr>
+        <td>${String(r.mes).padStart(2, '0')}/${r.ano}</td>
+        <td>${escapeHtml(formatData(r.contas_data_pagamento))}</td>
+        <td>${escapeHtml(r.source || '—')}</td>
+      </tr>`).join('')}</tbody></table>
+      ${result.fechamentos.length > fechamentoPreview.length ? `<p class="config-hint">Exibindo ${fechamentoPreview.length} de ${result.fechamentos.length} fechamentos reconhecidos.</p>` : ''}
+    </section>` : '';
+
+  els.importXlsxPreview.innerHTML = contaTable || fuelTable || fechamentoTable
+    ? `${contaTable}${fuelTable}${fechamentoTable}`
     : '<p class="config-hint">Nenhum registro selecionado para importação.</p>';
 
   els.importXlsxResult.hidden = false;
-  els.btnImportarXlsx.disabled = total === 0;
+  els.btnImportarXlsx.disabled = total === 0 || !validation.ready;
 }
-
 function accountImportKey(r) {
   const competencia = r.competencia || (r.data_vencimento ? `${r.data_vencimento.slice(0, 7)}-01` : '');
   return `${r.tipo}|${competencia}|${Number(r.valor_total).toFixed(2)}`;
@@ -410,7 +490,7 @@ if (els.btnImportarXlsx) {
       if (els.importXlsxFile) els.importXlsxFile.value = '';
     } catch (err) {
       console.error('[import] falha ao importar XLSX:', err);
-      showToast('Falha ao importar. Confirme se a migration 004 foi aplicada no Supabase DEV.', 'error');
+      showToast('Falha ao importar. Verifique os avisos da análise e a configuração do Supabase DEV.', 'error');
       els.btnImportarXlsx.disabled = false;
     } finally {
       els.btnImportarXlsx.textContent = 'Importar dados analisados';
@@ -420,22 +500,53 @@ if (els.btnImportarXlsx) {
 
 async function excluirDadosImportados() {
   if (!currentUser) return;
+
   const stores = ['contas_consumo', 'abastecimentos', 'fechamentos_mensais'];
   let removidos = 0;
+
   for (const store of stores) {
     const rows = await localDb.listAll(store);
-    for (const row of rows) {
-      if (row.user_id === currentUser.id && row.origem_importacao === 'xlsx_historico') {
-        await localDb.remove(store, row.id);
-        removidos += 1;
+    const importados = rows.filter(
+      (row) => row.user_id === currentUser.id && row.origem_importacao === 'xlsx_historico'
+    );
+
+    if (!importados.length) continue;
+
+    // Exclui por ID no Supabase. Assim a limpeza funciona inclusive para registros
+    // importados em versões anteriores e não depende do campo origem_importacao
+    // existir/estar preenchido remotamente.
+    const ids = importados.map((row) => row.id).filter(Boolean);
+    if (ids.length && isOnline()) {
+      const { error } = await supabase
+        .from(store)
+        .delete()
+        .eq('user_id', currentUser.id)
+        .in('id', ids);
+
+      if (error) {
+        throw new Error(`Falha ao excluir ${store} no Supabase: ${error.message}`);
       }
     }
+
+    // Só remove definitivamente do IndexedDB depois da exclusão remota.
+    // Se estiver offline, preserva o fluxo de soft delete para sincronização posterior.
+    for (const row of importados) {
+      if (isOnline()) {
+        await localDb.hardDelete(store, row.id);
+      } else {
+        await localDb.remove(store, row.id);
+      }
+      removidos += 1;
+    }
+  }
+
+  if (isOnline()) {
+    await syncAll(currentUser.id);
   }
   await refreshActiveView();
-  triggerBackgroundSync();
-  showToast(`${removidos} registro(s) importado(s) marcado(s) para exclusão.`);
+  atualizarListaPostos();
+  showToast(`${removidos} registro(s) importado(s) excluído(s).`);
 }
-
 if (els.btnExcluirImportados) {
   els.btnExcluirImportados.addEventListener('click', async () => {
     const confirmado = window.confirm('Excluir somente os dados originados da importação XLSX? Lançamentos manuais serão preservados.');

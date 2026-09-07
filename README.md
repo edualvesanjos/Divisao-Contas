@@ -6,7 +6,8 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 ## Versão atual
 
-- **v0.7.0.1.1 DEV** — importação histórica XLSX com pré-visualização, competência mensal nas contas e preservação do percentual histórico do combustível.
+- **v0.7.1 DEV** — pré-visualização e validação detalhadas da importação XLSX, com resumo por ano e conferência separada de contas, combustível e fechamentos.
+- **v0.7.0.1 DEV** — correções do mapeamento histórico, pagamentos e limpeza seletiva dos dados importados.
 - **v0.6.2 DEV** — padronização visual completa dos indicadores mensais e identificação do mês de referência do combustível no Resumo.
 - **v0.6.1 DEV** — seleção direta de mês/ano e padronização visual dos subtotais; mantém os indicadores mensais da v0.6.0.
 - **v0.5.0.3** — última versão estável de produção antes da série 0.6.x.
@@ -23,6 +24,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 │   ├── auth.js               # login/cadastro/sessão (Supabase Auth)
 │   ├── db-local.js           # IndexedDB (fonte de dados local)
 │   ├── sync.js                # sincroniza IndexedDB <-> Supabase
+│   ├── import-xlsx.js         # análise e importação histórica XLSX
 │   └── supabase-client.js     # config da conexão com o Supabase
 ├── manifest.json            # PWA (instalar no celular)
 ├── sw.js                    # cache do app shell p/ abrir offline
@@ -60,7 +62,6 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 ## O que fica para depois (fora da Etapa 1)
 
-- Importação do histórico da planilha (2021–2026)
 - Relatórios e gráficos de gastos
 - Suporte a mais tipos de conta além de Água/Luz/Internet
 - Ícones reais do PWA (os caminhos em `manifest.json` estão previstos, mas os
@@ -109,3 +110,6 @@ A leitura XLSX usa SheetJS CE 0.20.3 carregado no momento da página; por isso, 
 - Internet ausente em anos antigos deixa de gerar aviso.
 - Inclui exclusão seletiva dos dados importados para repetição segura dos testes.
 - Requer migration 005 no Supabase DEV.
+
+### Ajuste DEV da v0.7.1
+Antes do novo teste de importação, execute `supabase/migrations/006_reparo_tipo_contas_importacao.sql` no Supabase DEV. A exclusão seletiva de dados XLSX agora remove os registros remotos por ID e só então limpa o cache local.

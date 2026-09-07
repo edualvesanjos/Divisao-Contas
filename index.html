@@ -230,7 +230,7 @@
           <h2 class="config-section-title" id="import-title">Importar histórico da planilha</h2>
           <p class="config-hint">
             Perfil inicial compatível com a planilha “Contas de Consumo”: abas de Contas Consumo e Combustivel por ano.
-            A análise acontece antes de qualquer gravação. Antes de importar, aplique a migration 004 no Supabase DEV.
+            A análise acontece antes de qualquer gravação. A análise acontece antes de qualquer gravação e agora apresenta validação detalhada, resumo por ano e prévia por categoria.
           </p>
 
           <label class="field">
@@ -250,7 +250,10 @@
           </div>
 
           <div id="import-xlsx-result" class="import-result" hidden aria-live="polite">
+            <div id="import-xlsx-status" class="import-status"></div>
             <div class="import-summary" id="import-xlsx-summary"></div>
+            <div id="import-xlsx-years" class="import-years"></div>
+            <div id="import-xlsx-errors" class="import-errors" hidden></div>
             <div id="import-xlsx-warnings" class="import-warnings" hidden></div>
             <div id="import-xlsx-preview" class="import-preview"></div>
           </div>

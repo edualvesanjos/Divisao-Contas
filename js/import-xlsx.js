@@ -230,6 +230,59 @@ function parseCombustivelSheet(sheetName, sheet, fallbackPercentual) {
     : parseCombustivelBlocos(sheetName, matriz, ano, fallbackPercentual);
 }
 
+
+function montarResumoPorAno(contas, combustivel, fechamentos) {
+  const anos = new Map();
+
+  const ensure = (ano) => {
+    if (!anos.has(ano)) anos.set(ano, { ano, contas: 0, combustivel: 0, fechamentos: 0 });
+    return anos.get(ano);
+  };
+
+  for (const row of contas) {
+    const ano = Number(String(row.competencia || row.data_vencimento || '').slice(0, 4));
+    if (ano) ensure(ano).contas += 1;
+  }
+  for (const row of combustivel) {
+    const ano = Number(String(row.data || '').slice(0, 4));
+    if (ano) ensure(ano).combustivel += 1;
+  }
+  for (const row of fechamentos) {
+    const ano = Number(row.ano);
+    if (ano) ensure(ano).fechamentos += 1;
+  }
+
+  return [...anos.values()].sort((a, b) => a.ano - b.ano);
+}
+
+function validarAnalise(contas, combustivel, fechamentos, recognizedSheets, warnings) {
+  const errors = [];
+
+  if (!recognizedSheets.length) errors.push('Nenhuma aba compatível foi reconhecida.');
+  if (!contas.length && !combustivel.length) errors.push('Nenhum lançamento válido foi encontrado para importação.');
+
+  for (const row of contas) {
+    if (!row.tipo || !Number.isFinite(Number(row.valor_total)) || Number(row.valor_total) <= 0 || !row.competencia) {
+      errors.push(`Conta inválida em ${row.source || 'origem não identificada'}.`);
+      if (errors.length >= 10) break;
+    }
+  }
+  if (errors.length < 10) {
+    for (const row of combustivel) {
+      if (!row.data || !Number.isFinite(Number(row.valor_total)) || Number(row.valor_total) <= 0) {
+        errors.push(`Abastecimento inválido em ${row.source || 'origem não identificada'}.`);
+        if (errors.length >= 10) break;
+      }
+    }
+  }
+
+  return {
+    errors,
+    warnings: [...warnings],
+    ready: errors.length === 0,
+  };
+}
+
 export async function analisarPlanilhaHistorica(file, options = {}) {
   if (!globalThis.XLSX) throw new Error('Biblioteca XLSX não carregada. Verifique sua conexão e recarregue a página.');
   if (!file) throw new Error('Selecione uma planilha XLSX.');
@@ -268,6 +321,9 @@ export async function analisarPlanilhaHistorica(file, options = {}) {
     throw new Error('Nenhuma aba compatível foi reconhecida. O perfil atual espera abas “Contas Consumo AAAA” e/ou “Combustivel AAAA”.');
   }
 
+  const validation = validarAnalise(contas, combustivel, fechamentos, recognizedSheets, warnings);
+  const porAno = montarResumoPorAno(contas, combustivel, fechamentos);
+
   return {
     fileName: file.name,
     recognizedSheets,
@@ -275,10 +331,13 @@ export async function analisarPlanilhaHistorica(file, options = {}) {
     combustivel,
     fechamentos,
     warnings,
+    validation,
+    porAno,
     summary: {
       sheets: recognizedSheets.length,
       contas: contas.length,
       combustivel: combustivel.length,
+      fechamentos: fechamentos.length,
       total: contas.length + combustivel.length,
     },
   };

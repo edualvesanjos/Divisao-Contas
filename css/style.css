@@ -729,7 +729,7 @@ button, input, select {
 }
 
 /* ---------------------------------------------------------
-   Importação histórica XLSX — v0.7.0
+   Importação histórica XLSX — v0.7.1
    --------------------------------------------------------- */
 .config-section-title {
   margin: 0 0 0.35rem;
@@ -770,7 +770,7 @@ button, input, select {
 
 .import-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.55rem;
 }
 
@@ -831,6 +831,57 @@ button, input, select {
 }
 
 @media (max-width: 520px) {
-  .import-summary { grid-template-columns: 1fr; }
+  .import-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .import-actions .btn { width: 100%; }
 }
+
+
+.import-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  margin-bottom: 0.8rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+.import-status span { color: var(--color-ink-muted); }
+.import-status.is-ready { background: #eefaf2; border-color: #acd9b9; }
+.import-status.is-warning { background: #fff7dd; border-color: #e6cf7a; }
+.import-status.is-error { background: #fff0f0; border-color: #e1aaaa; }
+
+.import-errors {
+  margin-top: 0.8rem;
+  padding: 0.7rem;
+  border-radius: 10px;
+  background: #fff0f0;
+  color: #7a1f1f;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.import-years { margin-top: 0.9rem; }
+.import-years h3,
+.import-preview-group h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.86rem;
+}
+.import-years-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 0.5rem;
+}
+.import-year-card {
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  padding: 0.55rem 0.65rem;
+}
+.import-year-card strong,
+.import-year-card span { display: block; }
+.import-year-card span {
+  margin-top: 0.15rem;
+  color: var(--color-ink-muted);
+  font-size: 0.72rem;
+}
+.import-preview-group + .import-preview-group { margin-top: 1rem; }

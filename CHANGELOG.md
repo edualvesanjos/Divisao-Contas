@@ -1,3 +1,16 @@
+## v0.7.1 DEV
+
+- Corrige a exclusão de dados XLSX: exclusão remota por ID + remoção definitiva do cache local, evitando reidratação dos registros.
+- Adiciona migration 006 idempotente para garantir o tipo histórico `mercado_livre` no constraint de `contas_consumo`.
+- Evolui a pré-visualização da importação histórica XLSX.
+- Adiciona status claro de validação: pronto, com avisos ou bloqueado por erro.
+- Adiciona resumo por ano com quantidades de contas, abastecimentos e fechamentos reconhecidos.
+- Separa a prévia em tabelas de Contas, Combustível e Meses pagos/Fechamentos.
+- Exibe origem, competência/data, valores, rateio, percentual histórico e situação de pagamento para conferência.
+- Erros estruturais passam a bloquear o botão de importação; avisos continuam permitindo importação após conferência.
+- Não requer nova migration ou alteração no Supabase.
+- Cache do PWA atualizado para v0.7.1.
+
 ## v0.7.0.1 DEV
 
 - Corrige mapeamento histórico de contas e pagamentos.
