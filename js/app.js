@@ -299,10 +299,12 @@ function renderImportAnalysis(result) {
   const combustivelAtivo = els.importCombustivel?.checked ?? true;
   const contas = contasAtivas ? result.contas : [];
   const combustivel = combustivelAtivo ? result.combustivel : [];
-  const total = contas.length + combustivel.length;
+  const fechamentos = contasAtivas ? (result.fechamentos || []) : [];
+  const totalLancamentos = contas.length + combustivel.length;
+  const totalRegistros = totalLancamentos + fechamentos.length;
   const validation = result.validation || { errors: [], warnings: result.warnings || [], ready: true };
 
-  const linhasSelecionadas = [...contas, ...combustivel, ...(result.fechamentos || [])];
+  const linhasSelecionadas = [...contas, ...combustivel, ...fechamentos];
   const novos = linhasSelecionadas.filter((r) => (r._importStatus || 'novo') === 'novo').length;
   const duplicados = linhasSelecionadas.filter((r) => r._importStatus === 'duplicado').length;
   const conflitos = linhasSelecionadas.filter((r) => r._importStatus === 'conflito').length;
@@ -311,31 +313,33 @@ function renderImportAnalysis(result) {
     <div class="import-summary-card"><strong>${novos}</strong><span>novos</span></div>
     <div class="import-summary-card"><strong>${duplicados}</strong><span>duplicados</span></div>
     <div class="import-summary-card"><strong>${conflitos}</strong><span>conflitos</span></div>
-    <div class="import-summary-card"><strong>${contas.length + combustivel.length}</strong><span>lançamentos analisados</span></div>`;
+    <div class="import-summary-card"><strong>${totalRegistros}</strong><span>registros analisados</span></div>`;
 
   if (els.importXlsxStatus) {
     const hasWarnings = (result.warnings || []).length > 0;
-    const ready = validation.ready && total > 0;
+    const ready = validation.ready && totalLancamentos > 0;
     const hasConflicts = conflitos > 0;
     els.importXlsxStatus.className = `import-status ${ready ? ((hasWarnings || hasConflicts) ? 'is-warning' : 'is-ready') : 'is-error'}`;
     els.importXlsxStatus.innerHTML = ready
-      ? (hasConflicts
-          ? '<strong>Análise concluída com conflitos preservados.</strong><span>Somente registros novos serão importados. Duplicados e conflitos não serão sobrescritos.</span>'
-          : hasWarnings
-            ? '<strong>Análise concluída com avisos.</strong><span>Confira os itens destacados antes de importar.</span>'
-            : '<strong>Pronto para importar.</strong><span>Nenhuma inconsistência bloqueante foi encontrada.</span>')
+      ? (novos === 0
+          ? '<strong>Nenhum registro novo encontrado.</strong><span>A base já contém todos os itens analisados. Duplicados e conflitos permanecerão inalterados.</span>'
+          : hasConflicts
+            ? '<strong>Análise concluída com conflitos preservados.</strong><span>Somente registros novos serão importados. Duplicados e conflitos não serão sobrescritos.</span>'
+            : hasWarnings
+              ? '<strong>Análise concluída com avisos.</strong><span>Confira os itens destacados antes de importar.</span>'
+              : '<strong>Pronto para importar.</strong><span>Nenhuma inconsistência bloqueante foi encontrada.</span>')
       : '<strong>Importação bloqueada.</strong><span>Corrija os erros indicados e analise a planilha novamente.</span>';
   }
 
   if (els.importXlsxYears) {
     const rows = (result.porAno || []).filter((r) =>
-      (contasAtivas && r.contas) || (combustivelAtivo && r.combustivel) || r.fechamentos
+      (contasAtivas && r.contas) || (combustivelAtivo && r.combustivel) || (contasAtivas && r.fechamentos)
     );
     els.importXlsxYears.innerHTML = rows.length
       ? `<h3>Resumo por ano</h3><div class="import-years-grid">${rows.map((r) => `
           <div class="import-year-card">
             <strong>${r.ano}</strong>
-            <span>${contasAtivas ? `${r.contas} conta(s)` : ''}${contasAtivas && combustivelAtivo ? ' · ' : ''}${combustivelAtivo ? `${r.combustivel} abastecimento(s)` : ''}${r.fechamentos ? ` · ${r.fechamentos} fechamento(s)` : ''}</span>
+            <span>${contasAtivas ? `${r.contas} conta(s)` : ''}${contasAtivas && combustivelAtivo ? ' · ' : ''}${combustivelAtivo ? `${r.combustivel} abastecimento(s)` : ''}${contasAtivas && r.fechamentos ? ` · ${r.fechamentos} fechamento(s)` : ''}</span>
           </div>`).join('')}</div>`
       : '';
   }
@@ -360,7 +364,7 @@ function renderImportAnalysis(result) {
     els.importXlsxWarnings.innerHTML = '';
   }
 
-  const conflictRows = [...contas, ...combustivel, ...(result.fechamentos || [])]
+  const conflictRows = [...contas, ...combustivel, ...fechamentos]
     .filter((r) => r._importStatus === 'conflito' && r._conflictReason);
   if (conflictRows.length) {
     const details = conflictRows.slice(0, 10)
@@ -370,9 +374,22 @@ function renderImportAnalysis(result) {
     els.importXlsxWarnings.hidden = false;
   }
 
+  const classContas = contarStatus(contas);
+  const classFuel = contarStatus(combustivel);
+  const classFechamentos = contarStatus(fechamentos);
+  const classificationHtml = `
+    <section class="import-classification">
+      <h3>Classificação por grupo</h3>
+      <div class="import-classification-grid">
+        ${contasAtivas ? `<div><strong>Contas</strong><span>${classContas.novo} novo(s) · ${classContas.duplicado} duplicado(s) · ${classContas.conflito} conflito(s)</span></div>` : ''}
+        ${combustivelAtivo ? `<div><strong>Combustível</strong><span>${classFuel.novo} novo(s) · ${classFuel.duplicado} duplicado(s) · ${classFuel.conflito} conflito(s)</span></div>` : ''}
+        ${contasAtivas ? `<div><strong>Fechamentos</strong><span>${classFechamentos.novo} novo(s) · ${classFechamentos.duplicado} duplicado(s) · ${classFechamentos.conflito} conflito(s)</span></div>` : ''}
+      </div>
+    </section>`;
+
   const contasPreview = contas.slice(0, 10);
   const fuelPreview = combustivel.slice(0, 10);
-  const fechamentoPreview = (result.fechamentos || []).slice(0, 8);
+  const fechamentoPreview = fechamentos.slice(0, 8);
 
   const contaTable = contasPreview.length ? `
     <section class="import-preview-group">
@@ -415,15 +432,15 @@ function renderImportAnalysis(result) {
         <td>${escapeHtml(formatData(r.contas_data_pagamento))}</td>
         <td>${escapeHtml(r.source || '—')}</td>
       </tr>`).join('')}</tbody></table>
-      ${result.fechamentos.length > fechamentoPreview.length ? `<p class="config-hint">Exibindo ${fechamentoPreview.length} de ${result.fechamentos.length} fechamentos reconhecidos.</p>` : ''}
+      ${fechamentos.length > fechamentoPreview.length ? `<p class="config-hint">Exibindo ${fechamentoPreview.length} de ${fechamentos.length} fechamentos reconhecidos.</p>` : ''}
     </section>` : '';
 
   els.importXlsxPreview.innerHTML = contaTable || fuelTable || fechamentoTable
-    ? `${contaTable}${fuelTable}${fechamentoTable}`
+    ? `${classificationHtml}${contaTable}${fuelTable}${fechamentoTable}`
     : '<p class="config-hint">Nenhum registro selecionado para importação.</p>';
 
   els.importXlsxResult.hidden = false;
-  els.btnImportarXlsx.disabled = total === 0 || !validation.ready;
+  els.btnImportarXlsx.disabled = totalLancamentos === 0 || !validation.ready || novos === 0;
 }
 function accountImportKey(r) {
   const competencia = r.competencia || (r.data_vencimento ? `${r.data_vencimento.slice(0, 7)}-01` : '');
@@ -575,7 +592,7 @@ async function importarDadosAnalisados() {
 
   const selectedAccounts = els.importContas.checked ? importAnalysis.contas : [];
   const selectedFuel = els.importCombustivel.checked ? importAnalysis.combustivel : [];
-  const selectedClosings = importAnalysis.fechamentos || [];
+  const selectedClosings = els.importContas.checked ? (importAnalysis.fechamentos || []) : [];
 
   const accountsToCreate = selectedAccounts
     .filter((r) => r._importStatus === 'novo')

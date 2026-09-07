@@ -911,3 +911,31 @@ button, input, select {
   background: #fff7dd;
   border-color: #e6cf7a;
 }
+
+
+.import-classification {
+  margin: 1rem 0;
+}
+.import-classification h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.86rem;
+}
+.import-classification-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.5rem;
+}
+.import-classification-grid > div {
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  padding: 0.6rem 0.7rem;
+}
+.import-classification-grid strong,
+.import-classification-grid span {
+  display: block;
+}
+.import-classification-grid span {
+  margin-top: 0.15rem;
+  color: var(--color-ink-muted);
+  font-size: 0.74rem;
+}

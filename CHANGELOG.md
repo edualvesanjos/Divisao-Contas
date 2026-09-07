@@ -1,3 +1,14 @@
+## v0.7.3 DEV
+
+- Consolida o fluxo de importação histórica XLSX após a validação da v0.7.2.
+- Corrige o contador principal para mostrar **registros analisados**, incluindo contas, abastecimentos e fechamentos.
+- Adiciona detalhamento da classificação por grupo: Contas, Combustível e Fechamentos.
+- Quando não há registros novos, a análise informa que a base já contém os itens e desabilita a importação desnecessária.
+- Fechamentos passam a acompanhar corretamente a seleção de **Contas de consumo**; ao desmarcar Contas, fechamentos deixam de ser considerados/importados.
+- Mantém duplicados e conflitos preservados sem sobrescrita.
+- Não requer nova migration no Supabase.
+- Cache do PWA atualizado para v0.7.3.
+
 ## v0.7.2 DEV
 
 - Adiciona classificação preventiva da reimportação em **Novo**, **Duplicado** e **Conflito**.
