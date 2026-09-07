@@ -830,6 +830,31 @@ button, input, select {
   font-weight: 600;
 }
 
+.annual-comparison-highlights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.annual-highlight {
+  background: var(--color-surface);
+}
+
+.annual-comparison-table {
+  min-width: 820px;
+}
+
+.annual-difference.is-up {
+  color: var(--color-alert);
+  font-weight: 600;
+}
+
+.annual-difference.is-down {
+  color: var(--color-paid);
+  font-weight: 600;
+}
+
 @media (max-width: 520px) {
   .import-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .import-actions .btn { width: 100%; }
@@ -942,7 +967,7 @@ button, input, select {
 
 
 /* =========================================================
-   Visão anual — v0.8.0
+   Visão anual — v0.8.1
    ========================================================= */
 .annual-toolbar {
   display: flex;
@@ -950,6 +975,12 @@ button, input, select {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
+}
+
+.annual-year-selectors {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
 }
 
 .annual-eyebrow {
@@ -1160,9 +1191,47 @@ button, input, select {
   padding-top: 11px;
 }
 
+.annual-comparison-highlights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.annual-highlight {
+  background: var(--color-surface);
+}
+
+.annual-comparison-table {
+  min-width: 820px;
+}
+
+.annual-difference.is-up {
+  color: var(--color-alert);
+  font-weight: 600;
+}
+
+.annual-difference.is-down {
+  color: var(--color-paid);
+  font-weight: 600;
+}
+
 @media (max-width: 520px) {
   .annual-toolbar {
     align-items: stretch;
+    flex-direction: column;
+  }
+
+  .annual-year-selectors {
+    width: 100%;
+  }
+
+  .annual-year-field {
+    flex: 1;
+  }
+
+  .annual-comparison-highlights {
+    grid-template-columns: 1fr;
   }
 
   .annual-kpi-grid,

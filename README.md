@@ -6,6 +6,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 ## Versão atual
 
+- **v0.8.1 DEV** — comparativos anuais avançados, seleção de dois anos, diferenças em R$/%, detalhamento mensal e destaques de maior aumento/redução.
 - **v0.8.0 DEV** — pré-visualização e validação detalhadas da importação XLSX, com resumo por ano e conferência separada de contas, combustível e fechamentos.
 - **v0.7.0.1 DEV** — correções do mapeamento histórico, pagamentos e limpeza seletiva dos dados importados.
 - **v0.6.2 DEV** — padronização visual completa dos indicadores mensais e identificação do mês de referência do combustível no Resumo.

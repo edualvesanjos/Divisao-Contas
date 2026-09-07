@@ -9,7 +9,7 @@
 // Nunca coloque service_role aqui.
 // =========================================================
 
-export const APP_ENVIRONMENT = 'production';
+export const APP_ENVIRONMENT = 'development';
 
 const SUPABASE_CONFIG = {
   development: {

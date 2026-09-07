@@ -72,6 +72,7 @@ const els = {
   resumoPercentualFechado: document.getElementById('resumo-percentual-fechado'),
 
   anualAno: document.getElementById('anual-ano'),
+  anualAnoComparacao: document.getElementById('anual-ano-comparacao'),
   anualTotalContas: document.getElementById('anual-total-contas'),
   anualTotalCombustivel: document.getElementById('anual-total-combustivel'),
   anualTotalRateado: document.getElementById('anual-total-rateado'),
@@ -92,6 +93,14 @@ const els = {
   anualMaiorMesNote: document.getElementById('anual-maior-mes-note'),
   anualMesesAtivos: document.getElementById('anual-meses-ativos'),
   anualMesesAtivosNote: document.getElementById('anual-meses-ativos-note'),
+  anualComparativoPeriodo: document.getElementById('anual-comparativo-periodo'),
+  anualCompHeadBase: document.getElementById('anual-comp-head-base'),
+  anualCompHeadRef: document.getElementById('anual-comp-head-ref'),
+  anualComparativoTbody: document.getElementById('anual-comparativo-tbody'),
+  anualMaiorAumento: document.getElementById('anual-maior-aumento'),
+  anualMaiorAumentoNote: document.getElementById('anual-maior-aumento-note'),
+  anualMaiorReducao: document.getElementById('anual-maior-reducao'),
+  anualMaiorReducaoNote: document.getElementById('anual-maior-reducao-note'),
   anualVazio: document.getElementById('anual-vazio'),
 
   listaPostos: document.getElementById('lista-postos'),
@@ -1041,13 +1050,21 @@ function variacaoPercentual(atual, anterior) {
   return ((a - b) / b) * 100;
 }
 
-function textoVariacaoAnual(atual, anterior, anoAnterior) {
-  const variacao = variacaoPercentual(atual, anterior);
-  if (variacao === null) return `Sem base em ${anoAnterior}`;
-  if (!Number.isFinite(variacao)) return `Sem valor em ${anoAnterior}`;
-  if (Math.abs(variacao) < 0.005) return `Sem variação vs. ${anoAnterior}`;
+function textoVariacaoAnual(atual, anterior, anoComparacao) {
+  const a = Number(atual) || 0;
+  const b = Number(anterior) || 0;
+  const diferenca = a - b;
+  const variacao = variacaoPercentual(a, b);
+  const sinalValor = diferenca > 0 ? '+' : '';
+  const valorTexto = `${sinalValor}${formatMoeda(diferenca)}`;
+
+  if (variacao === null) return `${valorTexto} · sem base em ${anoComparacao}`;
+  if (!Number.isFinite(variacao)) return `${valorTexto} · sem valor em ${anoComparacao}`;
+  if (Math.abs(variacao) < 0.005) return `${valorTexto} · sem variação vs. ${anoComparacao}`;
+
   const sinal = variacao > 0 ? '+' : '';
-  return `${sinal}${variacao.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% vs. ${anoAnterior}`;
+  const percentual = `${sinal}${variacao.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+  return `${valorTexto} · ${percentual} vs. ${anoComparacao}`;
 }
 
 function classeVariacao(atual, anterior) {
@@ -1057,7 +1074,8 @@ function classeVariacao(atual, anterior) {
 }
 
 function preencherAnosVisaoAnual(contas, abastecimentos) {
-  if (!els.anualAno) return mesAtivo.ano;
+  if (!els.anualAno) return { ano: mesAtivo.ano, anoComparacao: mesAtivo.ano - 1 };
+
   const anos = new Set([mesAtivo.ano]);
   contas.forEach((r) => {
     const ano = anoDoRegistroConta(r);
@@ -1067,12 +1085,30 @@ function preencherAnosVisaoAnual(contas, abastecimentos) {
     const ano = anoDoAbastecimento(r);
     if (ano) anos.add(ano);
   });
+
   const lista = [...anos].sort((a, b) => b - a);
-  const valorAtual = Number(els.anualAno.value) || mesAtivo.ano;
-  els.anualAno.innerHTML = lista.map((ano) => `<option value="${ano}">${ano}</option>`).join('');
-  els.anualAno.value = lista.includes(valorAtual) ? String(valorAtual) : String(mesAtivo.ano);
-  if (!els.anualAno.value && lista.length) els.anualAno.value = String(lista[0]);
-  return Number(els.anualAno.value);
+  const valorBaseAtual = Number(els.anualAno.value) || mesAtivo.ano;
+  const valorComparacaoAtual = Number(els.anualAnoComparacao?.value) || (valorBaseAtual - 1);
+
+  const options = lista.map((ano) => `<option value="${ano}">${ano}</option>`).join('');
+  els.anualAno.innerHTML = options;
+  if (els.anualAnoComparacao) els.anualAnoComparacao.innerHTML = options;
+
+  const ano = lista.includes(valorBaseAtual) ? valorBaseAtual : (lista.includes(mesAtivo.ano) ? mesAtivo.ano : lista[0]);
+  els.anualAno.value = String(ano);
+
+  let anoComparacao = lista.includes(valorComparacaoAtual) && valorComparacaoAtual !== ano
+    ? valorComparacaoAtual
+    : lista.find((item) => item < ano) ?? lista.find((item) => item !== ano) ?? ano;
+
+  if (els.anualAnoComparacao) {
+    els.anualAnoComparacao.value = String(anoComparacao);
+    [...els.anualAnoComparacao.options].forEach((option) => {
+      option.disabled = Number(option.value) === ano;
+    });
+  }
+
+  return { ano, anoComparacao };
 }
 
 function consolidarAno(contas, abastecimentos, ano) {
@@ -1125,9 +1161,9 @@ function consolidarAno(contas, abastecimentos, ano) {
   };
 }
 
-function setAnnualVariation(element, atual, anterior, anoAnterior) {
+function setAnnualVariation(element, atual, anterior, anoComparacao) {
   if (!element) return;
-  element.textContent = textoVariacaoAnual(atual, anterior, anoAnterior);
+  element.textContent = textoVariacaoAnual(atual, anterior, anoComparacao);
   element.classList.remove('is-up', 'is-down');
   const cls = classeVariacao(atual, anterior);
   if (cls) element.classList.add(cls);
@@ -1143,19 +1179,19 @@ async function renderVisaoAnual() {
   const contas = contasRaw.filter((r) => r.user_id === currentUser.id);
   const abastecimentos = abastecimentosRaw.filter((r) => r.user_id === currentUser.id);
 
-  const ano = preencherAnosVisaoAnual(contas, abastecimentos);
+  const { ano, anoComparacao } = preencherAnosVisaoAnual(contas, abastecimentos);
   const atual = consolidarAno(contas, abastecimentos, ano);
-  const anterior = consolidarAno(contas, abastecimentos, ano - 1);
+  const comparacao = consolidarAno(contas, abastecimentos, anoComparacao);
 
   els.anualTotalContas.textContent = formatMoeda(atual.totalContas);
   els.anualTotalCombustivel.textContent = formatMoeda(atual.totalCombustivel);
   els.anualTotalRateado.textContent = formatMoeda(atual.totalRateado);
   els.anualTotalGeral.textContent = formatMoeda(atual.totalGeral);
 
-  setAnnualVariation(els.anualTotalContasVariacao, atual.totalContas, anterior.totalContas, ano - 1);
-  setAnnualVariation(els.anualTotalCombustivelVariacao, atual.totalCombustivel, anterior.totalCombustivel, ano - 1);
-  setAnnualVariation(els.anualTotalRateadoVariacao, atual.totalRateado, anterior.totalRateado, ano - 1);
-  setAnnualVariation(els.anualTotalGeralVariacao, atual.totalGeral, anterior.totalGeral, ano - 1);
+  setAnnualVariation(els.anualTotalContasVariacao, atual.totalContas, comparacao.totalContas, anoComparacao);
+  setAnnualVariation(els.anualTotalCombustivelVariacao, atual.totalCombustivel, comparacao.totalCombustivel, anoComparacao);
+  setAnnualVariation(els.anualTotalRateadoVariacao, atual.totalRateado, comparacao.totalRateado, anoComparacao);
+  setAnnualVariation(els.anualTotalGeralVariacao, atual.totalGeral, comparacao.totalGeral, anoComparacao);
 
   const maxMensal = Math.max(1, ...atual.meses.map((m) => Math.max(m.contas, m.combustivel)));
   els.anualBars.innerHTML = atual.meses.map((m) => {
@@ -1189,7 +1225,65 @@ async function renderVisaoAnual() {
       <th>${formatMoeda(atual.totalRateado)}</th>
     </tr>`;
 
-  els.anualComparacaoLabel.textContent = `Comparação entre ${ano} e ${ano - 1}.`;
+  if (els.anualComparativoPeriodo) {
+    els.anualComparativoPeriodo.textContent = `Diferenças mensais de ${ano} em relação a ${anoComparacao}.`;
+  }
+  if (els.anualCompHeadBase) els.anualCompHeadBase.textContent = String(ano);
+  if (els.anualCompHeadRef) els.anualCompHeadRef.textContent = String(anoComparacao);
+
+  const comparativosMensais = atual.meses.map((mesAtual, indice) => {
+    const mesRef = comparacao.meses[indice];
+    const totalAtual = mesAtual.contas + mesAtual.combustivel;
+    const totalRef = mesRef.contas + mesRef.combustivel;
+    const diferenca = totalAtual - totalRef;
+    const variacao = variacaoPercentual(totalAtual, totalRef);
+    return {
+      mes: indice,
+      totalAtual,
+      totalRef,
+      diferenca,
+      variacao,
+      diferencaContas: mesAtual.contas - mesRef.contas,
+      diferencaCombustivel: mesAtual.combustivel - mesRef.combustivel,
+    };
+  });
+
+  if (els.anualComparativoTbody) {
+    els.anualComparativoTbody.innerHTML = comparativosMensais.map((item) => {
+      const classe = item.diferenca > 0 ? 'is-up' : item.diferenca < 0 ? 'is-down' : '';
+      const percentual = item.variacao === null
+        ? '—'
+        : Number.isFinite(item.variacao)
+          ? `${item.variacao > 0 ? '+' : ''}${item.variacao.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
+          : 'novo';
+      return `
+        <tr>
+          <td>${NOMES_MESES[item.mes]}</td>
+          <td>${formatMoeda(item.totalAtual)}</td>
+          <td>${formatMoeda(item.totalRef)}</td>
+          <td class="annual-difference ${classe}">${item.diferenca > 0 ? '+' : ''}${formatMoeda(item.diferenca)}</td>
+          <td class="annual-difference ${classe}">${percentual}</td>
+          <td class="annual-difference ${item.diferencaContas > 0 ? 'is-up' : item.diferencaContas < 0 ? 'is-down' : ''}">${item.diferencaContas > 0 ? '+' : ''}${formatMoeda(item.diferencaContas)}</td>
+          <td class="annual-difference ${item.diferencaCombustivel > 0 ? 'is-up' : item.diferencaCombustivel < 0 ? 'is-down' : ''}">${item.diferencaCombustivel > 0 ? '+' : ''}${formatMoeda(item.diferencaCombustivel)}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  const aumentos = comparativosMensais.filter((item) => item.diferenca > 0);
+  const reducoes = comparativosMensais.filter((item) => item.diferenca < 0);
+  const maiorAumento = aumentos.reduce((best, item) => !best || item.diferenca > best.diferenca ? item : best, null);
+  const maiorReducao = reducoes.reduce((best, item) => !best || item.diferenca < best.diferenca ? item : best, null);
+
+  els.anualMaiorAumento.textContent = maiorAumento ? NOMES_MESES[maiorAumento.mes] : '—';
+  els.anualMaiorAumentoNote.textContent = maiorAumento
+    ? `+${formatMoeda(maiorAumento.diferenca)} em relação a ${anoComparacao}`
+    : 'Nenhum mês com aumento';
+  els.anualMaiorReducao.textContent = maiorReducao ? NOMES_MESES[maiorReducao.mes] : '—';
+  els.anualMaiorReducaoNote.textContent = maiorReducao
+    ? `${formatMoeda(maiorReducao.diferenca)} em relação a ${anoComparacao}`
+    : 'Nenhum mês com redução';
+
+  els.anualComparacaoLabel.textContent = `Comparação entre ${ano} e ${anoComparacao}.`;
   els.anualMediaContas.textContent = formatMoeda(atual.mediaContas);
   els.anualMediaContasNote.textContent = atual.ativosContas
     ? `Média sobre ${atual.ativosContas} mês(es) com contas`
@@ -1214,6 +1308,9 @@ async function renderVisaoAnual() {
 
 if (els.anualAno) {
   els.anualAno.addEventListener('change', () => renderVisaoAnual());
+}
+if (els.anualAnoComparacao) {
+  els.anualAnoComparacao.addEventListener('change', () => renderVisaoAnual());
 }
 
 async function renderResumo() {

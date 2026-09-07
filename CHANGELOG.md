@@ -1,3 +1,14 @@
+## v0.8.1 DEV
+
+- Evolui a aba **Anual** com comparação entre dois anos escolhidos pelo usuário.
+- Adiciona seletor **Comparar com**, independente do ano base.
+- Os indicadores anuais passam a exibir diferença absoluta em R$ e variação percentual em relação ao ano selecionado para comparação.
+- Adiciona tabela mensal comparativa com total dos dois anos, diferença total, diferença percentual, diferença de Contas e diferença de Combustível.
+- Destaca automaticamente o mês com maior aumento e o mês com maior redução do gasto total.
+- Mantém a Visão Anual baseada no mês real dos lançamentos e preserva todas as regras do Resumo Mensal.
+- Ambiente retornado para **development**.
+- Não requer nova migration no Supabase.
+
 ## v0.8.0 PROD
 
 - Versão de produção fechada a partir da **v0.8.0.1 DEV validada**.

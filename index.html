@@ -206,10 +206,16 @@
             <span class="annual-eyebrow">Histórico consolidado</span>
             <h2 class="annual-title">Visão anual</h2>
           </div>
-          <label class="annual-year-field">
-            <span>Ano</span>
-            <select id="anual-ano"></select>
-          </label>
+          <div class="annual-year-selectors">
+            <label class="annual-year-field">
+              <span>Ano base</span>
+              <select id="anual-ano"></select>
+            </label>
+            <label class="annual-year-field">
+              <span>Comparar com</span>
+              <select id="anual-ano-comparacao"></select>
+            </label>
+          </div>
         </div>
 
         <div class="annual-kpi-grid">
@@ -269,6 +275,45 @@
               </thead>
               <tbody id="anual-tbody"></tbody>
               <tfoot id="anual-tfoot"></tfoot>
+            </table>
+          </div>
+        </section>
+
+        <section class="annual-section">
+          <div class="annual-section-heading">
+            <div>
+              <h3>Comparação entre anos</h3>
+              <p id="anual-comparativo-periodo">Diferenças mensais entre os anos selecionados.</p>
+            </div>
+          </div>
+
+          <div class="annual-comparison-highlights">
+            <article class="annual-insight annual-highlight">
+              <span>Maior aumento mensal</span>
+              <strong id="anual-maior-aumento">—</strong>
+              <small id="anual-maior-aumento-note">—</small>
+            </article>
+            <article class="annual-insight annual-highlight">
+              <span>Maior redução mensal</span>
+              <strong id="anual-maior-reducao">—</strong>
+              <small id="anual-maior-reducao-note">—</small>
+            </article>
+          </div>
+
+          <div class="annual-table-wrap">
+            <table class="annual-table annual-comparison-table">
+              <thead>
+                <tr>
+                  <th>Mês</th>
+                  <th id="anual-comp-head-base">Ano base</th>
+                  <th id="anual-comp-head-ref">Comparação</th>
+                  <th>Dif. total</th>
+                  <th>Dif. %</th>
+                  <th>Dif. contas</th>
+                  <th>Dif. combustível</th>
+                </tr>
+              </thead>
+              <tbody id="anual-comparativo-tbody"></tbody>
             </table>
           </div>
         </section>
