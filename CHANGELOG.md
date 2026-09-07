@@ -1,0 +1,164 @@
+## v0.5.0.3 — Produção
+
+- Configurado ambiente de produção com Supabase dedicado.
+- Ambiente padrão alterado para `production`; badge DEV não é exibido.
+- Mantida separação entre credenciais DEV e PROD.
+
+## v0.5.0.3
+
+- Separação explícita dos ambientes `development` e `production` em `js/environment.js`
+- Banco atual preservado como ambiente DEV
+- Configuração de produção preparada para receber Project URL e publishable key próprias
+- Badge visual `DEV` exibido somente no ambiente de desenvolvimento
+- Bloqueio preventivo quando o ambiente ativo estiver sem credenciais válidas
+- Cache do PWA atualizado para v0.5.0.3
+
+## v0.5.0.2 — Produção
+
+- Versão DEV validada em testes e promovida para produção.
+- Consolida os ajustes de fechamento mensal, percentual histórico, data única de transferência e centralização dos modais.
+
+# Changelog
+
+Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
+`x.x.x.x` para correções (hotfixes) dentro da mesma versão.
+
+## [0.5.0.2] — DEV — Ajustes no fechamento mensal e interface
+
+- **Data de transferência única** no fechamento mensal; os dois campos legados do Supabase são mantidos e passam a receber a mesma data por compatibilidade
+- **Mês fechado**: o Resumo Mensal exibe no topo um aviso quando já existe fechamento salvo para o mês selecionado
+- **Percentual histórico do combustível**: meses fechados exibem o percentual efetivamente gravado nos abastecimentos incluídos no resumo; alterações posteriores no percentual padrão não recalculam lançamentos antigos
+- Quando houver percentuais diferentes entre abastecimentos do mesmo fechamento, o resumo informa todos os percentuais efetivamente utilizados
+- **Tela de lançamento**: modais de Contas e Combustível passam a abrir centralizados na tela, mantendo rolagem interna em telas menores
+- Cache do Service Worker atualizado para a nova versão
+
+## [0.5.0.1] — DEV — Estabilização da sincronização
+
+- **Forçar sincronização de tudo**: agora também remarca e sincroniza a tabela
+  `fechamentos_mensais`, criada na v0.5.0
+- **Proteção offline-first**: registros locais com `pending_sync` não são mais
+  sobrescritos pelo download do Supabase enquanto o envio local não tiver sido
+  confirmado
+- **Proteção contra dados remotos antigos**: quando não há alteração local
+  pendente, o cache ignora um registro remoto cujo `updated_at` seja anterior
+  ao registro local
+- Cache do Service Worker atualizado para garantir a distribuição dos arquivos
+  alterados desta versão
+
+## [0.5.0] — Fechamento mensal, combustível defasado e ajustes de formulário
+
+- **Contas**: removidos do formulário os campos "Já paga", "Data de
+  pagamento" e "Data de transferência do rateio" — agora são controlados
+  uma vez por mês, na aba Resumo ("Fechamento do mês")
+- **Combustível**: campo "Km atual" trocado por "Tipo de combustível"
+  (Gasolina/Etanol); "Data de transferência do rateio" também migrou pro
+  Fechamento do mês; campo "Posto" agora sugere postos já digitados antes
+  (autocomplete)
+- **Resumo**: os totais de Combustível/Combustível Rateado/Litros agora
+  usam o mês ANTERIOR ao mês exibido (lançou em agosto → conta em
+  setembro); Contas continua usando o mês exibido normalmente. A aba
+  Combustível continua listando pelo mês real do lançamento.
+- **Resumo**: adicionados Total de Litros e Litros por tipo
+  (Gasolina/Etanol)
+- Nova tabela `fechamentos_mensais` no Supabase (migração
+  `supabase/migrations/003_fechamento_mensal.sql`), um registro por
+  usuário/ano/mês
+- IndexedDB local subiu para versão 3 (nova store `fechamentos_mensais`)
+
+## [0.4.0] — Melhorias de UI: navegação por mês + Resumo Mensal
+
+- Navegador de mês (‹ Setembro 2026 ›) no topo do app, compartilhado entre
+  as abas Contas, Combustível e Resumo
+- Listas de Contas e Combustível agora filtram só os lançamentos do mês
+  selecionado
+- Nova aba **Resumo** com: Total Contas de Consumo, Total Combustível,
+  Contas Rateadas, Combustível Rateado, e "Valor rateado a pagar" (soma
+  do que a outra pessoa deve transferir naquele mês)
+- Definido: rateio sempre entre 2 participantes; percentual do Combustível
+  representa diretamente a parte da outra pessoa (sem necessidade de nome)
+
+## [0.3.0.3] — Hotfix
+
+- Corrigida a causa raiz da falha de sincronização: o campo local
+  `data_ordenacao` (usado só para ordenar a lista no navegador) estava
+  sendo enviado ao Supabase, que rejeitava com erro 400
+  ("Could not find the 'data_ordenacao' column"). Agora esse campo é
+  removido do payload antes do envio.
+- Registros baixados do Supabase (que não têm `data_ordenacao`) agora
+  recebem esse campo derivado localmente, mantendo a ordenação da lista correta.
+
+## [0.3.0.2] — Hotfix
+
+- Botão "Forçar sincronização de tudo" na aba Config, para reenviar
+  registros que ficaram presos localmente (ex: marcados como sincronizados
+  pelo bug do hotfix anterior, sem nunca terem chegado ao Supabase)
+- Novo método `localDb.markAllForResync()` que remarca todos os registros
+  de uma tabela local como pendentes, independente do estado atual
+
+## [0.3.0.1] — Hotfix
+
+- Corrigido bug crítico de sincronização: `sync.js` não verificava o `error`
+  retornado pelo Supabase, então falhas de envio (RLS, coluna incompatível,
+  etc.) eram silenciosas — o app marcava o registro como sincronizado sem
+  ele ter chegado ao banco. Agora o erro é logado (`[sync] Supabase recusou...`)
+  e o registro continua pendente até sincronizar de verdade.
+
+## [0.3.0] — Etapa 2 (parte 2): rateio automático + Configurações
+
+- Nova aba "Config" com nº de participantes padrão (Contas) e percentual
+  padrão (Combustível), salvos por usuário e sincronizados
+- Contas: campo de "valor rateado" trocado por "nº de participantes";
+  o rateio (valor total ÷ participantes) é calculado e exibido em tempo real
+- Combustível: campo de "valor rateado" trocado por "percentual rateado (%)";
+  o rateio (valor total × percentual) é calculado e exibido em tempo real
+- Ao editar um lançamento, participantes/percentual pré-preenchem com o
+  valor salvo naquele lançamento (ou o padrão, se não houver)
+- Nova tabela `configuracoes` no Supabase (migração
+  `supabase/migrations/002_rateio_automatico.sql`) e novas colunas
+  `numero_participantes` (contas_consumo) e `percentual_rateado` (abastecimentos)
+- IndexedDB local subiu para versão 2 (nova store `configuracoes`)
+
+## [0.2.0] — Etapa 2 (parte 1): editar e excluir lançamentos
+
+- Botões de editar (✏️) e excluir (🗑️) em cada lançamento das listas de
+  Contas e Combustível
+- Modal de cadastro agora funciona também como edição, pré-preenchendo
+  os campos do lançamento selecionado
+- Botão "Excluir" dentro do modal, visível apenas ao editar
+- Confirmação antes de excluir um lançamento
+- Novo método `localDb.get()` para buscar um registro local pelo id
+
+## [0.1.0.3] — Hotfix
+
+- Corrigido bug de CSS que fazia a tela de login e a tela do app ficarem
+  sobrepostas (o atributo `hidden` não estava vencendo regras de `display`
+  mais específicas)
+- Logout agora limpa a sessão local e recarrega a página, evitando login
+  persistente ao reabrir o site
+
+## [0.1.0.2] — Hotfix
+
+- Credenciais reais do Supabase (URL/anon key) mantidas preenchidas em
+  `js/supabase-client.js` desde a geração do projeto
+
+## [0.1.0.1] — Hotfix
+
+- Mensagem de erro clara na tela quando `SUPABASE_URL`/`SUPABASE_ANON_KEY`
+  estão ausentes ou inválidas (antes travava tudo com erro só no console)
+- Toast visível de sucesso/erro ao entrar, independente da transição de tela
+- Blindagem contra falhas de sincronização/leitura local ao logar
+- Ícones do PWA (`icons/icon-192.png`, `icons/icon-512.png`) adicionados
+
+## [0.1.0] — Etapa 1 (MVP)
+
+- Estrutura inicial do app (SPA/PWA em HTML/CSS/JS puro)
+- Login e cadastro via Supabase Auth (e-mail + senha)
+- Cadastro e listagem de Contas de Consumo (Água, Luz, Internet), com
+  valor total, valor rateado, vencimento e status de pagamento
+- Cadastro e listagem de Abastecimentos, com valor total, valor rateado,
+  litros, km e posto
+- Armazenamento local offline-first (IndexedDB) com fila de sincronização
+  automática ao reconectar
+- Schema inicial do banco (Supabase) com RLS por usuário
+- Botão de logout no cabeçalho do app
+- `package.json` com servidor estático (`serve`) para preview automático no StackBlitz

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Registro de Contas &amp; Combustível</title>
+  <meta name="theme-color" content="#16302D" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Tela de login -->
+  <section id="view-auth" class="view" hidden>
+    <div class="auth-card">
+      <h1 class="auth-title">Contas &amp; Combustível</h1>
+      <p class="auth-subtitle">Seu registro pessoal, direto do navegador.</p>
+
+      <form id="form-auth" class="auth-form" novalidate>
+        <label class="field">
+          <span class="field-label">E-mail</span>
+          <input type="email" id="auth-email" autocomplete="email" required />
+        </label>
+        <label class="field">
+          <span class="field-label">Senha</span>
+          <input type="password" id="auth-password" autocomplete="current-password" required minlength="6" />
+        </label>
+
+        <p id="auth-error" class="auth-error" role="alert" hidden></p>
+
+        <button type="submit" id="auth-submit" class="btn btn-primary btn-block">Entrar</button>
+        <button type="button" id="auth-toggle" class="btn btn-ghost btn-block">Criar uma conta</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- App principal -->
+  <div id="view-app" class="app" hidden>
+
+    <header class="app-header">
+      <div class="app-header-title">
+        <span id="tab-title">Contas</span>
+        <span id="app-version" class="app-version"></span>
+        <span id="environment-badge" class="environment-badge" hidden>DEV</span>
+      </div>
+      <div class="app-header-actions">
+        <div class="status" id="status-indicator" title="Status de conexão">
+          <span class="status-dot" id="status-dot"></span>
+          <span class="status-label" id="status-label">online</span>
+        </div>
+        <button id="btn-logout" class="btn-logout" aria-label="Sair da conta" title="Sair">Sair</button>
+      </div>
+    </header>
+
+    <div class="month-nav" id="month-nav">
+      <button class="month-nav-btn" id="btn-mes-anterior" aria-label="Mês anterior">‹</button>
+      <span class="month-nav-label" id="mes-ativo-label">—</span>
+      <button class="month-nav-btn" id="btn-mes-proximo" aria-label="Próximo mês">›</button>
+    </div>
+
+    <main class="app-main">
+
+      <!-- Aba: Contas de consumo -->
+      <section id="tab-contas" class="tab-panel">
+        <ul id="lista-contas" class="entry-list"></ul>
+        <p id="lista-contas-vazia" class="empty-state" hidden>
+          Nenhuma conta registrada ainda.<br />Toque em “+” para lançar a primeira.
+        </p>
+      </section>
+
+      <!-- Aba: Combustível -->
+      <section id="tab-combustivel" class="tab-panel" hidden>
+        <ul id="lista-combustivel" class="entry-list"></ul>
+        <p id="lista-combustivel-vazia" class="empty-state" hidden>
+          Nenhum abastecimento registrado ainda.<br />Toque em “+” para lançar o primeiro.
+        </p>
+      </section>
+
+      <!-- Aba: Resumo Mensal -->
+      <section id="tab-resumo" class="tab-panel" hidden>
+        <div id="resumo-fechado-banner" class="month-closed-banner" hidden>
+          <strong>Mês já fechado</strong>
+          <span id="resumo-percentual-fechado"></span>
+        </div>
+
+        <div class="resumo-grid">
+          <div class="resumo-card">
+            <span class="resumo-label">Total Contas de Consumo</span>
+            <span class="resumo-value" id="resumo-total-contas">R$ 0,00</span>
+          </div>
+          <div class="resumo-card">
+            <span class="resumo-label">Total Combustível</span>
+            <span class="resumo-value" id="resumo-total-combustivel">R$ 0,00</span>
+          </div>
+          <div class="resumo-card">
+            <span class="resumo-label">Combustível Rateado</span>
+            <span class="resumo-value" id="resumo-combustivel-rateado">R$ 0,00</span>
+          </div>
+          <div class="resumo-card">
+            <span class="resumo-label">Total de Litros</span>
+            <span class="resumo-value" id="resumo-total-litros">0 L</span>
+          </div>
+          <div class="resumo-card">
+            <span class="resumo-label">Litros — Gasolina / Etanol</span>
+            <span class="resumo-value" id="resumo-litros-por-tipo">0 L / 0 L</span>
+          </div>
+          <div class="resumo-card">
+            <span class="resumo-label">Contas Rateadas</span>
+            <span class="resumo-value" id="resumo-contas-rateado">R$ 0,00</span>
+          </div>
+          <div class="resumo-card resumo-card-destaque">
+            <span class="resumo-label">Valor rateado a pagar (a outra pessoa te transferir)</span>
+            <span class="resumo-value" id="resumo-total-rateado">R$ 0,00</span>
+          </div>
+        </div>
+        <p class="empty-state" id="resumo-vazio" hidden>
+          Nenhum lançamento neste mês ainda.
+        </p>
+
+        <hr class="config-divider" />
+
+        <h3 class="resumo-subtitulo">Fechamento do mês</h3>
+        <form id="form-fechamento" class="config-form">
+          <label class="field field-checkbox">
+            <input type="checkbox" id="fechamento-contas-pago" />
+            <span class="field-label">Contas pagas neste mês</span>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Data de pagamento das contas</span>
+            <input type="date" id="fechamento-contas-data-pagamento" />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Data de transferência do rateio</span>
+            <input type="date" id="fechamento-data-rateio" />
+          </label>
+
+          <button type="submit" class="btn btn-primary">Salvar fechamento do mês</button>
+        </form>
+      </section>
+
+      <!-- Aba: Configurações -->
+      <section id="tab-config" class="tab-panel" hidden>
+        <form id="form-config" class="config-form">
+          <label class="field">
+            <span class="field-label">Número de participantes padrão (Contas)</span>
+            <input type="number" id="config-participantes" min="1" step="1" required />
+          </label>
+
+          <label class="field">
+            <span class="field-label">Percentual padrão do rateio (Combustível, %)</span>
+            <input type="number" id="config-percentual" min="0" max="100" step="0.01" required />
+          </label>
+
+          <button type="submit" class="btn btn-primary">Salvar configurações</button>
+        </form>
+
+        <hr class="config-divider" />
+
+        <button type="button" id="btn-forcar-sync" class="btn btn-ghost btn-block">
+          Forçar sincronização de tudo
+        </button>
+        <p class="config-hint">
+          Use se algum lançamento estiver salvo só no aparelho e não aparecer no Supabase.
+        </p>
+      </section>
+
+    </main>
+
+    <button id="btn-novo" class="fab" aria-label="Novo registro">+</button>
+
+    <nav class="tab-bar">
+      <button class="tab-btn is-active" data-tab="contas">
+        <span class="tab-icon" aria-hidden="true">💧</span>
+        <span>Contas</span>
+      </button>
+      <button class="tab-btn" data-tab="combustivel">
+        <span class="tab-icon" aria-hidden="true">⛽</span>
+        <span>Combustível</span>
+      </button>
+      <button class="tab-btn" data-tab="resumo">
+        <span class="tab-icon" aria-hidden="true">📊</span>
+        <span>Resumo</span>
+      </button>
+      <button class="tab-btn" data-tab="config">
+        <span class="tab-icon" aria-hidden="true">⚙️</span>
+        <span>Config</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Modal: novo/editar registro de conta -->
+  <div id="modal-conta" class="modal" hidden>
+    <div class="modal-sheet">
+      <h2 class="modal-title" id="modal-conta-title">Nova conta</h2>
+      <form id="form-conta" novalidate>
+        <label class="field">
+          <span class="field-label">Tipo</span>
+          <select id="conta-tipo" required>
+            <option value="agua">Água</option>
+            <option value="luz">Luz</option>
+            <option value="internet">Internet</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Valor total (R$)</span>
+          <input type="number" id="conta-valor-total" step="0.01" min="0" required inputmode="decimal" />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Número de participantes</span>
+          <input type="number" id="conta-participantes" min="1" step="1" required />
+        </label>
+
+        <p class="computed-value">Rateio: <strong id="conta-valor-rateado-preview">—</strong></p>
+
+        <label class="field">
+          <span class="field-label">Vencimento</span>
+          <input type="date" id="conta-vencimento" />
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-danger" id="btn-excluir-conta" hidden>Excluir</button>
+          <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: novo/editar abastecimento -->
+  <div id="modal-combustivel" class="modal" hidden>
+    <div class="modal-sheet">
+      <h2 class="modal-title" id="modal-combustivel-title">Novo abastecimento</h2>
+      <form id="form-combustivel" novalidate>
+        <label class="field">
+          <span class="field-label">Data</span>
+          <input type="date" id="combustivel-data" required />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Valor total (R$)</span>
+          <input type="number" id="combustivel-valor-total" step="0.01" min="0" required inputmode="decimal" />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Percentual rateado (%)</span>
+          <input type="number" id="combustivel-percentual" min="0" max="100" step="0.01" required />
+        </label>
+
+        <p class="computed-value">Rateio: <strong id="combustivel-valor-rateado-preview">—</strong></p>
+
+        <label class="field">
+          <span class="field-label">Litros</span>
+          <input type="number" id="combustivel-litros" step="0.001" min="0" inputmode="decimal" />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Tipo de combustível</span>
+          <select id="combustivel-tipo">
+            <option value="gasolina">Gasolina</option>
+            <option value="etanol">Etanol</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Posto</span>
+          <input type="text" id="combustivel-posto" list="lista-postos" autocomplete="off" />
+          <datalist id="lista-postos"></datalist>
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-danger" id="btn-excluir-combustivel" hidden>Excluir</button>
+          <button type="button" class="btn btn-ghost" data-close-modal>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
