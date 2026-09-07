@@ -1,3 +1,12 @@
+## v0.7.0.1 DEV
+
+- Corrige mapeamento histórico de contas e pagamentos.
+- Reconhece Nivel 6 Mercado Livre.
+- Interpreta Dt pg vl rateado como pagamento/transferência do mês.
+- Adiciona exclusão seletiva dos dados importados.
+- Remove aviso para Internet opcional ausente.
+- Adiciona migration 005.
+
 ## v0.7.0 — DEV
 
 - Início da série de importação histórica XLSX.

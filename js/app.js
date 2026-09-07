@@ -100,6 +100,7 @@ const els = {
   importCombustivel: document.getElementById('import-combustivel'),
   btnAnalisarXlsx: document.getElementById('btn-analisar-xlsx'),
   btnImportarXlsx: document.getElementById('btn-importar-xlsx'),
+  btnExcluirImportados: document.getElementById('btn-excluir-importados'),
   importXlsxResult: document.getElementById('import-xlsx-result'),
   importXlsxSummary: document.getElementById('import-xlsx-summary'),
   importXlsxWarnings: document.getElementById('import-xlsx-warnings'),
@@ -348,7 +349,17 @@ async function importarDadosAnalisados() {
   await localDb.createMany('contas_consumo', accountsToCreate);
   await localDb.createMany('abastecimentos', fuelToCreate);
 
-  showToast(`${accountsToCreate.length + fuelToCreate.length} registro(s) importado(s)${skipped ? `; ${skipped} duplicado(s) ignorado(s)` : ''}.`);
+  let fechamentosCriados = 0;
+  for (const fechamento of (importAnalysis.fechamentos || [])) {
+    const id = fechamentoId(currentUser.id, fechamento.ano, fechamento.mes - 1);
+    const existing = await localDb.get('fechamentos_mensais', id);
+    if (existing && !existing.deleted && existing.origem_importacao !== 'xlsx_historico') continue;
+    const { source, ...fields } = fechamento;
+    await localDb.putWithId('fechamentos_mensais', id, { ...fields, user_id: currentUser.id });
+    fechamentosCriados += 1;
+  }
+
+  showToast(`${accountsToCreate.length + fuelToCreate.length} registro(s) importado(s)${fechamentosCriados ? `; ${fechamentosCriados} fechamento(s) histórico(s)` : ''}${skipped ? `; ${skipped} duplicado(s) ignorado(s)` : ''}.`);
   await refreshActiveView();
   triggerBackgroundSync();
   atualizarListaPostos();
@@ -407,6 +418,35 @@ if (els.btnImportarXlsx) {
   });
 }
 
+async function excluirDadosImportados() {
+  if (!currentUser) return;
+  const stores = ['contas_consumo', 'abastecimentos', 'fechamentos_mensais'];
+  let removidos = 0;
+  for (const store of stores) {
+    const rows = await localDb.listAll(store);
+    for (const row of rows) {
+      if (row.user_id === currentUser.id && row.origem_importacao === 'xlsx_historico') {
+        await localDb.remove(store, row.id);
+        removidos += 1;
+      }
+    }
+  }
+  await refreshActiveView();
+  triggerBackgroundSync();
+  showToast(`${removidos} registro(s) importado(s) marcado(s) para exclusão.`);
+}
+
+if (els.btnExcluirImportados) {
+  els.btnExcluirImportados.addEventListener('click', async () => {
+    const confirmado = window.confirm('Excluir somente os dados originados da importação XLSX? Lançamentos manuais serão preservados.');
+    if (!confirmado) return;
+    els.btnExcluirImportados.disabled = true;
+    try { await excluirDadosImportados(); }
+    catch (err) { console.error('[import] falha ao excluir dados importados:', err); showToast('Não foi possível excluir os dados importados.', 'error'); }
+    finally { els.btnExcluirImportados.disabled = false; }
+  });
+}
+
 async function checkExistingSession() {
   const session = await getSession();
   if (session) {
@@ -456,7 +496,7 @@ function switchTab(tab) {
 // Listagem
 // ---------------------------------------------------------
 
-const TIPO_LABEL = { agua: 'Água', luz: 'Luz', internet: 'Internet' };
+const TIPO_LABEL = { agua: 'Água', luz: 'Luz', internet: 'Internet', mercado_livre: 'Nivel 6 Mercado Livre' };
 const formatMoeda = (valor) =>
   valor == null ? '—' : Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const formatData = (iso) => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString('pt-BR') : '—');

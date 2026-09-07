@@ -6,7 +6,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 ## Versão atual
 
-- **v0.7.0 DEV** — importação histórica XLSX com pré-visualização, competência mensal nas contas e preservação do percentual histórico do combustível.
+- **v0.7.0.1.1 DEV** — importação histórica XLSX com pré-visualização, competência mensal nas contas e preservação do percentual histórico do combustível.
 - **v0.6.2 DEV** — padronização visual completa dos indicadores mensais e identificação do mês de referência do combustível no Resumo.
 - **v0.6.1 DEV** — seleção direta de mês/ano e padronização visual dos subtotais; mantém os indicadores mensais da v0.6.0.
 - **v0.5.0.3** — última versão estável de produção antes da série 0.6.x.
@@ -87,7 +87,7 @@ A seleção do banco fica centralizada em `js/environment.js`.
 - o badge `DEV` aparece somente no ambiente de desenvolvimento;
 - se as credenciais do ambiente ativo estiverem ausentes, o app interrompe a inicialização e informa a configuração pendente;
 - use apenas a **publishable/anon key** no frontend. Nunca use `service_role`.
-## Importação histórica XLSX (v0.7.0 DEV)
+## Importação histórica XLSX (v0.7.0.1.1 DEV)
 
 Antes do primeiro teste de importação, execute no **Supabase DEV**:
 
@@ -101,3 +101,11 @@ Nos abastecimentos históricos, o percentual mensal é inferido pela relação e
 
 A leitura XLSX usa SheetJS CE 0.20.3 carregado no momento da página; por isso, a análise de uma planilha requer conexão disponível para carregar a biblioteca caso ela ainda não esteja no navegador.
 
+
+
+### v0.7.0.1 DEV
+- Importa “Nivel 6 Mercado Livre” em 2023/2024.
+- Usa “Dt pg vl rateado” para pagamento das contas e transferência do rateio.
+- Internet ausente em anos antigos deixa de gerar aviso.
+- Inclui exclusão seletiva dos dados importados para repetição segura dos testes.
+- Requer migration 005 no Supabase DEV.

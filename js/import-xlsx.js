@@ -62,62 +62,51 @@ function localizarLinha(matriz, nomes) {
 function parseContasSheet(sheetName, sheet, participantesPadrao) {
   const match = sheetName.match(/^contas\s+consumo\s+(\d{4})$/i);
   if (!match) return null;
-
   const ano = Number(match[1]);
   const matriz = planilhaParaMatriz(sheet);
   const header = matriz[0] || [];
   const tipos = [
     { tipo: 'agua', nomes: ['agua'] },
     { tipo: 'luz', nomes: ['luz'] },
-    { tipo: 'internet', nomes: ['internet'] },
+    { tipo: 'internet', nomes: ['internet'], opcional: true },
+    { tipo: 'mercado_livre', nomes: ['nivel 6 mercado livre', 'nivel6 mercado livre', 'nivel 6 - mercado livre'], opcional: true },
   ];
-  const rows = [];
-  const warnings = [];
-
-  for (const def of tipos) {
-    const linha = localizarLinha(matriz, def.nomes);
-    if (!linha) {
-      warnings.push(`${sheetName}: linha de ${def.tipo} não encontrada.`);
-      continue;
-    }
-
-    for (let col = 1; col < header.length; col += 1) {
-      const mesNome = normalizarTexto(header[col]);
-      const mes = MESES[mesNome];
-      if (mes == null) continue;
-      const valor = numeroPositivo(linha[col]);
-      if (valor == null) continue;
-
-      rows.push({
-        tipo: def.tipo,
-        valor_total: valor,
-        numero_participantes: participantesPadrao,
-        valor_rateado: valor / participantesPadrao,
-        data_vencimento: null,
-        competencia: isoDate(ano, mes, 1),
-        origem_importacao: 'xlsx_historico',
-        data_ordenacao: isoDate(ano, mes, 1),
-        source: `${sheetName} · ${header[col]}`,
-      });
-    }
-  }
-
-  const linhaTransferencia = localizarLinha(matriz, ['data transf. leo', 'data transf leo']);
-  if (linhaTransferencia) {
+  const rows = [], warnings = [], fechamentos = [];
+  const linhaPagamentoRateio = localizarLinha(matriz, ['dt pg vl rateado','dt. pg. vl. rateado','dt pg valor rateado','data pg vl rateado','data pg valor rateado']);
+  const pagamentosPorMes = new Map();
+  if (linhaPagamentoRateio) {
     for (let col = 1; col < header.length; col += 1) {
       const mes = MESES[normalizarTexto(header[col])];
-      const value = linhaTransferencia[col];
-      if (mes == null || value == null) continue;
-      const parsed = excelDateToIso(value, ano, mes);
-      if (parsed && Number(parsed.slice(0, 4)) !== ano) {
-        warnings.push(`${sheetName}: data de transferência ${parsed} não corresponde ao ano ${ano}.`);
-      }
+      if (mes == null || linhaPagamentoRateio[col] == null) continue;
+      const parsed = excelDateToIso(linhaPagamentoRateio[col], ano, mes);
+      if (!parsed) { warnings.push(`${sheetName}: não foi possível interpretar a data de pagamento/rateio de ${header[col]}.`); continue; }
+      pagamentosPorMes.set(mes, parsed);
+      if (Number(parsed.slice(0,4)) !== ano) warnings.push(`${sheetName}: data de pagamento/rateio ${parsed} não corresponde ao ano ${ano}.`);
     }
   }
-
-  return { rows, warnings };
+  for (const def of tipos) {
+    const linha = localizarLinha(matriz, def.nomes);
+    if (!linha) { if (!def.opcional) warnings.push(`${sheetName}: linha de ${def.tipo} não encontrada.`); continue; }
+    for (let col = 1; col < header.length; col += 1) {
+      const mes = MESES[normalizarTexto(header[col])];
+      if (mes == null) continue;
+      const valor = numeroPositivo(linha[col]); if (valor == null) continue;
+      const dataPagamento = pagamentosPorMes.get(mes) || null;
+      rows.push({ tipo:def.tipo, valor_total:valor, numero_participantes:participantesPadrao, valor_rateado:valor/participantesPadrao,
+        data_vencimento:null, competencia:isoDate(ano,mes,1), pago:Boolean(dataPagamento), data_pagamento:dataPagamento,
+        data_transferencia_rateio:dataPagamento, origem_importacao:'xlsx_historico', data_ordenacao:isoDate(ano,mes,1), source:`${sheetName} · ${header[col]}` });
+    }
+  }
+  for (const [mes,dataPagamento] of pagamentosPorMes.entries()) fechamentos.push({ ano, mes:mes+1, contas_pago:true,
+    contas_data_pagamento:dataPagamento, contas_data_rateio:dataPagamento, combustivel_data_rateio:dataPagamento,
+    origem_importacao:'xlsx_historico', source:`${sheetName} · ${mes+1}` });
+  const linhaTransferencia = localizarLinha(matriz, ['data transf. leo','data transf leo']);
+  if (linhaTransferencia) for (let col=1; col<header.length; col+=1) {
+    const mes=MESES[normalizarTexto(header[col])], value=linhaTransferencia[col]; if (mes==null || value==null) continue;
+    const parsed=excelDateToIso(value,ano,mes); if (parsed && Number(parsed.slice(0,4))!==ano) warnings.push(`${sheetName}: data de transferência ${parsed} não corresponde ao ano ${ano}.`);
+  }
+  return { rows, fechamentos, warnings };
 }
-
 function percentualDoBloco(total, totalRateado, fallbackPercentual, warnings, label) {
   const totalN = Number(total);
   const rateadoN = Number(totalRateado);
@@ -253,6 +242,7 @@ export async function analisarPlanilhaHistorica(file, options = {}) {
   const contas = [];
   const combustivel = [];
   const warnings = [];
+  const fechamentos = [];
   const recognizedSheets = [];
 
   for (const sheetName of workbook.SheetNames) {
@@ -260,6 +250,7 @@ export async function analisarPlanilhaHistorica(file, options = {}) {
     const contasResult = parseContasSheet(sheetName, sheet, participantesPadrao);
     if (contasResult) {
       contas.push(...contasResult.rows);
+      fechamentos.push(...(contasResult.fechamentos || []));
       warnings.push(...contasResult.warnings);
       recognizedSheets.push(sheetName);
       continue;
@@ -282,6 +273,7 @@ export async function analisarPlanilhaHistorica(file, options = {}) {
     recognizedSheets,
     contas,
     combustivel,
+    fechamentos,
     warnings,
     summary: {
       sheets: recognizedSheets.length,
