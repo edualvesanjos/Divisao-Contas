@@ -1,3 +1,17 @@
+## v0.8.0 DEV
+
+- Inicia a série de **Visão Anual e Comparativos Históricos**.
+- Adiciona nova aba **Anual** com seleção direta do ano disponível na base.
+- Consolida totais anuais de Contas, Combustível, Total Rateado e Total Geral.
+- Compara automaticamente o ano selecionado com o ano imediatamente anterior.
+- Adiciona evolução mensal visual para Contas e Combustível.
+- Adiciona tabela mensal com Contas, Combustível, Total e Rateado.
+- Adiciona médias mensais anuais calculadas somente sobre meses que possuem lançamentos.
+- Exibe maior mês do ano e quantidade de meses com lançamentos.
+- A visão anual usa o mês real de cada lançamento de combustível; a regra especial de mês anterior permanece exclusiva do Resumo Mensal.
+- Não altera registros históricos nem requer nova migration no Supabase.
+- Cache do PWA atualizado para v0.8.0.
+
 ## v0.7.3 DEV
 
 - Consolida o fluxo de importação histórica XLSX após a validação da v0.7.2.

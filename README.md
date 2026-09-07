@@ -6,7 +6,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 ## Versão atual
 
-- **v0.7.3 DEV** — pré-visualização e validação detalhadas da importação XLSX, com resumo por ano e conferência separada de contas, combustível e fechamentos.
+- **v0.8.0 DEV** — pré-visualização e validação detalhadas da importação XLSX, com resumo por ano e conferência separada de contas, combustível e fechamentos.
 - **v0.7.0.1 DEV** — correções do mapeamento histórico, pagamentos e limpeza seletiva dos dados importados.
 - **v0.6.2 DEV** — padronização visual completa dos indicadores mensais e identificação do mês de referência do combustível no Resumo.
 - **v0.6.1 DEV** — seleção direta de mês/ano e padronização visual dos subtotais; mantém os indicadores mensais da v0.6.0.
@@ -111,5 +111,5 @@ A leitura XLSX usa SheetJS CE 0.20.3 carregado no momento da página; por isso, 
 - Inclui exclusão seletiva dos dados importados para repetição segura dos testes.
 - Requer migration 005 no Supabase DEV.
 
-### Ajuste DEV da v0.7.3
+### Ajuste DEV da v0.8.0
 Antes do novo teste de importação, execute `supabase/migrations/006_reparo_tipo_contas_importacao.sql` no Supabase DEV. A exclusão seletiva de dados XLSX agora remove os registros remotos por ID e só então limpa o cache local.

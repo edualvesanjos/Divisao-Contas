@@ -199,6 +199,116 @@
         </form>
       </section>
 
+      <!-- Aba: Visão Anual -->
+      <section id="tab-anual" class="tab-panel" hidden>
+        <div class="annual-toolbar">
+          <div>
+            <span class="annual-eyebrow">Histórico consolidado</span>
+            <h2 class="annual-title">Visão anual</h2>
+          </div>
+          <label class="annual-year-field">
+            <span>Ano</span>
+            <select id="anual-ano"></select>
+          </label>
+        </div>
+
+        <div class="annual-kpi-grid">
+          <article class="annual-kpi">
+            <span>Contas no ano</span>
+            <strong id="anual-total-contas">R$ 0,00</strong>
+            <small id="anual-total-contas-variacao">—</small>
+          </article>
+          <article class="annual-kpi">
+            <span>Combustível no ano</span>
+            <strong id="anual-total-combustivel">R$ 0,00</strong>
+            <small id="anual-total-combustivel-variacao">—</small>
+          </article>
+          <article class="annual-kpi">
+            <span>Total rateado</span>
+            <strong id="anual-total-rateado">R$ 0,00</strong>
+            <small id="anual-total-rateado-variacao">—</small>
+          </article>
+          <article class="annual-kpi">
+            <span>Total geral</span>
+            <strong id="anual-total-geral">R$ 0,00</strong>
+            <small id="anual-total-geral-variacao">—</small>
+          </article>
+        </div>
+
+        <section class="annual-section">
+          <div class="annual-section-heading">
+            <div>
+              <h3>Evolução mensal</h3>
+              <p>Valores totais por mês do ano selecionado.</p>
+            </div>
+          </div>
+          <div class="annual-legend" aria-hidden="true">
+            <span><i class="annual-legend-contas"></i> Contas</span>
+            <span><i class="annual-legend-fuel"></i> Combustível</span>
+          </div>
+          <div id="anual-bars" class="annual-bars" aria-label="Evolução mensal de contas e combustível"></div>
+        </section>
+
+        <section class="annual-section">
+          <div class="annual-section-heading">
+            <div>
+              <h3>Comparativo mensal</h3>
+              <p>Contas e combustível são considerados pelo mês real de cada lançamento.</p>
+            </div>
+          </div>
+          <div class="annual-table-wrap">
+            <table class="annual-table">
+              <thead>
+                <tr>
+                  <th>Mês</th>
+                  <th>Contas</th>
+                  <th>Combustível</th>
+                  <th>Total</th>
+                  <th>Rateado</th>
+                </tr>
+              </thead>
+              <tbody id="anual-tbody"></tbody>
+              <tfoot id="anual-tfoot"></tfoot>
+            </table>
+          </div>
+        </section>
+
+        <section class="annual-section">
+          <div class="annual-section-heading">
+            <div>
+              <h3>Indicadores históricos</h3>
+              <p id="anual-comparacao-label">Comparação com o ano anterior.</p>
+            </div>
+          </div>
+          <div class="annual-insight-grid">
+            <article class="annual-insight">
+              <span>Média mensal — Contas</span>
+              <strong id="anual-media-contas">R$ 0,00</strong>
+              <small id="anual-media-contas-note">—</small>
+            </article>
+            <article class="annual-insight">
+              <span>Média mensal — Combustível</span>
+              <strong id="anual-media-combustivel">R$ 0,00</strong>
+              <small id="anual-media-combustivel-note">—</small>
+            </article>
+            <article class="annual-insight">
+              <span>Maior mês do ano</span>
+              <strong id="anual-maior-mes">—</strong>
+              <small id="anual-maior-mes-note">—</small>
+            </article>
+            <article class="annual-insight">
+              <span>Meses com lançamentos</span>
+              <strong id="anual-meses-ativos">0</strong>
+              <small id="anual-meses-ativos-note">—</small>
+            </article>
+          </div>
+        </section>
+
+        <p id="anual-vazio" class="empty-state" hidden>
+          Nenhum lançamento encontrado para este ano.
+        </p>
+      </section>
+
       <!-- Aba: Configurações -->
       <section id="tab-config" class="tab-panel" hidden>
         <form id="form-config" class="config-form">
@@ -276,6 +386,10 @@
       <button class="tab-btn" data-tab="resumo">
         <span class="tab-icon" aria-hidden="true">📊</span>
         <span>Resumo</span>
+      </button>
+      <button class="tab-btn" data-tab="anual">
+        <span class="tab-icon" aria-hidden="true">📈</span>
+        <span>Anual</span>
       </button>
       <button class="tab-btn" data-tab="config">
         <span class="tab-icon" aria-hidden="true">⚙️</span>

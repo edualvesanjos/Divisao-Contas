@@ -27,6 +27,7 @@ const els = {
     contas: document.getElementById('tab-contas'),
     combustivel: document.getElementById('tab-combustivel'),
     resumo: document.getElementById('tab-resumo'),
+    anual: document.getElementById('tab-anual'),
     config: document.getElementById('tab-config'),
   },
 
@@ -69,6 +70,29 @@ const els = {
   fechamentoDataRateio: document.getElementById('fechamento-data-rateio'),
   resumoFechadoBanner: document.getElementById('resumo-fechado-banner'),
   resumoPercentualFechado: document.getElementById('resumo-percentual-fechado'),
+
+  anualAno: document.getElementById('anual-ano'),
+  anualTotalContas: document.getElementById('anual-total-contas'),
+  anualTotalCombustivel: document.getElementById('anual-total-combustivel'),
+  anualTotalRateado: document.getElementById('anual-total-rateado'),
+  anualTotalGeral: document.getElementById('anual-total-geral'),
+  anualTotalContasVariacao: document.getElementById('anual-total-contas-variacao'),
+  anualTotalCombustivelVariacao: document.getElementById('anual-total-combustivel-variacao'),
+  anualTotalRateadoVariacao: document.getElementById('anual-total-rateado-variacao'),
+  anualTotalGeralVariacao: document.getElementById('anual-total-geral-variacao'),
+  anualBars: document.getElementById('anual-bars'),
+  anualTbody: document.getElementById('anual-tbody'),
+  anualTfoot: document.getElementById('anual-tfoot'),
+  anualComparacaoLabel: document.getElementById('anual-comparacao-label'),
+  anualMediaContas: document.getElementById('anual-media-contas'),
+  anualMediaContasNote: document.getElementById('anual-media-contas-note'),
+  anualMediaCombustivel: document.getElementById('anual-media-combustivel'),
+  anualMediaCombustivelNote: document.getElementById('anual-media-combustivel-note'),
+  anualMaiorMes: document.getElementById('anual-maior-mes'),
+  anualMaiorMesNote: document.getElementById('anual-maior-mes-note'),
+  anualMesesAtivos: document.getElementById('anual-meses-ativos'),
+  anualMesesAtivosNote: document.getElementById('anual-meses-ativos-note'),
+  anualVazio: document.getElementById('anual-vazio'),
 
   listaPostos: document.getElementById('lista-postos'),
 
@@ -765,7 +789,7 @@ els.tabButtons.forEach((btn) => {
 
 function switchTab(tab) {
   activeTab = tab;
-  const titles = { contas: 'Contas', combustivel: 'Combustível', resumo: 'Resumo Mensal', config: 'Configurações' };
+  const titles = { contas: 'Contas', combustivel: 'Combustível', resumo: 'Resumo Mensal', anual: 'Visão Anual', config: 'Configurações' };
   els.tabTitle.textContent = titles[tab];
 
   els.tabButtons.forEach((btn) => btn.classList.toggle('is-active', btn.dataset.tab === tab));
@@ -773,11 +797,13 @@ function switchTab(tab) {
     panel.hidden = name !== tab;
   });
 
-  els.btnNovo.hidden = tab === 'config' || tab === 'resumo';
-  els.monthNav.hidden = tab === 'config';
+  els.btnNovo.hidden = tab === 'config' || tab === 'resumo' || tab === 'anual';
+  els.monthNav.hidden = tab === 'config' || tab === 'anual';
 
   if (tab === 'resumo') {
     renderResumo();
+  } else if (tab === 'anual') {
+    renderVisaoAnual();
   } else if (tab !== 'config') {
     renderTab(tab);
   }
@@ -795,6 +821,8 @@ const formatData = (iso) => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateStrin
 async function refreshActiveView() {
   if (activeTab === 'resumo') {
     await renderResumo();
+  } else if (activeTab === 'anual') {
+    await renderVisaoAnual();
   } else if (activeTab !== 'config') {
     await renderTab(activeTab);
   }
@@ -965,7 +993,7 @@ function renderIndicadoresMensais(prefixo, rows) {
 }
 
 async function renderTab(tab) {
-  if (tab === 'config' || tab === 'resumo') return;
+  if (tab === 'config' || tab === 'resumo' || tab === 'anual') return;
 
   if (tab === 'contas') {
     const allRows = await localDb.listAll('contas_consumo');
@@ -980,6 +1008,215 @@ async function renderTab(tab) {
     els.listaCombustivelVazia.hidden = rows.length > 0;
     els.listaCombustivel.innerHTML = rows.map(renderCombustivelItem).join('');
   }
+}
+
+
+function anoDoRegistroConta(row) {
+  const base = row.competencia || row.data_vencimento || row.data_ordenacao || '';
+  return Number(String(base).slice(0, 4)) || null;
+}
+
+function mesDoRegistroConta(row) {
+  const base = row.competencia || row.data_vencimento || row.data_ordenacao || '';
+  const mes = Number(String(base).slice(5, 7));
+  return mes >= 1 && mes <= 12 ? mes - 1 : null;
+}
+
+function anoDoAbastecimento(row) {
+  const base = row.data || row.data_ordenacao || '';
+  return Number(String(base).slice(0, 4)) || null;
+}
+
+function mesDoAbastecimento(row) {
+  const base = row.data || row.data_ordenacao || '';
+  const mes = Number(String(base).slice(5, 7));
+  return mes >= 1 && mes <= 12 ? mes - 1 : null;
+}
+
+function somarCampo(rows, campo) {
+  return rows.reduce((acc, row) => acc + (Number(row[campo]) || 0), 0);
+}
+
+function variacaoPercentual(atual, anterior) {
+  const a = Number(atual) || 0;
+  const b = Number(anterior) || 0;
+  if (b === 0) return a === 0 ? null : Infinity;
+  return ((a - b) / b) * 100;
+}
+
+function textoVariacaoAnual(atual, anterior, anoAnterior) {
+  const variacao = variacaoPercentual(atual, anterior);
+  if (variacao === null) return `Sem base em ${anoAnterior}`;
+  if (!Number.isFinite(variacao)) return `Sem valor em ${anoAnterior}`;
+  if (Math.abs(variacao) < 0.005) return `Sem variação vs. ${anoAnterior}`;
+  const sinal = variacao > 0 ? '+' : '';
+  return `${sinal}${variacao.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% vs. ${anoAnterior}`;
+}
+
+function classeVariacao(atual, anterior) {
+  const variacao = variacaoPercentual(atual, anterior);
+  if (variacao === null || !Number.isFinite(variacao) || Math.abs(variacao) < 0.005) return '';
+  return variacao > 0 ? 'is-up' : 'is-down';
+}
+
+function preencherAnosVisaoAnual(contas, abastecimentos) {
+  if (!els.anualAno) return mesAtivo.ano;
+  const anos = new Set([mesAtivo.ano]);
+  contas.forEach((r) => {
+    const ano = anoDoRegistroConta(r);
+    if (ano) anos.add(ano);
+  });
+  abastecimentos.forEach((r) => {
+    const ano = anoDoAbastecimento(r);
+    if (ano) anos.add(ano);
+  });
+  const lista = [...anos].sort((a, b) => b - a);
+  const valorAtual = Number(els.anualAno.value) || mesAtivo.ano;
+  els.anualAno.innerHTML = lista.map((ano) => `<option value="${ano}">${ano}</option>`).join('');
+  els.anualAno.value = lista.includes(valorAtual) ? String(valorAtual) : String(mesAtivo.ano);
+  if (!els.anualAno.value && lista.length) els.anualAno.value = String(lista[0]);
+  return Number(els.anualAno.value);
+}
+
+function consolidarAno(contas, abastecimentos, ano) {
+  const meses = Array.from({ length: 12 }, (_, mes) => ({
+    mes,
+    contas: 0,
+    contasRateado: 0,
+    combustivel: 0,
+    combustivelRateado: 0,
+    litros: 0,
+  }));
+
+  for (const row of contas) {
+    if (anoDoRegistroConta(row) !== ano) continue;
+    const mes = mesDoRegistroConta(row);
+    if (mes == null) continue;
+    meses[mes].contas += Number(row.valor_total) || 0;
+    meses[mes].contasRateado += Number(row.valor_rateado) || 0;
+  }
+
+  for (const row of abastecimentos) {
+    if (anoDoAbastecimento(row) !== ano) continue;
+    const mes = mesDoAbastecimento(row);
+    if (mes == null) continue;
+    meses[mes].combustivel += Number(row.valor_total) || 0;
+    meses[mes].combustivelRateado += Number(row.valor_rateado) || 0;
+    meses[mes].litros += Number(row.litros) || 0;
+  }
+
+  const totalContas = meses.reduce((a, m) => a + m.contas, 0);
+  const totalCombustivel = meses.reduce((a, m) => a + m.combustivel, 0);
+  const totalRateado = meses.reduce((a, m) => a + m.contasRateado + m.combustivelRateado, 0);
+  const totalGeral = totalContas + totalCombustivel;
+  const ativosContas = meses.filter((m) => m.contas > 0).length;
+  const ativosCombustivel = meses.filter((m) => m.combustivel > 0).length;
+  const mesesAtivos = meses.filter((m) => m.contas > 0 || m.combustivel > 0).length;
+
+  return {
+    ano,
+    meses,
+    totalContas,
+    totalCombustivel,
+    totalRateado,
+    totalGeral,
+    ativosContas,
+    ativosCombustivel,
+    mesesAtivos,
+    mediaContas: ativosContas ? totalContas / ativosContas : 0,
+    mediaCombustivel: ativosCombustivel ? totalCombustivel / ativosCombustivel : 0,
+  };
+}
+
+function setAnnualVariation(element, atual, anterior, anoAnterior) {
+  if (!element) return;
+  element.textContent = textoVariacaoAnual(atual, anterior, anoAnterior);
+  element.classList.remove('is-up', 'is-down');
+  const cls = classeVariacao(atual, anterior);
+  if (cls) element.classList.add(cls);
+}
+
+async function renderVisaoAnual() {
+  if (!currentUser) return;
+
+  const [contasRaw, abastecimentosRaw] = await Promise.all([
+    localDb.listAll('contas_consumo'),
+    localDb.listAll('abastecimentos'),
+  ]);
+  const contas = contasRaw.filter((r) => r.user_id === currentUser.id);
+  const abastecimentos = abastecimentosRaw.filter((r) => r.user_id === currentUser.id);
+
+  const ano = preencherAnosVisaoAnual(contas, abastecimentos);
+  const atual = consolidarAno(contas, abastecimentos, ano);
+  const anterior = consolidarAno(contas, abastecimentos, ano - 1);
+
+  els.anualTotalContas.textContent = formatMoeda(atual.totalContas);
+  els.anualTotalCombustivel.textContent = formatMoeda(atual.totalCombustivel);
+  els.anualTotalRateado.textContent = formatMoeda(atual.totalRateado);
+  els.anualTotalGeral.textContent = formatMoeda(atual.totalGeral);
+
+  setAnnualVariation(els.anualTotalContasVariacao, atual.totalContas, anterior.totalContas, ano - 1);
+  setAnnualVariation(els.anualTotalCombustivelVariacao, atual.totalCombustivel, anterior.totalCombustivel, ano - 1);
+  setAnnualVariation(els.anualTotalRateadoVariacao, atual.totalRateado, anterior.totalRateado, ano - 1);
+  setAnnualVariation(els.anualTotalGeralVariacao, atual.totalGeral, anterior.totalGeral, ano - 1);
+
+  const maxMensal = Math.max(1, ...atual.meses.map((m) => Math.max(m.contas, m.combustivel)));
+  els.anualBars.innerHTML = atual.meses.map((m) => {
+    const contaPct = (m.contas / maxMensal) * 100;
+    const combustivelPct = (m.combustivel / maxMensal) * 100;
+    return `
+      <div class="annual-bar-month" title="${NOMES_MESES[m.mes]} — Contas ${formatMoeda(m.contas)} · Combustível ${formatMoeda(m.combustivel)}">
+        <div class="annual-bar-pair">
+          <span class="annual-bar annual-bar-contas" style="height:${contaPct.toFixed(2)}%"></span>
+          <span class="annual-bar annual-bar-fuel" style="height:${combustivelPct.toFixed(2)}%"></span>
+        </div>
+        <span>${NOMES_MESES[m.mes].slice(0, 3)}</span>
+      </div>`;
+  }).join('');
+
+  els.anualTbody.innerHTML = atual.meses.map((m) => `
+    <tr>
+      <td>${NOMES_MESES[m.mes]}</td>
+      <td>${formatMoeda(m.contas)}</td>
+      <td>${formatMoeda(m.combustivel)}</td>
+      <td>${formatMoeda(m.contas + m.combustivel)}</td>
+      <td>${formatMoeda(m.contasRateado + m.combustivelRateado)}</td>
+    </tr>`).join('');
+
+  els.anualTfoot.innerHTML = `
+    <tr>
+      <th>Total</th>
+      <th>${formatMoeda(atual.totalContas)}</th>
+      <th>${formatMoeda(atual.totalCombustivel)}</th>
+      <th>${formatMoeda(atual.totalGeral)}</th>
+      <th>${formatMoeda(atual.totalRateado)}</th>
+    </tr>`;
+
+  els.anualComparacaoLabel.textContent = `Comparação entre ${ano} e ${ano - 1}.`;
+  els.anualMediaContas.textContent = formatMoeda(atual.mediaContas);
+  els.anualMediaContasNote.textContent = atual.ativosContas
+    ? `Média sobre ${atual.ativosContas} mês(es) com contas`
+    : 'Sem contas no ano';
+  els.anualMediaCombustivel.textContent = formatMoeda(atual.mediaCombustivel);
+  els.anualMediaCombustivelNote.textContent = atual.ativosCombustivel
+    ? `Média sobre ${atual.ativosCombustivel} mês(es) com abastecimentos`
+    : 'Sem abastecimentos no ano';
+
+  const maior = atual.meses.reduce((best, m) => {
+    const total = m.contas + m.combustivel;
+    return total > best.total ? { mes: m.mes, total } : best;
+  }, { mes: null, total: 0 });
+
+  els.anualMaiorMes.textContent = maior.mes == null ? '—' : NOMES_MESES[maior.mes];
+  els.anualMaiorMesNote.textContent = maior.mes == null ? 'Sem lançamentos' : formatMoeda(maior.total);
+  els.anualMesesAtivos.textContent = String(atual.mesesAtivos);
+  els.anualMesesAtivosNote.textContent = `${12 - atual.mesesAtivos} mês(es) sem lançamentos`;
+
+  els.anualVazio.hidden = atual.totalGeral > 0;
+}
+
+if (els.anualAno) {
+  els.anualAno.addEventListener('change', () => renderVisaoAnual());
 }
 
 async function renderResumo() {

@@ -939,3 +939,249 @@ button, input, select {
   color: var(--color-ink-muted);
   font-size: 0.74rem;
 }
+
+
+/* =========================================================
+   Visão anual — v0.8.0
+   ========================================================= */
+.annual-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.annual-eyebrow {
+  display: block;
+  color: var(--color-ink-muted);
+  font-size: 0.75rem;
+  margin-bottom: 2px;
+}
+
+.annual-title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.annual-year-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 105px;
+}
+
+.annual-year-field span {
+  font-size: 0.72rem;
+  color: var(--color-ink-muted);
+}
+
+.annual-year-field select {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  padding: 8px 10px;
+  color: var(--color-ink);
+}
+
+.annual-kpi-grid,
+.annual-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.annual-kpi,
+.annual-insight {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+}
+
+.annual-kpi span,
+.annual-insight span {
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+}
+
+.annual-kpi strong,
+.annual-insight strong {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.annual-kpi small,
+.annual-insight small {
+  color: var(--color-ink-muted);
+  font-size: 0.7rem;
+  line-height: 1.25;
+}
+
+.annual-kpi small.is-up {
+  color: var(--color-alert);
+}
+
+.annual-kpi small.is-down {
+  color: var(--color-paid);
+}
+
+.annual-section {
+  margin-top: 18px;
+  padding: 16px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+.annual-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.annual-section-heading h3 {
+  margin: 0 0 3px;
+  font-size: 0.95rem;
+}
+
+.annual-section-heading p {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: 0.75rem;
+}
+
+.annual-legend {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 8px;
+  color: var(--color-ink-muted);
+  font-size: 0.7rem;
+}
+
+.annual-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.annual-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.annual-legend-contas,
+.annual-bar-contas {
+  background: var(--color-primary);
+}
+
+.annual-legend-fuel,
+.annual-bar-fuel {
+  background: var(--color-ink-muted);
+}
+
+.annual-bars {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(20px, 1fr));
+  align-items: end;
+  gap: 5px;
+  min-height: 190px;
+  padding-top: 8px;
+}
+
+.annual-bar-month {
+  display: flex;
+  height: 180px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.annual-bar-pair {
+  height: 150px;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+}
+
+.annual-bar {
+  display: block;
+  width: min(10px, 42%);
+  min-height: 1px;
+  border-radius: 4px 4px 1px 1px;
+}
+
+.annual-bar-month > span {
+  font-size: 0.62rem;
+  color: var(--color-ink-muted);
+}
+
+.annual-table-wrap {
+  overflow-x: auto;
+}
+
+.annual-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 540px;
+  font-size: 0.78rem;
+}
+
+.annual-table th,
+.annual-table td {
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.annual-table th:first-child,
+.annual-table td:first-child {
+  text-align: left;
+}
+
+.annual-table thead th {
+  color: var(--color-ink-muted);
+  font-size: 0.7rem;
+}
+
+.annual-table tfoot th {
+  border-bottom: none;
+  padding-top: 11px;
+}
+
+@media (max-width: 520px) {
+  .annual-toolbar {
+    align-items: stretch;
+  }
+
+  .annual-kpi-grid,
+  .annual-insight-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .annual-bars {
+    gap: 2px;
+  }
+
+  .annual-bar-month > span {
+    font-size: 0.56rem;
+  }
+}
+
+@media (min-width: 700px) {
+  .annual-kpi-grid,
+  .annual-insight-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
