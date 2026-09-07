@@ -80,6 +80,11 @@
 
       <!-- Aba: Resumo Mensal -->
       <section id="tab-resumo" class="tab-panel" hidden>
+        <div id="resumo-fechado-banner" class="month-closed-banner" hidden>
+          <strong>Mês já fechado</strong>
+          <span id="resumo-percentual-fechado"></span>
+        </div>
+
         <div class="resumo-grid">
           <div class="resumo-card">
             <span class="resumo-label">Total Contas de Consumo</span>
@@ -129,13 +134,8 @@
           </label>
 
           <label class="field">
-            <span class="field-label">Data de transferência do rateio (Contas)</span>
-            <input type="date" id="fechamento-contas-data-rateio" />
-          </label>
-
-          <label class="field">
-            <span class="field-label">Data de transferência do rateio (Combustível)</span>
-            <input type="date" id="fechamento-combustivel-data-rateio" />
+            <span class="field-label">Data de transferência do rateio</span>
+            <input type="date" id="fechamento-data-rateio" />
           </label>
 
           <button type="submit" class="btn btn-primary">Salvar fechamento do mês</button>

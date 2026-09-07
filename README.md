@@ -6,6 +6,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 ## Versão atual
 
+- **v0.5.0.2 DEV** — ajustes no fechamento mensal, preservação do percentual histórico e modais centralizados.
 - **v0.5.0.1 DEV** — estabilização da sincronização offline-first.
 
 

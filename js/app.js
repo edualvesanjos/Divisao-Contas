@@ -43,8 +43,9 @@ const els = {
   formFechamento: document.getElementById('form-fechamento'),
   fechamentoContasPago: document.getElementById('fechamento-contas-pago'),
   fechamentoContasDataPagamento: document.getElementById('fechamento-contas-data-pagamento'),
-  fechamentoContasDataRateio: document.getElementById('fechamento-contas-data-rateio'),
-  fechamentoCombustivelDataRateio: document.getElementById('fechamento-combustivel-data-rateio'),
+  fechamentoDataRateio: document.getElementById('fechamento-data-rateio'),
+  resumoFechadoBanner: document.getElementById('resumo-fechado-banner'),
+  resumoPercentualFechado: document.getElementById('resumo-percentual-fechado'),
 
   listaPostos: document.getElementById('lista-postos'),
 
@@ -369,22 +370,50 @@ async function renderResumo() {
 
   els.resumoVazio.hidden = contas.length + abastecimentos.length > 0;
 
-  await loadFechamentoMes();
+  await loadFechamentoMes(abastecimentos);
 }
 
 function fechamentoId(userId, ano, mes) {
   return `${userId}::${ano}-${String(mes + 1).padStart(2, '0')}`;
 }
 
-async function loadFechamentoMes() {
-  if (!currentUser) return;
+async function loadFechamentoMes(abastecimentos = null) {
+  if (!currentUser) return null;
   const id = fechamentoId(currentUser.id, mesAtivo.ano, mesAtivo.mes);
   const record = await localDb.get('fechamentos_mensais', id);
 
   els.fechamentoContasPago.checked = record?.contas_pago ?? false;
   els.fechamentoContasDataPagamento.value = record?.contas_data_pagamento ?? '';
-  els.fechamentoContasDataRateio.value = record?.contas_data_rateio ?? '';
-  els.fechamentoCombustivelDataRateio.value = record?.combustivel_data_rateio ?? '';
+
+  // A interface usa uma única data de transferência. Mantemos os dois campos
+  // legados no Supabase por compatibilidade e aceitamos qualquer um deles ao ler.
+  els.fechamentoDataRateio.value =
+    record?.contas_data_rateio ?? record?.combustivel_data_rateio ?? '';
+
+  const mesFechado = Boolean(record && !record.deleted);
+  els.resumoFechadoBanner.hidden = !mesFechado;
+
+  if (mesFechado) {
+    const rows = abastecimentos ?? [];
+    const percentuais = [...new Set(
+      rows
+        .map((item) => Number(item.percentual_rateado))
+        .filter((valor) => Number.isFinite(valor))
+        .map((valor) => valor.toLocaleString('pt-BR', { maximumFractionDigits: 2 }))
+    )];
+
+    if (percentuais.length === 1) {
+      els.resumoPercentualFechado.textContent = `Percentual de combustível usado neste mês: ${percentuais[0]}%`;
+    } else if (percentuais.length > 1) {
+      els.resumoPercentualFechado.textContent = `Percentuais de combustível usados neste mês: ${percentuais.join('%, ')}%`;
+    } else {
+      els.resumoPercentualFechado.textContent = 'Sem abastecimentos vinculados a este fechamento.';
+    }
+  } else {
+    els.resumoPercentualFechado.textContent = '';
+  }
+
+  return record;
 }
 
 els.formFechamento.addEventListener('submit', async (event) => {
@@ -393,16 +422,20 @@ els.formFechamento.addEventListener('submit', async (event) => {
 
   const id = fechamentoId(currentUser.id, mesAtivo.ano, mesAtivo.mes);
 
+  const dataRateio = els.fechamentoDataRateio.value || null;
+
   await localDb.putWithId('fechamentos_mensais', id, {
     user_id: currentUser.id,
     ano: mesAtivo.ano,
     mes: mesAtivo.mes + 1,
     contas_pago: els.fechamentoContasPago.checked,
     contas_data_pagamento: els.fechamentoContasDataPagamento.value || null,
-    contas_data_rateio: els.fechamentoContasDataRateio.value || null,
-    combustivel_data_rateio: els.fechamentoCombustivelDataRateio.value || null,
+    // Mantemos os dois campos legados sincronizados com a mesma data.
+    contas_data_rateio: dataRateio,
+    combustivel_data_rateio: dataRateio,
   });
 
+  await renderResumo();
   showToast('Fechamento do mês salvo.');
   triggerBackgroundSync();
 });

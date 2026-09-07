@@ -3,6 +3,15 @@
 Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 `x.x.x.x` para correções (hotfixes) dentro da mesma versão.
 
+## [0.5.0.2] — DEV — Ajustes no fechamento mensal e interface
+
+- **Data de transferência única** no fechamento mensal; os dois campos legados do Supabase são mantidos e passam a receber a mesma data por compatibilidade
+- **Mês fechado**: o Resumo Mensal exibe no topo um aviso quando já existe fechamento salvo para o mês selecionado
+- **Percentual histórico do combustível**: meses fechados exibem o percentual efetivamente gravado nos abastecimentos incluídos no resumo; alterações posteriores no percentual padrão não recalculam lançamentos antigos
+- Quando houver percentuais diferentes entre abastecimentos do mesmo fechamento, o resumo informa todos os percentuais efetivamente utilizados
+- **Tela de lançamento**: modais de Contas e Combustível passam a abrir centralizados na tela, mantendo rolagem interna em telas menores
+- Cache do Service Worker atualizado para a nova versão
+
 ## [0.5.0.1] — DEV — Estabilização da sincronização
 
 - **Forçar sincronização de tudo**: agora também remarca e sincroniza a tabela

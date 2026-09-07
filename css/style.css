@@ -13,6 +13,7 @@
 
   --color-primary: #2B6E63;
   --color-primary-ink: #FFFFFF;
+  --color-primary-soft: #E5F0ED;
   --color-fuel: #C7622A;
   --color-alert: #B23A48;
   --color-paid: #3E7C4A;
@@ -489,27 +490,54 @@ button, input, select {
 .tab-icon { font-size: 1.2rem; }
 
 /* =========================================================
-   Modal (folha inferior)
+   Status do fechamento mensal
+   ========================================================= */
+.month-closed-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+}
+
+.month-closed-banner[hidden] { display: none; }
+
+.month-closed-banner strong {
+  color: var(--color-primary);
+}
+
+.month-closed-banner span {
+  color: var(--color-ink-muted);
+  font-size: 0.9rem;
+}
+
+/* =========================================================
+   Modal centralizado
    ========================================================= */
 .modal {
   position: fixed;
   inset: 0;
   background: rgba(22, 48, 45, 0.45);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
   z-index: 20;
 }
 
 .modal[hidden] { display: none; }
 
 .modal-sheet {
-  width: 100%;
+  width: min(100%, 560px);
   max-height: 90dvh;
   overflow-y: auto;
   background: var(--color-surface);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
-  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  padding: 24px 20px;
 }
 
 .modal-title {
