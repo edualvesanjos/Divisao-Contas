@@ -207,6 +207,7 @@ els.btnForcarSync.addEventListener('click', async () => {
     await localDb.markAllForResync('contas_consumo');
     await localDb.markAllForResync('abastecimentos');
     await localDb.markAllForResync('configuracoes');
+    await localDb.markAllForResync('fechamentos_mensais');
     await syncAll(currentUser.id);
     await refreshActiveView();
     showToast('Sincronização forçada concluída.');

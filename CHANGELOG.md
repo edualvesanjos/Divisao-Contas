@@ -3,6 +3,19 @@
 Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 `x.x.x.x` para correções (hotfixes) dentro da mesma versão.
 
+## [0.5.0.1] — DEV — Estabilização da sincronização
+
+- **Forçar sincronização de tudo**: agora também remarca e sincroniza a tabela
+  `fechamentos_mensais`, criada na v0.5.0
+- **Proteção offline-first**: registros locais com `pending_sync` não são mais
+  sobrescritos pelo download do Supabase enquanto o envio local não tiver sido
+  confirmado
+- **Proteção contra dados remotos antigos**: quando não há alteração local
+  pendente, o cache ignora um registro remoto cujo `updated_at` seja anterior
+  ao registro local
+- Cache do Service Worker atualizado para garantir a distribuição dos arquivos
+  alterados desta versão
+
 ## [0.5.0] — Fechamento mensal, combustível defasado e ajustes de formulário
 
 - **Contas**: removidos do formulário os campos "Já paga", "Data de

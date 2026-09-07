@@ -170,11 +170,35 @@ export const localDb = {
     });
   },
 
-  /** Grava (ou sobrescreve) um registro vindo do servidor, já sincronizado. */
+  /**
+   * Grava um registro vindo do servidor sem apagar uma alteração local ainda pendente.
+   * Também ignora respostas remotas mais antigas que o cache local, evitando regressão
+   * quando duas sincronizações se sobrepõem.
+   */
   async upsertFromRemote(storeName, record) {
+    const existing = await this.get(storeName, record.id);
+
+    // Nunca substitui uma edição/exclusão local que ainda não teve envio confirmado.
+    if (existing?.pending_sync) {
+      return { applied: false, reason: 'local_pending' };
+    }
+
+    const localUpdatedAt = Date.parse(existing?.updated_at || '');
+    const remoteUpdatedAt = Date.parse(record.updated_at || '');
+
+    if (
+      existing &&
+      Number.isFinite(localUpdatedAt) &&
+      Number.isFinite(remoteUpdatedAt) &&
+      localUpdatedAt > remoteUpdatedAt
+    ) {
+      return { applied: false, reason: 'local_newer' };
+    }
+
     await withStore(storeName, 'readwrite', (store) =>
       store.put({ ...record, pending_sync: 0 })
     );
+    return { applied: true };
   },
 
   /** Limpa a flag de sincronização pendente após envio confirmado. */

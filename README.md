@@ -1,8 +1,13 @@
-# Contas & Combustível — Etapa 1 (MVP)
+# Contas & Combustível
 
 Registro pessoal de contas de consumo (água, luz, internet) e abastecimentos de
 combustível, com rateio de valores com outra pessoa. Offline-first, 100% online
 para editar e publicar (StackBlitz + GitHub + Supabase).
+
+## Versão atual
+
+- **v0.5.0.1 DEV** — estabilização da sincronização offline-first.
+
 
 ## Estrutura
 
@@ -64,5 +69,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 Todo registro é salvo primeiro no IndexedDB do navegador (`js/db-local.js`) e
 marcado como pendente. O módulo `js/sync.js` envia esses pendentes ao Supabase
 assim que detecta conexão (evento `online`, foco na aba, ou a cada 5 minutos),
-e baixa o que estiver no servidor. A estratégia de conflito é "o último que
-salvou vale" — suficiente para uso de uma pessoa só, em um dispositivo por vez.
+e baixa o que estiver no servidor. Registros com alteração local ainda pendente
+não são sobrescritos pelo download remoto. Quando não há pendência local, o
+`updated_at` impede que um registro remoto mais antigo substitua uma versão local
+mais recente.
