@@ -101,6 +101,10 @@ const els = {
   anualMaiorAumentoNote: document.getElementById('anual-maior-aumento-note'),
   anualMaiorReducao: document.getElementById('anual-maior-reducao'),
   anualMaiorReducaoNote: document.getElementById('anual-maior-reducao-note'),
+  anualCategoriasPeriodo: document.getElementById('anual-categorias-periodo'),
+  anualCategoriasCompHead: document.getElementById('anual-categorias-comp-head'),
+  anualCategoriasTbody: document.getElementById('anual-categorias-tbody'),
+  anualCategoriasTfoot: document.getElementById('anual-categorias-tfoot'),
   anualVazio: document.getElementById('anual-vazio'),
 
   listaPostos: document.getElementById('lista-postos'),
@@ -1161,6 +1165,38 @@ function consolidarAno(contas, abastecimentos, ano) {
   };
 }
 
+function consolidarCategoriasContas(contas, ano) {
+  const tipos = ['agua', 'luz', 'internet', 'mercado_livre'];
+  const categorias = Object.fromEntries(tipos.map((tipo) => [tipo, {
+    tipo,
+    total: 0,
+    meses: new Set(),
+  }]));
+
+  for (const row of contas) {
+    if (anoDoRegistroConta(row) !== ano) continue;
+    const tipo = row.tipo;
+    if (!categorias[tipo]) continue;
+    const mes = mesDoRegistroConta(row);
+    categorias[tipo].total += Number(row.valor_total) || 0;
+    if (mes != null) categorias[tipo].meses.add(mes);
+  }
+
+  const totalContas = tipos.reduce((acc, tipo) => acc + categorias[tipo].total, 0);
+  return tipos.map((tipo) => {
+    const item = categorias[tipo];
+    const mesesAtivos = item.meses.size;
+    return {
+      tipo,
+      label: TIPO_LABEL[tipo] || tipo,
+      total: item.total,
+      mesesAtivos,
+      mediaMensal: mesesAtivos ? item.total / mesesAtivos : 0,
+      participacao: totalContas > 0 ? (item.total / totalContas) * 100 : 0,
+    };
+  });
+}
+
 function setAnnualVariation(element, atual, anterior, anoComparacao) {
   if (!element) return;
   element.textContent = textoVariacaoAnual(atual, anterior, anoComparacao);
@@ -1282,6 +1318,48 @@ async function renderVisaoAnual() {
   els.anualMaiorReducaoNote.textContent = maiorReducao
     ? `${formatMoeda(maiorReducao.diferenca)} em relação a ${anoComparacao}`
     : 'Nenhum mês com redução';
+
+  const categoriasAtual = consolidarCategoriasContas(contas, ano);
+  const categoriasComparacao = consolidarCategoriasContas(contas, anoComparacao);
+  const categoriasComparacaoMap = new Map(categoriasComparacao.map((item) => [item.tipo, item]));
+
+  if (els.anualCategoriasPeriodo) {
+    els.anualCategoriasPeriodo.textContent = `Distribuição das contas de ${ano}, comparada com ${anoComparacao}.`;
+  }
+  if (els.anualCategoriasCompHead) {
+    els.anualCategoriasCompHead.textContent = `Dif. vs. ${anoComparacao}`;
+  }
+  if (els.anualCategoriasTbody) {
+    els.anualCategoriasTbody.innerHTML = categoriasAtual.map((item) => {
+      const referencia = categoriasComparacaoMap.get(item.tipo) || { total: 0 };
+      const diferenca = item.total - referencia.total;
+      const variacao = variacaoPercentual(item.total, referencia.total);
+      const classe = diferenca > 0 ? 'is-up' : diferenca < 0 ? 'is-down' : '';
+      const percentual = variacao === null
+        ? '—'
+        : Number.isFinite(variacao)
+          ? `${variacao > 0 ? '+' : ''}${variacao.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
+          : 'novo';
+      return `
+        <tr>
+          <td>${item.label}</td>
+          <td>${formatMoeda(item.total)}</td>
+          <td>${formatMoeda(item.mediaMensal)}${item.mesesAtivos ? ` <small>(${item.mesesAtivos} mês(es))</small>` : ''}</td>
+          <td>${item.participacao.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%</td>
+          <td class="annual-difference ${classe}">${diferenca > 0 ? '+' : ''}${formatMoeda(diferenca)} · ${percentual}</td>
+        </tr>`;
+    }).join('');
+  }
+  if (els.anualCategoriasTfoot) {
+    els.anualCategoriasTfoot.innerHTML = `
+      <tr>
+        <th>Total contas</th>
+        <th>${formatMoeda(atual.totalContas)}</th>
+        <th>—</th>
+        <th>${atual.totalContas > 0 ? '100%' : '0%'}</th>
+        <th>${textoVariacaoAnual(atual.totalContas, comparacao.totalContas, anoComparacao)}</th>
+      </tr>`;
+  }
 
   els.anualComparacaoLabel.textContent = `Comparação entre ${ano} e ${anoComparacao}.`;
   els.anualMediaContas.textContent = formatMoeda(atual.mediaContas);

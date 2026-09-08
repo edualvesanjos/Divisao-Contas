@@ -1,3 +1,13 @@
+## v0.8.2 DEV
+
+- Adicionado detalhamento anual das contas por categoria: Água, Luz, Internet e Nivel 6 Mercado Livre.
+- Cada categoria apresenta total anual, média mensal, participação percentual e diferença em relação ao ano comparado.
+- A média mensal por categoria considera apenas os meses em que a categoria possui lançamentos.
+- Mantidos os comparativos anuais avançados introduzidos na v0.8.1.
+- Corrigido o 404 do favicon com inclusão de `favicon.ico` na raiz e referência explícita no `index.html`.
+- Ambiente permanece em desenvolvimento.
+- Não requer nova migration do Supabase.
+
 ## v0.8.1 DEV
 
 - Evolui a aba **Anual** com comparação entre dois anos escolhidos pelo usuário.

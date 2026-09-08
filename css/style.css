@@ -1254,3 +1254,23 @@ button, input, select {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+
+/* =========================================================
+   Detalhamento por categoria — v0.8.2
+   ========================================================= */
+.annual-category-table td:nth-child(n+2),
+.annual-category-table th:nth-child(n+2) {
+  text-align: right;
+}
+
+.annual-category-table td small {
+  opacity: .7;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .annual-category-table {
+    min-width: 760px;
+  }
+}
