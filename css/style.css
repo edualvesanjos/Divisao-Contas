@@ -830,6 +830,31 @@ button, input, select {
   font-weight: 600;
 }
 
+.annual-comparison-highlights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.annual-highlight {
+  background: var(--color-surface);
+}
+
+.annual-comparison-table {
+  min-width: 820px;
+}
+
+.annual-difference.is-up {
+  color: var(--color-alert);
+  font-weight: 600;
+}
+
+.annual-difference.is-down {
+  color: var(--color-paid);
+  font-weight: 600;
+}
+
 @media (max-width: 520px) {
   .import-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .import-actions .btn { width: 100%; }
@@ -942,7 +967,7 @@ button, input, select {
 
 
 /* =========================================================
-   Visão anual — v0.8.0
+   Visão anual — v0.8.1
    ========================================================= */
 .annual-toolbar {
   display: flex;
@@ -950,6 +975,12 @@ button, input, select {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
+}
+
+.annual-year-selectors {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
 }
 
 .annual-eyebrow {
@@ -1160,9 +1191,47 @@ button, input, select {
   padding-top: 11px;
 }
 
+.annual-comparison-highlights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.annual-highlight {
+  background: var(--color-surface);
+}
+
+.annual-comparison-table {
+  min-width: 820px;
+}
+
+.annual-difference.is-up {
+  color: var(--color-alert);
+  font-weight: 600;
+}
+
+.annual-difference.is-down {
+  color: var(--color-paid);
+  font-weight: 600;
+}
+
 @media (max-width: 520px) {
   .annual-toolbar {
     align-items: stretch;
+    flex-direction: column;
+  }
+
+  .annual-year-selectors {
+    width: 100%;
+  }
+
+  .annual-year-field {
+    flex: 1;
+  }
+
+  .annual-comparison-highlights {
+    grid-template-columns: 1fr;
   }
 
   .annual-kpi-grid,
@@ -1183,5 +1252,284 @@ button, input, select {
   .annual-kpi-grid,
   .annual-insight-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+
+/* =========================================================
+   Detalhamento por categoria — v0.8.2
+   ========================================================= */
+.annual-category-table td:nth-child(n+2),
+.annual-category-table th:nth-child(n+2) {
+  text-align: right;
+}
+
+.annual-category-table td small {
+  opacity: .7;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .annual-category-table {
+    min-width: 760px;
+  }
+}
+
+
+/* =========================================================
+   Indicadores de combustível — v0.8.3
+   ========================================================= */
+.annual-fuel-insights {
+  margin-bottom: 14px;
+}
+
+.annual-fuel-table-wrap {
+  margin-top: 4px;
+}
+
+.annual-fuel-table td:nth-child(n+2),
+.annual-fuel-table th:nth-child(n+2) {
+  text-align: right;
+}
+
+@media (max-width: 720px) {
+  .annual-fuel-table {
+    min-width: 680px;
+  }
+}
+
+
+/* =========================================================
+   Complementação de combustível + Gerenciador de Postos — v0.8.3.2
+   ========================================================= */
+.station-input-row { display: flex; gap: 8px; align-items: center; }
+.station-input-row input { flex: 1; min-width: 0; }
+.station-manage-btn { flex: 0 0 42px; padding-inline: 0; font-size: 1.2rem; font-weight: 700; }
+.station-manager-sheet { max-width: 560px; }
+.station-add-form { display: flex; gap: 8px; margin: 14px 0; }
+.station-add-form input { flex: 1; min-width: 0; }
+.station-manager-list { display: grid; gap: 8px; max-height: 360px; overflow-y: auto; }
+.station-manager-item { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--color-border); }
+.station-manager-item > span { overflow-wrap: anywhere; }
+.station-manager-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.btn-small { padding: 6px 9px; min-height: 32px; font-size: .8rem; }
+.fuel-enrich-table { min-width: 760px; }
+.import-badge-atualizar { background: #e8f5e9; color: #1b5e20; }
+.import-badge-ja_atualizado { background: #e3f2fd; color: #0d47a1; }
+.import-badge-nao_localizado { background: #fff3e0; color: #8d4b00; }
+.import-badge-ambiguo { background: #ffebee; color: #b71c1c; }
+@media (max-width: 600px) {
+  .station-add-form { flex-direction: column; }
+  .station-manager-item { align-items: flex-start; flex-direction: column; }
+  .station-manager-actions { width: 100%; }
+}
+
+
+/* =========================================================
+   Leitura histórica / gráfico anual — v0.8.4
+   ========================================================= */
+.annual-chart-heading {
+  align-items: flex-end;
+}
+
+.annual-metric-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-primary-soft);
+}
+
+.annual-metric-btn {
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-ink-muted);
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.annual-metric-btn.is-active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.annual-chart-reading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border);
+}
+
+.annual-chart-reading span {
+  color: var(--color-ink-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.annual-chart-reading strong {
+  font-size: 0.9rem;
+}
+
+.annual-chart-reading small {
+  color: var(--color-ink-muted);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 620px) {
+  .annual-chart-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .annual-metric-switch {
+    width: 100%;
+  }
+
+  .annual-metric-btn {
+    flex: 1;
+  }
+
+  .annual-bars {
+    overflow-x: auto;
+    grid-template-columns: repeat(12, minmax(34px, 1fr));
+    padding-bottom: 4px;
+  }
+}
+
+
+/* =========================================================
+   Relatórios e compartilhamento — v0.8.5
+   ========================================================= */
+.summary-share-actions,
+.annual-report-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.summary-share-actions > div:first-child,
+.annual-report-actions > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.summary-share-actions span,
+.annual-report-actions span {
+  color: var(--color-ink-muted);
+  font-size: .74rem;
+}
+
+.summary-share-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.annual-report-actions {
+  margin: 0 0 16px;
+}
+
+@media (max-width: 620px) {
+  .summary-share-actions,
+  .annual-report-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .summary-share-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .summary-share-buttons .btn,
+  .annual-report-actions .btn {
+    width: 100%;
+  }
+}
+
+@media print {
+  body {
+    background: #fff !important;
+  }
+
+  #view-auth,
+  .app-header,
+  .bottom-nav,
+  .month-nav,
+  #btn-novo,
+  .annual-report-actions,
+  .summary-share-actions,
+  .toast-container,
+  .modal {
+    display: none !important;
+  }
+
+  #view-app,
+  .app-main,
+  #tab-anual {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #tab-contas,
+  #tab-combustivel,
+  #tab-resumo,
+  #tab-config {
+    display: none !important;
+  }
+
+  #tab-anual {
+    color: #111;
+  }
+
+  .annual-section,
+  .annual-kpi,
+  .annual-insight {
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  .annual-section {
+    border: 1px solid #ddd;
+    margin-top: 12px;
+  }
+
+  .annual-metric-switch {
+    display: none !important;
+  }
+
+  .annual-table-wrap {
+    overflow: visible !important;
+  }
+
+  .annual-table,
+  .annual-comparison-table,
+  .annual-category-table {
+    min-width: 0 !important;
+    font-size: 9pt;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
   }
 }

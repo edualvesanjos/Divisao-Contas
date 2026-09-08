@@ -1,19 +1,21 @@
 // Service worker mínimo: cacheia o "app shell" para abrir offline.
 // A sincronização de dados em si é feita por js/sync.js, não aqui.
 
-const CACHE_NAME = 'contas-combustivel-v0.8.0';
+const CACHE_NAME = 'contas-combustivel-v0.8.6';
 const APP_SHELL = [
   './',
   './index.html',
   './css/style.css',
   './js/app.js',
   './js/import-xlsx.js',
+  './js/import-fuel-enrichment.js',
   './js/auth.js',
   './js/db-local.js',
   './js/sync.js',
   './js/environment.js',
   './js/supabase-client.js',
   './manifest.json',
+  './favicon.ico',
   './package.json',
 ];
 

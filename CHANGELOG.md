@@ -1,3 +1,104 @@
+## v0.8.6 PROD
+
+- Fecha em produção a série v0.8.x a partir da v0.8.6 DEV validada.
+- Altera o ambiente da aplicação para `production`.
+- Mantém integralmente as funcionalidades e correções validadas na v0.8.6 DEV.
+- Não requer nova migration no Supabase.
+- Recomenda-se executar `supabase/verificar_release.sql` no Supabase PROD antes da publicação.
+
+## v0.8.6 DEV
+
+- Consolida a série v0.8.x antes do próximo fechamento de produção.
+- Não adiciona novas funcionalidades de negócio.
+- Atualiza `supabase/schema.sql` para refletir o schema completo atualmente exigido pelo aplicativo.
+- Adiciona `supabase/verificar_release.sql`, consulta somente leitura para comparar DEV/PROD antes de releases e detectar colunas, RLS, políticas e constraints ausentes.
+- Adiciona `docs/TESTES_v0.8.6.md` com checklist de regressão de autenticação, sincronização, lançamentos, fechamento, importações, postos, imagem do resumo, visão anual e PWA.
+- Mantém todas as funcionalidades validadas até a v0.8.5.
+- Não requer nova migration no Supabase para ambientes já atualizados pelas migrations 002–007.
+- Cache do PWA atualizado para v0.8.6.
+
+## v0.8.5 DEV
+
+- Adiciona **Compartilhar resumo** na aba Resumo Mensal.
+- Gera uma imagem PNG limpa do mês, sem menus ou campos de edição, pronta para encaminhamento ao segundo participante.
+- A imagem inclui competência, totais de contas e combustível, valores rateados, litros, valor a transferir e situação do fechamento.
+- Adiciona compartilhamento nativo da imagem quando suportado pelo dispositivo/navegador, com fallback automático para download do PNG.
+- Adiciona botão **Baixar PNG** para salvar diretamente a imagem do resumo.
+- Adiciona **Imprimir / Salvar PDF** na Visão Anual, com layout específico para impressão.
+- O relatório anual preserva totais, comparativos, evolução mensal, categorias e indicadores de combustível.
+- Não requer nova migration no Supabase.
+- Cache do PWA atualizado para v0.8.5.
+
+## v0.8.4 DEV
+
+- Evolui a leitura histórica da aba **Anual**.
+- Adiciona alternância do gráfico entre **Totais**, **Rateados** e **Litros**.
+- Em Totais, compara mensalmente Contas e Combustível.
+- Em Rateados, compara mensalmente os valores rateados de Contas e Combustível.
+- Em Litros, separa mensalmente Gasolina e Etanol, sem estimar dados ausentes.
+- Adiciona leitura automática do maior e do menor mês com dados para a métrica selecionada.
+- Mantém os comparativos anuais, detalhamento por categoria e indicadores de combustível já validados.
+- Melhora o comportamento do gráfico em telas menores, com controles adaptáveis e rolagem horizontal quando necessária.
+- Não requer nova migration no Supabase.
+- Cache do PWA atualizado para v0.8.4.
+
+## v0.8.3.2.1 DEV
+
+- Corrige erro de sintaxe `await is a reserved identifier` ao abrir a aplicação.
+- Torna assíncrono o manipulador de **Novo**, permitindo aguardar o carregamento dos postos antes de abrir Novo Abastecimento.
+- Mantém as correções da v0.8.3.2 para fechamento independente do Gerenciador de Postos e seleção explícita de postos.
+- Não requer nova migration no Supabase.
+
+## v0.8.3.2 DEV
+
+- Corrige o fechamento do Gerenciador de Postos para não fechar o modal de Novo Abastecimento.
+- Substitui a sugestão via `datalist` por uma seleção explícita de postos, tornando a lista visível e selecionável de forma consistente entre navegadores.
+- Atualiza a lista ao abrir ou editar um abastecimento e preserva postos históricos que não estejam mais na lista gerenciada.
+- Mantém a migration 007, sem nova alteração de schema.
+
+## v0.8.3.1 DEV
+
+- Adiciona importação complementar de abastecimentos por **data + valor total**, sem criar novos lançamentos.
+- A complementação atualiza somente tipo de combustível, litros e posto; valor, percentual, rateio e data existentes são preservados.
+- Normaliza `Dt Clean` para Gasolina e `Posto Big` para `Posto Big Atibaia`.
+- Exibe análise prévia com registros a atualizar, já completos, não localizados e ambiguidades.
+- Adiciona **Gerenciar postos** no cadastro de combustível, com inclusão, renomeação e exclusão da lista sem alterar abastecimentos históricos.
+- Corrige o carregamento da lista de postos após sincronização inicial e sincronização forçada.
+- Adiciona `007_postos_gerenciados.sql` para sincronizar a lista gerenciada de postos entre dispositivos.
+- Mantém ambiente de desenvolvimento.
+
+## v0.8.3 DEV
+
+- Adiciona **Indicadores de combustível** à Visão Anual.
+- Exibe litros no ano, média mensal de litros, gasto médio por abastecimento e preço médio ponderado por litro quando há dados suficientes.
+- Separa Gasolina e Etanol em tabela anual com quantidade de abastecimentos, litros, gasto e preço médio por litro; registros sem tipo informado aparecem em linha própria quando existirem.
+- Os cálculos de litros e preço por litro consideram somente registros com quantidade de litros válida, evitando estimativas sobre dados históricos incompletos.
+- Mantém o combustível anual associado ao mês real do abastecimento, sem alterar a regra especial do Resumo Mensal.
+- Garante referência explícita ao `favicon.ico` no `index.html` e adiciona o ícone ao cache do PWA.
+- Ambiente permanece em desenvolvimento.
+- Não requer nova migration do Supabase.
+
+## v0.8.2 DEV
+
+- Adicionado detalhamento anual das contas por categoria: Água, Luz, Internet e Nivel 6 Mercado Livre.
+- Cada categoria apresenta total anual, média mensal, participação percentual e diferença em relação ao ano comparado.
+- A média mensal por categoria considera apenas os meses em que a categoria possui lançamentos.
+- Mantidos os comparativos anuais avançados introduzidos na v0.8.1.
+- Corrigido o 404 do favicon com inclusão de `favicon.ico` na raiz e referência explícita no `index.html`.
+- Ambiente permanece em desenvolvimento.
+- Não requer nova migration do Supabase.
+
+## v0.8.1 DEV
+
+- Evolui a aba **Anual** com comparação entre dois anos escolhidos pelo usuário.
+- Adiciona seletor **Comparar com**, independente do ano base.
+- Os indicadores anuais passam a exibir diferença absoluta em R$ e variação percentual em relação ao ano selecionado para comparação.
+- Adiciona tabela mensal comparativa com total dos dois anos, diferença total, diferença percentual, diferença de Contas e diferença de Combustível.
+- Destaca automaticamente o mês com maior aumento e o mês com maior redução do gasto total.
+- Mantém a Visão Anual baseada no mês real dos lançamentos e preserva todas as regras do Resumo Mensal.
+- Ambiente retornado para **development**.
+- Não requer nova migration no Supabase.
+
 ## v0.8.0 PROD
 
 - Versão de produção fechada a partir da **v0.8.0.1 DEV validada**.

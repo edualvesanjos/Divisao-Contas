@@ -6,6 +6,7 @@
   <title>Registro de Contas &amp; Combustível</title>
   <meta name="theme-color" content="#16302D" />
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="./favicon.ico" sizes="any" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -176,6 +177,17 @@
           Nenhum lançamento neste mês ainda.
         </p>
 
+        <div class="summary-share-actions">
+          <div>
+            <strong>Compartilhar resumo</strong>
+            <span>Gere uma imagem limpa do mês para encaminhar ao outro participante.</span>
+          </div>
+          <div class="summary-share-buttons">
+            <button type="button" class="btn btn-primary" id="btn-compartilhar-resumo">Compartilhar imagem</button>
+            <button type="button" class="btn btn-secondary" id="btn-baixar-resumo">Baixar PNG</button>
+          </div>
+        </div>
+
         <hr class="config-divider" />
 
         <h3 class="resumo-subtitulo">Fechamento do mês</h3>
@@ -206,10 +218,24 @@
             <span class="annual-eyebrow">Histórico consolidado</span>
             <h2 class="annual-title">Visão anual</h2>
           </div>
-          <label class="annual-year-field">
-            <span>Ano</span>
-            <select id="anual-ano"></select>
-          </label>
+          <div class="annual-year-selectors">
+            <label class="annual-year-field">
+              <span>Ano base</span>
+              <select id="anual-ano"></select>
+            </label>
+            <label class="annual-year-field">
+              <span>Comparar com</span>
+              <select id="anual-ano-comparacao"></select>
+            </label>
+          </div>
+        </div>
+
+        <div class="annual-report-actions">
+          <div>
+            <strong>Relatório anual</strong>
+            <span>Versão consolidada para impressão ou salvamento em PDF pelo navegador.</span>
+          </div>
+          <button type="button" class="btn btn-secondary" id="btn-imprimir-anual">Imprimir / Salvar PDF</button>
         </div>
 
         <div class="annual-kpi-grid">
@@ -236,17 +262,27 @@
         </div>
 
         <section class="annual-section">
-          <div class="annual-section-heading">
+          <div class="annual-section-heading annual-chart-heading">
             <div>
               <h3>Evolução mensal</h3>
-              <p>Valores totais por mês do ano selecionado.</p>
+              <p id="anual-grafico-descricao">Valores totais por mês do ano selecionado.</p>
+            </div>
+            <div class="annual-metric-switch" role="group" aria-label="Métrica do gráfico anual">
+              <button type="button" class="annual-metric-btn is-active" data-annual-metric="total">Totais</button>
+              <button type="button" class="annual-metric-btn" data-annual-metric="rateado">Rateados</button>
+              <button type="button" class="annual-metric-btn" data-annual-metric="litros">Litros</button>
             </div>
           </div>
-          <div class="annual-legend" aria-hidden="true">
+          <div class="annual-legend" id="anual-grafico-legenda" aria-hidden="true">
             <span><i class="annual-legend-contas"></i> Contas</span>
             <span><i class="annual-legend-fuel"></i> Combustível</span>
           </div>
-          <div id="anual-bars" class="annual-bars" aria-label="Evolução mensal de contas e combustível"></div>
+          <div id="anual-bars" class="annual-bars" aria-label="Evolução mensal"></div>
+          <div class="annual-chart-reading">
+            <span>Leitura do período</span>
+            <strong id="anual-grafico-destaque">—</strong>
+            <small id="anual-grafico-destaque-note">—</small>
+          </div>
         </section>
 
         <section class="annual-section">
@@ -269,6 +305,118 @@
               </thead>
               <tbody id="anual-tbody"></tbody>
               <tfoot id="anual-tfoot"></tfoot>
+            </table>
+          </div>
+        </section>
+
+        <section class="annual-section">
+          <div class="annual-section-heading">
+            <div>
+              <h3>Comparação entre anos</h3>
+              <p id="anual-comparativo-periodo">Diferenças mensais entre os anos selecionados.</p>
+            </div>
+          </div>
+
+          <div class="annual-comparison-highlights">
+            <article class="annual-insight annual-highlight">
+              <span>Maior aumento mensal</span>
+              <strong id="anual-maior-aumento">—</strong>
+              <small id="anual-maior-aumento-note">—</small>
+            </article>
+            <article class="annual-insight annual-highlight">
+              <span>Maior redução mensal</span>
+              <strong id="anual-maior-reducao">—</strong>
+              <small id="anual-maior-reducao-note">—</small>
+            </article>
+          </div>
+
+          <div class="annual-table-wrap">
+            <table class="annual-table annual-comparison-table">
+              <thead>
+                <tr>
+                  <th>Mês</th>
+                  <th id="anual-comp-head-base">Ano base</th>
+                  <th id="anual-comp-head-ref">Comparação</th>
+                  <th>Dif. total</th>
+                  <th>Dif. %</th>
+                  <th>Dif. contas</th>
+                  <th>Dif. combustível</th>
+                </tr>
+              </thead>
+              <tbody id="anual-comparativo-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="annual-section">
+          <div class="annual-section-heading">
+            <div>
+              <h3>Detalhamento por categoria</h3>
+              <p id="anual-categorias-periodo">Distribuição anual das contas por categoria.</p>
+            </div>
+          </div>
+          <div class="annual-table-wrap">
+            <table class="annual-table annual-category-table">
+              <thead>
+                <tr>
+                  <th>Categoria</th>
+                  <th>Total anual</th>
+                  <th>Média mensal</th>
+                  <th>Participação</th>
+                  <th id="anual-categorias-comp-head">Dif. comparativo</th>
+                </tr>
+              </thead>
+              <tbody id="anual-categorias-tbody"></tbody>
+              <tfoot id="anual-categorias-tfoot"></tfoot>
+            </table>
+          </div>
+        </section>
+
+
+        <section class="annual-section">
+          <div class="annual-section-heading">
+            <div>
+              <h3>Indicadores de combustível</h3>
+              <p id="anual-combustivel-periodo">Consumo e custo dos abastecimentos do ano selecionado.</p>
+            </div>
+          </div>
+
+          <div class="annual-insight-grid annual-fuel-insights">
+            <article class="annual-insight">
+              <span>Litros no ano</span>
+              <strong id="anual-litros-total">0 L</strong>
+              <small id="anual-litros-total-note">—</small>
+            </article>
+            <article class="annual-insight">
+              <span>Média mensal de litros</span>
+              <strong id="anual-litros-media">0 L</strong>
+              <small id="anual-litros-media-note">—</small>
+            </article>
+            <article class="annual-insight">
+              <span>Gasto médio por abastecimento</span>
+              <strong id="anual-gasto-medio-abastecimento">R$ 0,00</strong>
+              <small id="anual-gasto-medio-abastecimento-note">—</small>
+            </article>
+            <article class="annual-insight">
+              <span>Preço médio por litro</span>
+              <strong id="anual-preco-medio-litro">—</strong>
+              <small id="anual-preco-medio-litro-note">—</small>
+            </article>
+          </div>
+
+          <div class="annual-table-wrap annual-fuel-table-wrap">
+            <table class="annual-table annual-fuel-table">
+              <thead>
+                <tr>
+                  <th>Combustível</th>
+                  <th>Abastecimentos</th>
+                  <th>Litros</th>
+                  <th>Gasto</th>
+                  <th>Preço médio/L</th>
+                </tr>
+              </thead>
+              <tbody id="anual-combustivel-tbody"></tbody>
+              <tfoot id="anual-combustivel-tfoot"></tfoot>
             </table>
           </div>
         </section>
@@ -366,6 +514,30 @@
             <div id="import-xlsx-errors" class="import-errors" hidden></div>
             <div id="import-xlsx-warnings" class="import-warnings" hidden></div>
             <div id="import-xlsx-preview" class="import-preview"></div>
+          </div>
+        </section>
+
+        <hr class="config-divider" />
+
+        <section class="import-section" aria-labelledby="fuel-enrich-title">
+          <h2 class="config-section-title" id="fuel-enrich-title">Complementar dados dos abastecimentos</h2>
+          <p class="config-hint">
+            Use a planilha de abastecimentos para preencher <strong>tipo de combustível, litros e posto</strong> nos lançamentos já existentes.
+            A correspondência exige <strong>mesma data e mesmo valor total</strong>; nenhum novo abastecimento é criado.
+          </p>
+          <label class="field">
+            <span class="field-label">Arquivo XLS/XLSX de abastecimentos</span>
+            <input type="file" id="fuel-enrich-file" accept=".xlsx,.xls" />
+          </label>
+          <div class="import-actions">
+            <button type="button" id="btn-analisar-fuel-enrich" class="btn btn-ghost">Analisar complementação</button>
+            <button type="button" id="btn-aplicar-fuel-enrich" class="btn btn-primary" disabled>Atualizar correspondências</button>
+          </div>
+          <div id="fuel-enrich-result" class="import-result" hidden aria-live="polite">
+            <div id="fuel-enrich-status" class="import-status"></div>
+            <div id="fuel-enrich-summary" class="import-summary"></div>
+            <div id="fuel-enrich-warnings" class="import-warnings" hidden></div>
+            <div id="fuel-enrich-preview" class="import-preview"></div>
           </div>
         </section>
       </section>
@@ -475,8 +647,12 @@
 
         <label class="field">
           <span class="field-label">Posto</span>
-          <input type="text" id="combustivel-posto" list="lista-postos" autocomplete="off" />
-          <datalist id="lista-postos"></datalist>
+          <span class="station-input-row">
+            <select id="combustivel-posto" aria-label="Posto">
+              <option value="">Selecione um posto</option>
+            </select>
+            <button type="button" id="btn-gerenciar-postos" class="btn btn-ghost station-manage-btn" aria-label="Gerenciar postos" title="Gerenciar postos">+</button>
+          </span>
         </label>
 
         <div class="modal-actions">
@@ -485,6 +661,22 @@
           <button type="submit" class="btn btn-primary">Salvar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal: gerenciar postos -->
+  <div id="modal-postos" class="modal" hidden>
+    <div class="modal-sheet station-manager-sheet">
+      <h2 class="modal-title">Gerenciar postos</h2>
+      <p class="config-hint">A lista facilita novos lançamentos. Renomear ou excluir um posto não altera abastecimentos antigos.</p>
+      <form id="form-novo-posto" class="station-add-form">
+        <input type="text" id="novo-posto-nome" maxlength="100" placeholder="Nome do posto" required autocomplete="off" />
+        <button type="submit" class="btn btn-primary">Adicionar</button>
+      </form>
+      <div id="lista-postos-gerenciados" class="station-manager-list"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal>Fechar</button>
+      </div>
     </div>
   </div>
 

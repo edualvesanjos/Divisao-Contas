@@ -8,6 +8,7 @@ import { supabase } from './supabase-client.js';
 import { syncAll, watchConnectivity, isOnline } from './sync.js';
 import { APP_ENVIRONMENT, isDevelopment } from './environment.js';
 import { analisarPlanilhaHistorica } from './import-xlsx.js';
+import { lerPlanilhaComplementarCombustivel, classificarComplementoCombustivel } from './import-fuel-enrichment.js';
 
 const els = {
   viewAuth: document.getElementById('view-auth'),
@@ -63,6 +64,9 @@ const els = {
   resumoVazio: document.getElementById('resumo-vazio'),
   resumoTotalLitros: document.getElementById('resumo-total-litros'),
   resumoLitrosPorTipo: document.getElementById('resumo-litros-por-tipo'),
+  btnCompartilharResumo: document.getElementById('btn-compartilhar-resumo'),
+  btnBaixarResumo: document.getElementById('btn-baixar-resumo'),
+  btnImprimirAnual: document.getElementById('btn-imprimir-anual'),
 
   formFechamento: document.getElementById('form-fechamento'),
   fechamentoContasPago: document.getElementById('fechamento-contas-pago'),
@@ -72,6 +76,7 @@ const els = {
   resumoPercentualFechado: document.getElementById('resumo-percentual-fechado'),
 
   anualAno: document.getElementById('anual-ano'),
+  anualAnoComparacao: document.getElementById('anual-ano-comparacao'),
   anualTotalContas: document.getElementById('anual-total-contas'),
   anualTotalCombustivel: document.getElementById('anual-total-combustivel'),
   anualTotalRateado: document.getElementById('anual-total-rateado'),
@@ -81,6 +86,11 @@ const els = {
   anualTotalRateadoVariacao: document.getElementById('anual-total-rateado-variacao'),
   anualTotalGeralVariacao: document.getElementById('anual-total-geral-variacao'),
   anualBars: document.getElementById('anual-bars'),
+  anualGraficoDescricao: document.getElementById('anual-grafico-descricao'),
+  anualGraficoLegenda: document.getElementById('anual-grafico-legenda'),
+  anualGraficoDestaque: document.getElementById('anual-grafico-destaque'),
+  anualGraficoDestaqueNote: document.getElementById('anual-grafico-destaque-note'),
+  anualMetricButtons: document.querySelectorAll('[data-annual-metric]'),
   anualTbody: document.getElementById('anual-tbody'),
   anualTfoot: document.getElementById('anual-tfoot'),
   anualComparacaoLabel: document.getElementById('anual-comparacao-label'),
@@ -92,9 +102,37 @@ const els = {
   anualMaiorMesNote: document.getElementById('anual-maior-mes-note'),
   anualMesesAtivos: document.getElementById('anual-meses-ativos'),
   anualMesesAtivosNote: document.getElementById('anual-meses-ativos-note'),
+  anualComparativoPeriodo: document.getElementById('anual-comparativo-periodo'),
+  anualCompHeadBase: document.getElementById('anual-comp-head-base'),
+  anualCompHeadRef: document.getElementById('anual-comp-head-ref'),
+  anualComparativoTbody: document.getElementById('anual-comparativo-tbody'),
+  anualMaiorAumento: document.getElementById('anual-maior-aumento'),
+  anualMaiorAumentoNote: document.getElementById('anual-maior-aumento-note'),
+  anualMaiorReducao: document.getElementById('anual-maior-reducao'),
+  anualMaiorReducaoNote: document.getElementById('anual-maior-reducao-note'),
+  anualCategoriasPeriodo: document.getElementById('anual-categorias-periodo'),
+  anualCategoriasCompHead: document.getElementById('anual-categorias-comp-head'),
+  anualCategoriasTbody: document.getElementById('anual-categorias-tbody'),
+  anualCategoriasTfoot: document.getElementById('anual-categorias-tfoot'),
+  anualCombustivelPeriodo: document.getElementById('anual-combustivel-periodo'),
+  anualLitrosTotal: document.getElementById('anual-litros-total'),
+  anualLitrosTotalNote: document.getElementById('anual-litros-total-note'),
+  anualLitrosMedia: document.getElementById('anual-litros-media'),
+  anualLitrosMediaNote: document.getElementById('anual-litros-media-note'),
+  anualGastoMedioAbastecimento: document.getElementById('anual-gasto-medio-abastecimento'),
+  anualGastoMedioAbastecimentoNote: document.getElementById('anual-gasto-medio-abastecimento-note'),
+  anualPrecoMedioLitro: document.getElementById('anual-preco-medio-litro'),
+  anualPrecoMedioLitroNote: document.getElementById('anual-preco-medio-litro-note'),
+  anualCombustivelTbody: document.getElementById('anual-combustivel-tbody'),
+  anualCombustivelTfoot: document.getElementById('anual-combustivel-tfoot'),
   anualVazio: document.getElementById('anual-vazio'),
 
-  listaPostos: document.getElementById('lista-postos'),
+  campoPosto: document.getElementById('combustivel-posto'),
+  btnGerenciarPostos: document.getElementById('btn-gerenciar-postos'),
+  modalPostos: document.getElementById('modal-postos'),
+  formNovoPosto: document.getElementById('form-novo-posto'),
+  novoPostoNome: document.getElementById('novo-posto-nome'),
+  listaPostosGerenciados: document.getElementById('lista-postos-gerenciados'),
 
   listaContas: document.getElementById('lista-contas'),
   listaContasVazia: document.getElementById('lista-contas-vazia'),
@@ -133,14 +171,25 @@ const els = {
   importXlsxErrors: document.getElementById('import-xlsx-errors'),
   importXlsxWarnings: document.getElementById('import-xlsx-warnings'),
   importXlsxPreview: document.getElementById('import-xlsx-preview'),
+
+  fuelEnrichFile: document.getElementById('fuel-enrich-file'),
+  btnAnalisarFuelEnrich: document.getElementById('btn-analisar-fuel-enrich'),
+  btnAplicarFuelEnrich: document.getElementById('btn-aplicar-fuel-enrich'),
+  fuelEnrichResult: document.getElementById('fuel-enrich-result'),
+  fuelEnrichStatus: document.getElementById('fuel-enrich-status'),
+  fuelEnrichSummary: document.getElementById('fuel-enrich-summary'),
+  fuelEnrichWarnings: document.getElementById('fuel-enrich-warnings'),
+  fuelEnrichPreview: document.getElementById('fuel-enrich-preview'),
 };
 
 let currentUser = null;
 let activeTab = 'contas';
 let isSignUpMode = false;
 let editingId = null;
-let settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50 };
+let settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50, postos_gerenciados: null };
 let importAnalysis = null;
+let annualMetric = 'total';
+let fuelEnrichAnalysis = null;
 
 if (els.environmentBadge) {
   els.environmentBadge.hidden = !isDevelopment;
@@ -227,10 +276,18 @@ async function enterApp(user) {
   }
 
   syncAll(currentUser.id)
-    .then(() => refreshActiveView())
+    .then(async () => {
+      await loadSettings();
+      await garantirPostosGerenciados();
+      await atualizarListaPostos();
+      await refreshActiveView();
+    })
     .catch((err) => console.error('[sync] falha na sincronização inicial:', err));
 
-  watchConnectivity(() => currentUser?.id, () => refreshActiveView());
+  watchConnectivity(() => currentUser?.id, async () => {
+    await atualizarListaPostos();
+    await refreshActiveView();
+  });
 }
 
 async function loadSettings() {
@@ -240,9 +297,10 @@ async function loadSettings() {
     settings = {
       numero_participantes_padrao: record.numero_participantes_padrao ?? 2,
       percentual_combustivel_padrao: record.percentual_combustivel_padrao ?? 50,
+      postos_gerenciados: Array.isArray(record.postos_gerenciados) ? record.postos_gerenciados : null,
     };
   } else {
-    settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50 };
+    settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50, postos_gerenciados: null };
   }
   els.configParticipantes.value = settings.numero_participantes_padrao;
   els.configPercentual.value = settings.percentual_combustivel_padrao;
@@ -253,6 +311,7 @@ els.formConfig.addEventListener('submit', async (event) => {
   if (!currentUser) return;
 
   settings = {
+    ...settings,
     numero_participantes_padrao: Number(els.configParticipantes.value),
     percentual_combustivel_padrao: Number(els.configPercentual.value),
   };
@@ -277,6 +336,9 @@ els.btnForcarSync.addEventListener('click', async () => {
     await localDb.markAllForResync('configuracoes');
     await localDb.markAllForResync('fechamentos_mensais');
     await syncAll(currentUser.id);
+    await loadSettings();
+    await garantirPostosGerenciados();
+    await atualizarListaPostos();
     await refreshActiveView();
     showToast('Sincronização forçada concluída.');
   } catch (err) {
@@ -645,7 +707,7 @@ async function importarDadosAnalisados() {
   showToast(`${novos} novo(s) importado(s); ${duplicados} duplicado(s) ignorado(s); ${conflitos} conflito(s) preservado(s).`);
   await refreshActiveView();
   triggerBackgroundSync();
-  atualizarListaPostos();
+  await atualizarListaPostos();
 }
 
 if (els.importXlsxFile) els.importXlsxFile.addEventListener('change', resetImportAnalysis);
@@ -694,13 +756,108 @@ if (els.btnImportarXlsx) {
       if (els.importXlsxFile) els.importXlsxFile.value = '';
     } catch (err) {
       console.error('[import] falha ao importar XLSX:', err);
-      showToast('Falha ao importar. Verifique os avisos da análise e a configuração do Supabase DEV.', 'error');
+      showToast('Falha ao importar. Verifique os avisos da análise e a configuração do Supabase.', 'error');
       els.btnImportarXlsx.disabled = false;
     } finally {
       els.btnImportarXlsx.textContent = 'Importar dados analisados';
     }
   });
 }
+
+
+function renderFuelEnrichAnalysis(analysis) {
+  if (!els.fuelEnrichResult) return;
+  const s = analysis.summary;
+  els.fuelEnrichResult.hidden = false;
+  els.fuelEnrichStatus.innerHTML = `<strong>${s.atualizar} correspondência(s) pronta(s) para atualização.</strong> A chave usada é exclusivamente data + valor total.`;
+  els.fuelEnrichSummary.innerHTML = `
+    <div><strong>${s.total}</strong><span>registros analisados</span></div>
+    <div><strong>${s.atualizar}</strong><span>atualizar</span></div>
+    <div><strong>${s.ja_atualizado}</strong><span>já completos</span></div>
+    <div><strong>${s.nao_localizado}</strong><span>não localizados</span></div>
+    <div><strong>${s.ambiguo}</strong><span>ambiguidades</span></div>`;
+  const warnings = [...(analysis.warnings || [])];
+  els.fuelEnrichWarnings.hidden = warnings.length === 0;
+  els.fuelEnrichWarnings.innerHTML = warnings.length ? `<strong>Avisos</strong><ul>${warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join('')}</ul>` : '';
+
+  const statusLabel = { atualizar: 'Atualizar', ja_atualizado: 'Já completo', nao_localizado: 'Não localizado', ambiguo: 'Ambíguo' };
+  els.fuelEnrichPreview.innerHTML = `
+    <div class="table-scroll"><table class="preview-table fuel-enrich-table">
+      <thead><tr><th>Status</th><th>Data</th><th>Valor</th><th>Tipo</th><th>Litros</th><th>Posto</th></tr></thead>
+      <tbody>${analysis.rows.map((r) => `<tr>
+        <td><span class="import-badge import-badge-${r._status}">${statusLabel[r._status]}</span></td>
+        <td>${formatData(r.data)}</td><td>${formatMoeda(r.valor_total)}</td>
+        <td>${escapeHtml(r.tipo_combustivel === 'etanol' ? 'Etanol' : r.tipo_combustivel === 'gasolina' ? 'Gasolina' : '—')}</td>
+        <td>${r.litros == null ? '—' : `${Number(r.litros).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 3})} L`}</td>
+        <td>${escapeHtml(r.posto || '—')}</td></tr>`).join('')}</tbody>
+    </table></div>`;
+  els.btnAplicarFuelEnrich.disabled = s.atualizar === 0;
+}
+
+function resetFuelEnrichAnalysis() {
+  fuelEnrichAnalysis = null;
+  if (els.fuelEnrichResult) els.fuelEnrichResult.hidden = true;
+  if (els.btnAplicarFuelEnrich) els.btnAplicarFuelEnrich.disabled = true;
+}
+
+if (els.fuelEnrichFile) els.fuelEnrichFile.addEventListener('change', resetFuelEnrichAnalysis);
+
+if (els.btnAnalisarFuelEnrich) els.btnAnalisarFuelEnrich.addEventListener('click', async () => {
+  const file = els.fuelEnrichFile?.files?.[0];
+  if (!file) { showToast('Selecione primeiro a planilha de abastecimentos.', 'error'); return; }
+  els.btnAnalisarFuelEnrich.disabled = true;
+  els.btnAnalisarFuelEnrich.textContent = 'Analisando...';
+  try {
+    const parsed = await lerPlanilhaComplementarCombustivel(file);
+    const existentes = (await localDb.listAll('abastecimentos')).filter((r) => r.user_id === currentUser.id);
+    fuelEnrichAnalysis = classificarComplementoCombustivel(parsed, existentes);
+    renderFuelEnrichAnalysis(fuelEnrichAnalysis);
+    showToast('Complementação analisada. Confira as correspondências.');
+  } catch (err) {
+    console.error('[fuel-enrich] falha na análise:', err);
+    resetFuelEnrichAnalysis();
+    showToast(err.message || 'Não foi possível analisar a planilha.', 'error');
+  } finally {
+    els.btnAnalisarFuelEnrich.disabled = false;
+    els.btnAnalisarFuelEnrich.textContent = 'Analisar complementação';
+  }
+});
+
+if (els.btnAplicarFuelEnrich) els.btnAplicarFuelEnrich.addEventListener('click', async () => {
+  if (!fuelEnrichAnalysis || !currentUser) return;
+  const rows = fuelEnrichAnalysis.rows.filter((r) => r._status === 'atualizar');
+  if (!rows.length) return;
+  if (!window.confirm(`Atualizar tipo de combustível, litros e posto de ${rows.length} lançamento(s) correspondentes? Data, valor e rateio serão preservados.`)) return;
+  els.btnAplicarFuelEnrich.disabled = true;
+  els.btnAplicarFuelEnrich.textContent = 'Atualizando...';
+  try {
+    for (const row of rows) {
+      const fields = {};
+      if (row.tipo_combustivel) fields.tipo_combustivel = row.tipo_combustivel;
+      if (row.litros != null) fields.litros = row.litros;
+      if (row.posto) fields.posto = row.posto;
+      await localDb.update('abastecimentos', row._existingId, fields);
+    }
+    // Incorpora os postos encontrados à lista gerenciada sem alterar históricos antigos.
+    await garantirPostosGerenciados();
+    const novosPostos = rows.map((r) => r.posto).filter(Boolean);
+    if (novosPostos.length) await salvarPostosGerenciados([...(settings.postos_gerenciados || []), ...novosPostos]);
+    if (isOnline()) await syncAll(currentUser.id);
+    await atualizarListaPostos();
+    await refreshActiveView();
+    showToast(`${rows.length} abastecimento(s) complementado(s) com sucesso.`);
+    // Reclassifica para mostrar que agora já estão completos.
+    const existentes = (await localDb.listAll('abastecimentos')).filter((r) => r.user_id === currentUser.id);
+    fuelEnrichAnalysis = classificarComplementoCombustivel(fuelEnrichAnalysis, existentes);
+    renderFuelEnrichAnalysis(fuelEnrichAnalysis);
+  } catch (err) {
+    console.error('[fuel-enrich] falha ao aplicar:', err);
+    showToast('Falha ao complementar abastecimentos. Verifique o console e a sincronização.', 'error');
+  } finally {
+    els.btnAplicarFuelEnrich.textContent = 'Atualizar correspondências';
+    els.btnAplicarFuelEnrich.disabled = !fuelEnrichAnalysis?.summary?.atualizar;
+  }
+});
 
 async function excluirDadosImportados() {
   if (!currentUser) return;
@@ -828,11 +985,133 @@ async function refreshActiveView() {
   }
 }
 
-async function atualizarListaPostos() {
-  const rows = await localDb.listAll('abastecimentos');
-  const postos = [...new Set(rows.map((r) => r.posto).filter(Boolean))].sort();
-  els.listaPostos.innerHTML = postos.map((p) => `<option value="${p}"></option>`).join('');
+function normalizarNomePosto(nome) {
+  const clean = String(nome ?? '').trim().replace(/\s+/g, ' ');
+  if (clean.toLowerCase() === 'posto big') return 'Posto Big Atibaia';
+  return clean;
 }
+
+async function postosDosAbastecimentos() {
+  const rows = await localDb.listAll('abastecimentos');
+  return [...new Set(rows
+    .filter((r) => r.user_id === currentUser?.id && !r.deleted)
+    .map((r) => normalizarNomePosto(r.posto))
+    .filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+async function garantirPostosGerenciados() {
+  if (!currentUser || Array.isArray(settings.postos_gerenciados)) return;
+  settings.postos_gerenciados = await postosDosAbastecimentos();
+  await localDb.putWithId('configuracoes', currentUser.id, {
+    user_id: currentUser.id,
+    numero_participantes_padrao: settings.numero_participantes_padrao,
+    percentual_combustivel_padrao: settings.percentual_combustivel_padrao,
+    postos_gerenciados: settings.postos_gerenciados,
+  });
+  if (isOnline()) await syncAll(currentUser.id);
+}
+
+async function salvarPostosGerenciados(postos) {
+  if (!currentUser) return;
+  settings.postos_gerenciados = [...new Set(postos.map(normalizarNomePosto).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  await localDb.putWithId('configuracoes', currentUser.id, {
+    user_id: currentUser.id,
+    numero_participantes_padrao: settings.numero_participantes_padrao,
+    percentual_combustivel_padrao: settings.percentual_combustivel_padrao,
+    postos_gerenciados: settings.postos_gerenciados,
+  });
+  await atualizarListaPostos();
+  renderGerenciadorPostos();
+  if (isOnline()) await syncAll(currentUser.id);
+}
+
+async function atualizarListaPostos() {
+  if (!els.campoPosto) return;
+
+  const valorAtual = els.campoPosto.value || '';
+  const postos = Array.isArray(settings.postos_gerenciados) ? settings.postos_gerenciados : [];
+  const opcoes = [...postos];
+
+  // Preserva um posto histórico ao editar um abastecimento, mesmo que ele
+  // não faça mais parte da lista gerenciada.
+  if (valorAtual && !opcoes.some((p) => p.toLowerCase() === valorAtual.toLowerCase())) {
+    opcoes.push(valorAtual);
+  }
+
+  els.campoPosto.innerHTML = [
+    '<option value="">Selecione um posto</option>',
+    ...opcoes
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+      .map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`),
+  ].join('');
+
+  els.campoPosto.value = valorAtual;
+}
+
+function renderGerenciadorPostos() {
+  if (!els.listaPostosGerenciados) return;
+  const postos = Array.isArray(settings.postos_gerenciados) ? settings.postos_gerenciados : [];
+  els.listaPostosGerenciados.innerHTML = postos.length
+    ? postos.map((posto, index) => `
+      <div class="station-manager-item">
+        <span>${escapeHtml(posto)}</span>
+        <div class="station-manager-actions">
+          <button type="button" class="btn btn-ghost btn-small" data-posto-renomear="${index}">Renomear</button>
+          <button type="button" class="btn btn-ghost btn-small" data-posto-excluir="${index}">Excluir</button>
+        </div>
+      </div>`).join('')
+    : '<p class="config-hint">Nenhum posto cadastrado na lista.</p>';
+}
+
+if (els.btnGerenciarPostos) els.btnGerenciarPostos.addEventListener('click', async () => {
+  await garantirPostosGerenciados();
+  renderGerenciadorPostos();
+  els.modalPostos.hidden = false;
+  els.novoPostoNome?.focus();
+});
+
+if (els.formNovoPosto) els.formNovoPosto.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const nome = normalizarNomePosto(els.novoPostoNome.value);
+  if (!nome) return;
+  const postos = Array.isArray(settings.postos_gerenciados) ? [...settings.postos_gerenciados] : [];
+  if (postos.some((p) => p.toLowerCase() === nome.toLowerCase())) {
+    showToast('Esse posto já está cadastrado.', 'error');
+    return;
+  }
+  postos.push(nome);
+  await salvarPostosGerenciados(postos);
+  els.novoPostoNome.value = '';
+  showToast('Posto adicionado.');
+});
+
+if (els.listaPostosGerenciados) els.listaPostosGerenciados.addEventListener('click', async (event) => {
+  const renameButton = event.target.closest('[data-posto-renomear]');
+  const deleteButton = event.target.closest('[data-posto-excluir]');
+  const postos = Array.isArray(settings.postos_gerenciados) ? [...settings.postos_gerenciados] : [];
+  if (renameButton) {
+    const index = Number(renameButton.dataset.postoRenomear);
+    const atual = postos[index];
+    const novo = normalizarNomePosto(window.prompt('Novo nome do posto:', atual));
+    if (!novo || novo === atual) return;
+    if (postos.some((p, i) => i !== index && p.toLowerCase() === novo.toLowerCase())) {
+      showToast('Já existe um posto com esse nome.', 'error');
+      return;
+    }
+    postos[index] = novo;
+    await salvarPostosGerenciados(postos);
+    showToast('Posto renomeado na lista. O histórico foi preservado.');
+  }
+  if (deleteButton) {
+    const index = Number(deleteButton.dataset.postoExcluir);
+    const nome = postos[index];
+    if (!window.confirm(`Excluir “${nome}” da lista de postos? Os abastecimentos antigos não serão alterados.`)) return;
+    postos.splice(index, 1);
+    await salvarPostosGerenciados(postos);
+    showToast('Posto excluído da lista. O histórico foi preservado.');
+  }
+});
 
 function isNoMes(dataOrdenacao, ano, mes) {
   if (!dataOrdenacao) return false;
@@ -1041,13 +1320,21 @@ function variacaoPercentual(atual, anterior) {
   return ((a - b) / b) * 100;
 }
 
-function textoVariacaoAnual(atual, anterior, anoAnterior) {
-  const variacao = variacaoPercentual(atual, anterior);
-  if (variacao === null) return `Sem base em ${anoAnterior}`;
-  if (!Number.isFinite(variacao)) return `Sem valor em ${anoAnterior}`;
-  if (Math.abs(variacao) < 0.005) return `Sem variação vs. ${anoAnterior}`;
+function textoVariacaoAnual(atual, anterior, anoComparacao) {
+  const a = Number(atual) || 0;
+  const b = Number(anterior) || 0;
+  const diferenca = a - b;
+  const variacao = variacaoPercentual(a, b);
+  const sinalValor = diferenca > 0 ? '+' : '';
+  const valorTexto = `${sinalValor}${formatMoeda(diferenca)}`;
+
+  if (variacao === null) return `${valorTexto} · sem base em ${anoComparacao}`;
+  if (!Number.isFinite(variacao)) return `${valorTexto} · sem valor em ${anoComparacao}`;
+  if (Math.abs(variacao) < 0.005) return `${valorTexto} · sem variação vs. ${anoComparacao}`;
+
   const sinal = variacao > 0 ? '+' : '';
-  return `${sinal}${variacao.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% vs. ${anoAnterior}`;
+  const percentual = `${sinal}${variacao.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+  return `${valorTexto} · ${percentual} vs. ${anoComparacao}`;
 }
 
 function classeVariacao(atual, anterior) {
@@ -1057,7 +1344,8 @@ function classeVariacao(atual, anterior) {
 }
 
 function preencherAnosVisaoAnual(contas, abastecimentos) {
-  if (!els.anualAno) return mesAtivo.ano;
+  if (!els.anualAno) return { ano: mesAtivo.ano, anoComparacao: mesAtivo.ano - 1 };
+
   const anos = new Set([mesAtivo.ano]);
   contas.forEach((r) => {
     const ano = anoDoRegistroConta(r);
@@ -1067,12 +1355,30 @@ function preencherAnosVisaoAnual(contas, abastecimentos) {
     const ano = anoDoAbastecimento(r);
     if (ano) anos.add(ano);
   });
+
   const lista = [...anos].sort((a, b) => b - a);
-  const valorAtual = Number(els.anualAno.value) || mesAtivo.ano;
-  els.anualAno.innerHTML = lista.map((ano) => `<option value="${ano}">${ano}</option>`).join('');
-  els.anualAno.value = lista.includes(valorAtual) ? String(valorAtual) : String(mesAtivo.ano);
-  if (!els.anualAno.value && lista.length) els.anualAno.value = String(lista[0]);
-  return Number(els.anualAno.value);
+  const valorBaseAtual = Number(els.anualAno.value) || mesAtivo.ano;
+  const valorComparacaoAtual = Number(els.anualAnoComparacao?.value) || (valorBaseAtual - 1);
+
+  const options = lista.map((ano) => `<option value="${ano}">${ano}</option>`).join('');
+  els.anualAno.innerHTML = options;
+  if (els.anualAnoComparacao) els.anualAnoComparacao.innerHTML = options;
+
+  const ano = lista.includes(valorBaseAtual) ? valorBaseAtual : (lista.includes(mesAtivo.ano) ? mesAtivo.ano : lista[0]);
+  els.anualAno.value = String(ano);
+
+  let anoComparacao = lista.includes(valorComparacaoAtual) && valorComparacaoAtual !== ano
+    ? valorComparacaoAtual
+    : lista.find((item) => item < ano) ?? lista.find((item) => item !== ano) ?? ano;
+
+  if (els.anualAnoComparacao) {
+    els.anualAnoComparacao.value = String(anoComparacao);
+    [...els.anualAnoComparacao.options].forEach((option) => {
+      option.disabled = Number(option.value) === ano;
+    });
+  }
+
+  return { ano, anoComparacao };
 }
 
 function consolidarAno(contas, abastecimentos, ano) {
@@ -1083,6 +1389,8 @@ function consolidarAno(contas, abastecimentos, ano) {
     combustivel: 0,
     combustivelRateado: 0,
     litros: 0,
+    litrosGasolina: 0,
+    litrosEtanol: 0,
   }));
 
   for (const row of contas) {
@@ -1099,7 +1407,10 @@ function consolidarAno(contas, abastecimentos, ano) {
     if (mes == null) continue;
     meses[mes].combustivel += Number(row.valor_total) || 0;
     meses[mes].combustivelRateado += Number(row.valor_rateado) || 0;
-    meses[mes].litros += Number(row.litros) || 0;
+    const litros = Number(row.litros) || 0;
+    meses[mes].litros += litros;
+    if (row.tipo_combustivel === 'gasolina') meses[mes].litrosGasolina += litros;
+    if (row.tipo_combustivel === 'etanol') meses[mes].litrosEtanol += litros;
   }
 
   const totalContas = meses.reduce((a, m) => a + m.contas, 0);
@@ -1125,12 +1436,209 @@ function consolidarAno(contas, abastecimentos, ano) {
   };
 }
 
-function setAnnualVariation(element, atual, anterior, anoAnterior) {
+function consolidarCategoriasContas(contas, ano) {
+  const tipos = ['agua', 'luz', 'internet', 'mercado_livre'];
+  const categorias = Object.fromEntries(tipos.map((tipo) => [tipo, {
+    tipo,
+    total: 0,
+    meses: new Set(),
+  }]));
+
+  for (const row of contas) {
+    if (anoDoRegistroConta(row) !== ano) continue;
+    const tipo = row.tipo;
+    if (!categorias[tipo]) continue;
+    const mes = mesDoRegistroConta(row);
+    categorias[tipo].total += Number(row.valor_total) || 0;
+    if (mes != null) categorias[tipo].meses.add(mes);
+  }
+
+  const totalContas = tipos.reduce((acc, tipo) => acc + categorias[tipo].total, 0);
+  return tipos.map((tipo) => {
+    const item = categorias[tipo];
+    const mesesAtivos = item.meses.size;
+    return {
+      tipo,
+      label: TIPO_LABEL[tipo] || tipo,
+      total: item.total,
+      mesesAtivos,
+      mediaMensal: mesesAtivos ? item.total / mesesAtivos : 0,
+      participacao: totalContas > 0 ? (item.total / totalContas) * 100 : 0,
+    };
+  });
+}
+
+
+function formatLitros(valor) {
+  const numero = Number(valor) || 0;
+  return `${numero.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} L`;
+}
+
+function consolidarIndicadoresCombustivel(abastecimentos, ano) {
+  const rows = abastecimentos.filter((row) => anoDoAbastecimento(row) === ano);
+  const mesesComLitros = new Set();
+  let totalGasto = 0;
+  let totalLitros = 0;
+  let gastoComLitros = 0;
+  let litrosComPreco = 0;
+  let registrosComLitros = 0;
+
+  const grupos = {
+    gasolina: { tipo: 'gasolina', label: 'Gasolina', quantidade: 0, litros: 0, gasto: 0, gastoComLitros: 0, litrosComPreco: 0 },
+    etanol: { tipo: 'etanol', label: 'Etanol', quantidade: 0, litros: 0, gasto: 0, gastoComLitros: 0, litrosComPreco: 0 },
+    nao_informado: { tipo: 'nao_informado', label: 'Não informado', quantidade: 0, litros: 0, gasto: 0, gastoComLitros: 0, litrosComPreco: 0 },
+  };
+
+  for (const row of rows) {
+    const gasto = Number(row.valor_total) || 0;
+    const litros = Number(row.litros) || 0;
+    const tipo = row.tipo_combustivel === 'gasolina' || row.tipo_combustivel === 'etanol'
+      ? row.tipo_combustivel
+      : 'nao_informado';
+    const grupo = grupos[tipo];
+
+    totalGasto += gasto;
+    grupo.quantidade += 1;
+    grupo.gasto += gasto;
+
+    if (litros > 0) {
+      totalLitros += litros;
+      registrosComLitros += 1;
+      grupo.litros += litros;
+      const mes = mesDoAbastecimento(row);
+      if (mes != null) mesesComLitros.add(mes);
+      if (gasto >= 0) {
+        gastoComLitros += gasto;
+        litrosComPreco += litros;
+        grupo.gastoComLitros += gasto;
+        grupo.litrosComPreco += litros;
+      }
+    }
+  }
+
+  const gruposVisiveis = [grupos.gasolina, grupos.etanol];
+  if (grupos.nao_informado.quantidade > 0) gruposVisiveis.push(grupos.nao_informado);
+
+  return {
+    quantidade: rows.length,
+    totalGasto,
+    totalLitros,
+    registrosComLitros,
+    mesesComLitros: mesesComLitros.size,
+    mediaMensalLitros: mesesComLitros.size ? totalLitros / mesesComLitros.size : 0,
+    gastoMedioAbastecimento: rows.length ? totalGasto / rows.length : 0,
+    precoMedioLitro: litrosComPreco > 0 ? gastoComLitros / litrosComPreco : null,
+    grupos: gruposVisiveis.map((grupo) => ({
+      ...grupo,
+      precoMedioLitro: grupo.litrosComPreco > 0 ? grupo.gastoComLitros / grupo.litrosComPreco : null,
+    })),
+  };
+}
+
+function setAnnualVariation(element, atual, anterior, anoComparacao) {
   if (!element) return;
-  element.textContent = textoVariacaoAnual(atual, anterior, anoAnterior);
+  element.textContent = textoVariacaoAnual(atual, anterior, anoComparacao);
   element.classList.remove('is-up', 'is-down');
   const cls = classeVariacao(atual, anterior);
   if (cls) element.classList.add(cls);
+}
+
+
+function formatAnnualMetricValue(valor, metric) {
+  if (metric === 'litros') return formatLitros(valor);
+  return formatMoeda(valor);
+}
+
+function annualMetricSeries(meses, metric) {
+  if (metric === 'rateado') {
+    return {
+      descricao: 'Valores rateados por mês do ano selecionado.',
+      legendaA: 'Contas rateadas',
+      legendaB: 'Combustível rateado',
+      aria: 'Evolução mensal dos valores rateados',
+      series: meses.map((m) => ({
+        mes: m.mes,
+        a: m.contasRateado,
+        b: m.combustivelRateado,
+      })),
+    };
+  }
+
+  if (metric === 'litros') {
+    return {
+      descricao: 'Litros abastecidos por mês, separados entre Gasolina e Etanol.',
+      legendaA: 'Gasolina',
+      legendaB: 'Etanol',
+      aria: 'Evolução mensal dos litros de gasolina e etanol',
+      series: meses.map((m) => ({
+        mes: m.mes,
+        a: m.litrosGasolina,
+        b: m.litrosEtanol,
+      })),
+    };
+  }
+
+  return {
+    descricao: 'Valores totais por mês do ano selecionado.',
+    legendaA: 'Contas',
+    legendaB: 'Combustível',
+    aria: 'Evolução mensal de contas e combustível',
+    series: meses.map((m) => ({
+      mes: m.mes,
+      a: m.contas,
+      b: m.combustivel,
+    })),
+  };
+}
+
+function renderAnnualChart(atual) {
+  if (!els.anualBars) return;
+
+  const chart = annualMetricSeries(atual.meses, annualMetric);
+  if (els.anualGraficoDescricao) els.anualGraficoDescricao.textContent = chart.descricao;
+  if (els.anualGraficoLegenda) {
+    els.anualGraficoLegenda.innerHTML = `
+      <span><i class="annual-legend-contas"></i> ${chart.legendaA}</span>
+      <span><i class="annual-legend-fuel"></i> ${chart.legendaB}</span>`;
+  }
+
+  const maxMensal = Math.max(1, ...chart.series.map((m) => Math.max(m.a, m.b)));
+  els.anualBars.setAttribute('aria-label', chart.aria);
+  els.anualBars.innerHTML = chart.series.map((m) => {
+    const aPct = (m.a / maxMensal) * 100;
+    const bPct = (m.b / maxMensal) * 100;
+    return `
+      <div class="annual-bar-month" title="${NOMES_MESES[m.mes]} — ${chart.legendaA} ${formatAnnualMetricValue(m.a, annualMetric)} · ${chart.legendaB} ${formatAnnualMetricValue(m.b, annualMetric)}">
+        <div class="annual-bar-pair">
+          <span class="annual-bar annual-bar-contas" style="height:${aPct.toFixed(2)}%"></span>
+          <span class="annual-bar annual-bar-fuel" style="height:${bPct.toFixed(2)}%"></span>
+        </div>
+        <span>${NOMES_MESES[m.mes].slice(0, 3)}</span>
+      </div>`;
+  }).join('');
+
+  const totais = chart.series.map((m) => ({ mes: m.mes, total: m.a + m.b }));
+  const ativos = totais.filter((m) => m.total > 0);
+  const maior = ativos.reduce((best, item) => !best || item.total > best.total ? item : best, null);
+  const menor = ativos.reduce((best, item) => !best || item.total < best.total ? item : best, null);
+
+  if (els.anualGraficoDestaque) {
+    els.anualGraficoDestaque.textContent = maior
+      ? `${NOMES_MESES[maior.mes]} · ${formatAnnualMetricValue(maior.total, annualMetric)}`
+      : 'Sem dados para esta métrica';
+  }
+  if (els.anualGraficoDestaqueNote) {
+    els.anualGraficoDestaqueNote.textContent = maior && menor && maior.mes !== menor.mes
+      ? `Menor mês com dados: ${NOMES_MESES[menor.mes]} · ${formatAnnualMetricValue(menor.total, annualMetric)}`
+      : maior
+        ? 'Somente um mês possui dados para esta métrica.'
+        : 'Nenhum mês possui dados suficientes.';
+  }
+
+  els.anualMetricButtons?.forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.annualMetric === annualMetric);
+    btn.setAttribute('aria-pressed', btn.dataset.annualMetric === annualMetric ? 'true' : 'false');
+  });
 }
 
 async function renderVisaoAnual() {
@@ -1143,33 +1651,21 @@ async function renderVisaoAnual() {
   const contas = contasRaw.filter((r) => r.user_id === currentUser.id);
   const abastecimentos = abastecimentosRaw.filter((r) => r.user_id === currentUser.id);
 
-  const ano = preencherAnosVisaoAnual(contas, abastecimentos);
+  const { ano, anoComparacao } = preencherAnosVisaoAnual(contas, abastecimentos);
   const atual = consolidarAno(contas, abastecimentos, ano);
-  const anterior = consolidarAno(contas, abastecimentos, ano - 1);
+  const comparacao = consolidarAno(contas, abastecimentos, anoComparacao);
 
   els.anualTotalContas.textContent = formatMoeda(atual.totalContas);
   els.anualTotalCombustivel.textContent = formatMoeda(atual.totalCombustivel);
   els.anualTotalRateado.textContent = formatMoeda(atual.totalRateado);
   els.anualTotalGeral.textContent = formatMoeda(atual.totalGeral);
 
-  setAnnualVariation(els.anualTotalContasVariacao, atual.totalContas, anterior.totalContas, ano - 1);
-  setAnnualVariation(els.anualTotalCombustivelVariacao, atual.totalCombustivel, anterior.totalCombustivel, ano - 1);
-  setAnnualVariation(els.anualTotalRateadoVariacao, atual.totalRateado, anterior.totalRateado, ano - 1);
-  setAnnualVariation(els.anualTotalGeralVariacao, atual.totalGeral, anterior.totalGeral, ano - 1);
+  setAnnualVariation(els.anualTotalContasVariacao, atual.totalContas, comparacao.totalContas, anoComparacao);
+  setAnnualVariation(els.anualTotalCombustivelVariacao, atual.totalCombustivel, comparacao.totalCombustivel, anoComparacao);
+  setAnnualVariation(els.anualTotalRateadoVariacao, atual.totalRateado, comparacao.totalRateado, anoComparacao);
+  setAnnualVariation(els.anualTotalGeralVariacao, atual.totalGeral, comparacao.totalGeral, anoComparacao);
 
-  const maxMensal = Math.max(1, ...atual.meses.map((m) => Math.max(m.contas, m.combustivel)));
-  els.anualBars.innerHTML = atual.meses.map((m) => {
-    const contaPct = (m.contas / maxMensal) * 100;
-    const combustivelPct = (m.combustivel / maxMensal) * 100;
-    return `
-      <div class="annual-bar-month" title="${NOMES_MESES[m.mes]} — Contas ${formatMoeda(m.contas)} · Combustível ${formatMoeda(m.combustivel)}">
-        <div class="annual-bar-pair">
-          <span class="annual-bar annual-bar-contas" style="height:${contaPct.toFixed(2)}%"></span>
-          <span class="annual-bar annual-bar-fuel" style="height:${combustivelPct.toFixed(2)}%"></span>
-        </div>
-        <span>${NOMES_MESES[m.mes].slice(0, 3)}</span>
-      </div>`;
-  }).join('');
+  renderAnnualChart(atual);
 
   els.anualTbody.innerHTML = atual.meses.map((m) => `
     <tr>
@@ -1189,7 +1685,163 @@ async function renderVisaoAnual() {
       <th>${formatMoeda(atual.totalRateado)}</th>
     </tr>`;
 
-  els.anualComparacaoLabel.textContent = `Comparação entre ${ano} e ${ano - 1}.`;
+  if (els.anualComparativoPeriodo) {
+    els.anualComparativoPeriodo.textContent = `Diferenças mensais de ${ano} em relação a ${anoComparacao}.`;
+  }
+  if (els.anualCompHeadBase) els.anualCompHeadBase.textContent = String(ano);
+  if (els.anualCompHeadRef) els.anualCompHeadRef.textContent = String(anoComparacao);
+
+  const comparativosMensais = atual.meses.map((mesAtual, indice) => {
+    const mesRef = comparacao.meses[indice];
+    const totalAtual = mesAtual.contas + mesAtual.combustivel;
+    const totalRef = mesRef.contas + mesRef.combustivel;
+    const diferenca = totalAtual - totalRef;
+    const variacao = variacaoPercentual(totalAtual, totalRef);
+    return {
+      mes: indice,
+      totalAtual,
+      totalRef,
+      diferenca,
+      variacao,
+      diferencaContas: mesAtual.contas - mesRef.contas,
+      diferencaCombustivel: mesAtual.combustivel - mesRef.combustivel,
+    };
+  });
+
+  if (els.anualComparativoTbody) {
+    els.anualComparativoTbody.innerHTML = comparativosMensais.map((item) => {
+      const classe = item.diferenca > 0 ? 'is-up' : item.diferenca < 0 ? 'is-down' : '';
+      const percentual = item.variacao === null
+        ? '—'
+        : Number.isFinite(item.variacao)
+          ? `${item.variacao > 0 ? '+' : ''}${item.variacao.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
+          : 'novo';
+      return `
+        <tr>
+          <td>${NOMES_MESES[item.mes]}</td>
+          <td>${formatMoeda(item.totalAtual)}</td>
+          <td>${formatMoeda(item.totalRef)}</td>
+          <td class="annual-difference ${classe}">${item.diferenca > 0 ? '+' : ''}${formatMoeda(item.diferenca)}</td>
+          <td class="annual-difference ${classe}">${percentual}</td>
+          <td class="annual-difference ${item.diferencaContas > 0 ? 'is-up' : item.diferencaContas < 0 ? 'is-down' : ''}">${item.diferencaContas > 0 ? '+' : ''}${formatMoeda(item.diferencaContas)}</td>
+          <td class="annual-difference ${item.diferencaCombustivel > 0 ? 'is-up' : item.diferencaCombustivel < 0 ? 'is-down' : ''}">${item.diferencaCombustivel > 0 ? '+' : ''}${formatMoeda(item.diferencaCombustivel)}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  const aumentos = comparativosMensais.filter((item) => item.diferenca > 0);
+  const reducoes = comparativosMensais.filter((item) => item.diferenca < 0);
+  const maiorAumento = aumentos.reduce((best, item) => !best || item.diferenca > best.diferenca ? item : best, null);
+  const maiorReducao = reducoes.reduce((best, item) => !best || item.diferenca < best.diferenca ? item : best, null);
+
+  els.anualMaiorAumento.textContent = maiorAumento ? NOMES_MESES[maiorAumento.mes] : '—';
+  els.anualMaiorAumentoNote.textContent = maiorAumento
+    ? `+${formatMoeda(maiorAumento.diferenca)} em relação a ${anoComparacao}`
+    : 'Nenhum mês com aumento';
+  els.anualMaiorReducao.textContent = maiorReducao ? NOMES_MESES[maiorReducao.mes] : '—';
+  els.anualMaiorReducaoNote.textContent = maiorReducao
+    ? `${formatMoeda(maiorReducao.diferenca)} em relação a ${anoComparacao}`
+    : 'Nenhum mês com redução';
+
+  const categoriasAtual = consolidarCategoriasContas(contas, ano);
+  const categoriasComparacao = consolidarCategoriasContas(contas, anoComparacao);
+  const categoriasComparacaoMap = new Map(categoriasComparacao.map((item) => [item.tipo, item]));
+
+  if (els.anualCategoriasPeriodo) {
+    els.anualCategoriasPeriodo.textContent = `Distribuição das contas de ${ano}, comparada com ${anoComparacao}.`;
+  }
+  if (els.anualCategoriasCompHead) {
+    els.anualCategoriasCompHead.textContent = `Dif. vs. ${anoComparacao}`;
+  }
+  if (els.anualCategoriasTbody) {
+    els.anualCategoriasTbody.innerHTML = categoriasAtual.map((item) => {
+      const referencia = categoriasComparacaoMap.get(item.tipo) || { total: 0 };
+      const diferenca = item.total - referencia.total;
+      const variacao = variacaoPercentual(item.total, referencia.total);
+      const classe = diferenca > 0 ? 'is-up' : diferenca < 0 ? 'is-down' : '';
+      const percentual = variacao === null
+        ? '—'
+        : Number.isFinite(variacao)
+          ? `${variacao > 0 ? '+' : ''}${variacao.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
+          : 'novo';
+      return `
+        <tr>
+          <td>${item.label}</td>
+          <td>${formatMoeda(item.total)}</td>
+          <td>${formatMoeda(item.mediaMensal)}${item.mesesAtivos ? ` <small>(${item.mesesAtivos} mês(es))</small>` : ''}</td>
+          <td>${item.participacao.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%</td>
+          <td class="annual-difference ${classe}">${diferenca > 0 ? '+' : ''}${formatMoeda(diferenca)} · ${percentual}</td>
+        </tr>`;
+    }).join('');
+  }
+  if (els.anualCategoriasTfoot) {
+    els.anualCategoriasTfoot.innerHTML = `
+      <tr>
+        <th>Total contas</th>
+        <th>${formatMoeda(atual.totalContas)}</th>
+        <th>—</th>
+        <th>${atual.totalContas > 0 ? '100%' : '0%'}</th>
+        <th>${textoVariacaoAnual(atual.totalContas, comparacao.totalContas, anoComparacao)}</th>
+      </tr>`;
+  }
+
+
+  const indicadoresCombustivel = consolidarIndicadoresCombustivel(abastecimentos, ano);
+  if (els.anualCombustivelPeriodo) {
+    els.anualCombustivelPeriodo.textContent = `Consumo e custo dos abastecimentos de ${ano}, pelo mês real de cada lançamento.`;
+  }
+  if (els.anualLitrosTotal) els.anualLitrosTotal.textContent = formatLitros(indicadoresCombustivel.totalLitros);
+  if (els.anualLitrosTotalNote) {
+    els.anualLitrosTotalNote.textContent = indicadoresCombustivel.quantidade
+      ? `${indicadoresCombustivel.registrosComLitros} de ${indicadoresCombustivel.quantidade} abastecimento(s) com litros informados`
+      : 'Sem abastecimentos no ano';
+  }
+  if (els.anualLitrosMedia) els.anualLitrosMedia.textContent = formatLitros(indicadoresCombustivel.mediaMensalLitros);
+  if (els.anualLitrosMediaNote) {
+    els.anualLitrosMediaNote.textContent = indicadoresCombustivel.mesesComLitros
+      ? `Média sobre ${indicadoresCombustivel.mesesComLitros} mês(es) com litros informados`
+      : 'Sem litros informados no ano';
+  }
+  if (els.anualGastoMedioAbastecimento) {
+    els.anualGastoMedioAbastecimento.textContent = formatMoeda(indicadoresCombustivel.gastoMedioAbastecimento);
+  }
+  if (els.anualGastoMedioAbastecimentoNote) {
+    els.anualGastoMedioAbastecimentoNote.textContent = indicadoresCombustivel.quantidade
+      ? `${indicadoresCombustivel.quantidade} abastecimento(s) considerado(s)`
+      : 'Sem abastecimentos no ano';
+  }
+  if (els.anualPrecoMedioLitro) {
+    els.anualPrecoMedioLitro.textContent = indicadoresCombustivel.precoMedioLitro == null
+      ? '—'
+      : `${formatMoeda(indicadoresCombustivel.precoMedioLitro)}/L`;
+  }
+  if (els.anualPrecoMedioLitroNote) {
+    els.anualPrecoMedioLitroNote.textContent = indicadoresCombustivel.registrosComLitros
+      ? `Média ponderada pelos litros informados`
+      : 'Dados insuficientes para calcular';
+  }
+  if (els.anualCombustivelTbody) {
+    els.anualCombustivelTbody.innerHTML = indicadoresCombustivel.grupos.map((grupo) => `
+      <tr>
+        <td>${grupo.label}</td>
+        <td>${grupo.quantidade}</td>
+        <td>${formatLitros(grupo.litros)}</td>
+        <td>${formatMoeda(grupo.gasto)}</td>
+        <td>${grupo.precoMedioLitro == null ? '—' : `${formatMoeda(grupo.precoMedioLitro)}/L`}</td>
+      </tr>`).join('');
+  }
+  if (els.anualCombustivelTfoot) {
+    els.anualCombustivelTfoot.innerHTML = `
+      <tr>
+        <th>Total</th>
+        <th>${indicadoresCombustivel.quantidade}</th>
+        <th>${formatLitros(indicadoresCombustivel.totalLitros)}</th>
+        <th>${formatMoeda(indicadoresCombustivel.totalGasto)}</th>
+        <th>${indicadoresCombustivel.precoMedioLitro == null ? '—' : `${formatMoeda(indicadoresCombustivel.precoMedioLitro)}/L`}</th>
+      </tr>`;
+  }
+
+  els.anualComparacaoLabel.textContent = `Comparação entre ${ano} e ${anoComparacao}.`;
   els.anualMediaContas.textContent = formatMoeda(atual.mediaContas);
   els.anualMediaContasNote.textContent = atual.ativosContas
     ? `Média sobre ${atual.ativosContas} mês(es) com contas`
@@ -1214,6 +1866,198 @@ async function renderVisaoAnual() {
 
 if (els.anualAno) {
   els.anualAno.addEventListener('change', () => renderVisaoAnual());
+}
+if (els.anualAnoComparacao) {
+  els.anualAnoComparacao.addEventListener('change', () => renderVisaoAnual());
+}
+els.anualMetricButtons?.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const metric = btn.dataset.annualMetric;
+    if (!['total', 'rateado', 'litros'].includes(metric)) return;
+    annualMetric = metric;
+    renderVisaoAnual();
+  });
+});
+
+
+function roundedRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+async function dadosResumoCompartilhavel() {
+  const mesCombustivel = mesAnterior(mesAtivo);
+  const [contasRaw, abastecimentosRaw, fechamento] = await Promise.all([
+    localDb.listAll('contas_consumo'),
+    localDb.listAll('abastecimentos'),
+    localDb.get('fechamentos_mensais', fechamentoId(currentUser.id, mesAtivo.ano, mesAtivo.mes)),
+  ]);
+  const contas = contasRaw.filter((r) => r.user_id === currentUser.id && isNoMesAtivo(r.data_ordenacao));
+  const abastecimentos = abastecimentosRaw.filter((r) =>
+    r.user_id === currentUser.id && isNoMes(r.data_ordenacao, mesCombustivel.ano, mesCombustivel.mes)
+  );
+  const somar = (rows, campo) => rows.reduce((acc, r) => acc + (Number(r[campo]) || 0), 0);
+  return {
+    competencia: `${NOMES_MESES[mesAtivo.mes]} de ${mesAtivo.ano}`,
+    combustivelReferencia: `${NOMES_MESES[mesCombustivel.mes]} de ${mesCombustivel.ano}`,
+    totalContas: somar(contas, 'valor_total'),
+    totalCombustivel: somar(abastecimentos, 'valor_total'),
+    contasRateado: somar(contas, 'valor_rateado'),
+    combustivelRateado: somar(abastecimentos, 'valor_rateado'),
+    totalLitros: somar(abastecimentos, 'litros'),
+    fechamento,
+  };
+}
+
+async function gerarImagemResumoBlob() {
+  if (!currentUser) throw new Error('Usuário não autenticado.');
+  const dados = await dadosResumoCompartilhavel();
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1120;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas indisponível.');
+
+  const ink = '#102a43';
+  const muted = '#627d98';
+  const primary = '#1261a0';
+  const soft = '#eef6fb';
+  const border = '#d9e2ec';
+  const highlight = '#e9f7ef';
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = primary;
+  ctx.fillRect(0, 0, canvas.width, 150);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 48px system-ui, sans-serif';
+  ctx.fillText('Contas & Combustível', 64, 68);
+  ctx.font = '400 28px system-ui, sans-serif';
+  ctx.fillText(`Resumo · ${dados.competencia}`, 64, 112);
+
+  const card = (x, y, w, h, label, value, note = '', destaque = false) => {
+    ctx.fillStyle = destaque ? highlight : soft;
+    roundedRect(ctx, x, y, w, h, 20);
+    ctx.fill();
+    ctx.strokeStyle = destaque ? '#b7dfc4' : border;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = muted;
+    ctx.font = '500 24px system-ui, sans-serif';
+    ctx.fillText(label, x + 28, y + 42);
+    ctx.fillStyle = destaque ? '#146c43' : ink;
+    ctx.font = '700 38px system-ui, sans-serif';
+    ctx.fillText(value, x + 28, y + 92);
+    if (note) {
+      ctx.fillStyle = muted;
+      ctx.font = '400 20px system-ui, sans-serif';
+      ctx.fillText(note, x + 28, y + 126);
+    }
+  };
+
+  card(64, 190, 452, 150, 'Contas de consumo', formatMoeda(dados.totalContas));
+  card(564, 190, 452, 150, 'Contas rateadas', formatMoeda(dados.contasRateado));
+  card(64, 370, 452, 170, 'Combustível', formatMoeda(dados.totalCombustivel), `Referência: ${dados.combustivelReferencia}`);
+  card(564, 370, 452, 170, 'Combustível rateado', formatMoeda(dados.combustivelRateado), `${dados.totalLitros.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} L no período`);
+
+  const totalRateado = dados.contasRateado + dados.combustivelRateado;
+  card(64, 580, 952, 180, 'Valor a transferir', formatMoeda(totalRateado), 'Total rateado de contas + combustível', true);
+
+  ctx.fillStyle = ink;
+  ctx.font = '700 27px system-ui, sans-serif';
+  ctx.fillText('Situação do mês', 64, 825);
+  ctx.fillStyle = muted;
+  ctx.font = '400 23px system-ui, sans-serif';
+  const fechado = Boolean(dados.fechamento && !dados.fechamento.deleted);
+  ctx.fillText(fechado ? 'Mês fechado' : 'Mês ainda não fechado', 64, 868);
+  if (dados.fechamento?.contas_data_pagamento) {
+    ctx.fillText(`Pagamento das contas: ${formatData(dados.fechamento.contas_data_pagamento)}`, 64, 908);
+  }
+  const dataRateio = dados.fechamento?.contas_data_rateio || dados.fechamento?.combustivel_data_rateio;
+  if (dataRateio) ctx.fillText(`Transferência do rateio: ${formatData(dataRateio)}`, 64, 948);
+
+  ctx.strokeStyle = border;
+  ctx.beginPath();
+  ctx.moveTo(64, 1000);
+  ctx.lineTo(1016, 1000);
+  ctx.stroke();
+  ctx.fillStyle = muted;
+  ctx.font = '400 19px system-ui, sans-serif';
+  ctx.fillText('Resumo gerado pelo Contas & Combustível', 64, 1042);
+  ctx.textAlign = 'right';
+  ctx.fillText(new Date().toLocaleString('pt-BR'), 1016, 1042);
+  ctx.textAlign = 'left';
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Não foi possível gerar a imagem.')), 'image/png');
+  });
+}
+
+function nomeArquivoResumo() {
+  return `resumo-${mesAtivo.ano}-${String(mesAtivo.mes + 1).padStart(2, '0')}.png`;
+}
+
+async function baixarImagemResumo() {
+  try {
+    const blob = await gerarImagemResumoBlob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeArquivoResumo();
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('Imagem do resumo gerada.');
+  } catch (error) {
+    console.error('[resumo-imagem]', error);
+    showToast('Não foi possível gerar a imagem.', 'error');
+  }
+}
+
+async function compartilharImagemResumo() {
+  try {
+    const blob = await gerarImagemResumoBlob();
+    const file = new File([blob], nomeArquivoResumo(), { type: 'image/png' });
+    if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+      await navigator.share({
+        files: [file],
+        title: `Resumo ${NOMES_MESES[mesAtivo.mes]}/${mesAtivo.ano}`,
+        text: 'Resumo de contas e combustível.',
+      });
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeArquivoResumo();
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('Compartilhamento direto indisponível. A imagem foi baixada.');
+  } catch (error) {
+    if (error?.name === 'AbortError') return;
+    console.error('[resumo-compartilhar]', error);
+    showToast('Não foi possível compartilhar a imagem.', 'error');
+  }
+}
+
+
+if (els.btnBaixarResumo) {
+  els.btnBaixarResumo.addEventListener('click', baixarImagemResumo);
+}
+if (els.btnCompartilharResumo) {
+  els.btnCompartilharResumo.addEventListener('click', compartilharImagemResumo);
+}
+if (els.btnImprimirAnual) {
+  els.btnImprimirAnual.addEventListener('click', () => {
+    if (activeTab !== 'anual') return;
+    window.print();
+  });
 }
 
 async function renderResumo() {
@@ -1366,7 +2210,7 @@ function renderCombustivelItem(a) {
 // Modais de criação/edição
 // ---------------------------------------------------------
 
-els.btnNovo.addEventListener('click', () => {
+els.btnNovo.addEventListener('click', async () => {
   editingId = null;
   if (activeTab === 'contas') {
     els.formConta.reset();
@@ -1378,6 +2222,8 @@ els.btnNovo.addEventListener('click', () => {
   } else {
     els.formCombustivel.reset();
     document.getElementById('combustivel-percentual').value = settings.percentual_combustivel_padrao;
+    await garantirPostosGerenciados();
+    await atualizarListaPostos();
     atualizarPreviewCombustivel();
     els.modalCombustivelTitle.textContent = 'Novo abastecimento';
     els.btnExcluirCombustivel.hidden = true;
@@ -1387,9 +2233,16 @@ els.btnNovo.addEventListener('click', () => {
 
 document.querySelectorAll('[data-close-modal]').forEach((btn) => {
   btn.addEventListener('click', () => {
-    editingId = null;
-    els.modalConta.hidden = true;
-    els.modalCombustivel.hidden = true;
+    const modal = btn.closest('.modal');
+    if (!modal) return;
+
+    // Fecha somente o modal ao qual o botão pertence. Assim, ao fechar o
+    // Gerenciador de Postos, o formulário de Novo Abastecimento permanece aberto.
+    modal.hidden = true;
+
+    if (modal === els.modalConta || modal === els.modalCombustivel) {
+      editingId = null;
+    }
   });
 });
 
@@ -1459,7 +2312,14 @@ async function abrirEdicao(storeName, id) {
       record.percentual_rateado ?? settings.percentual_combustivel_padrao;
     document.getElementById('combustivel-litros').value = record.litros ?? '';
     document.getElementById('combustivel-tipo').value = record.tipo_combustivel ?? 'gasolina';
-    document.getElementById('combustivel-posto').value = record.posto ?? '';
+    await garantirPostosGerenciados();
+    await atualizarListaPostos();
+    const campoPosto = document.getElementById('combustivel-posto');
+    const postoAtual = record.posto ?? '';
+    if (postoAtual && ![...campoPosto.options].some((option) => option.value === postoAtual)) {
+      campoPosto.add(new Option(postoAtual, postoAtual));
+    }
+    campoPosto.value = postoAtual;
     atualizarPreviewCombustivel();
 
     els.modalCombustivelTitle.textContent = 'Editar abastecimento';
@@ -1567,7 +2427,10 @@ function parseOptionalText(id) {
 }
 
 function triggerBackgroundSync() {
-  if (currentUser) syncAll(currentUser.id).then(() => refreshActiveView());
+  if (currentUser) syncAll(currentUser.id).then(async () => {
+    await atualizarListaPostos();
+    await refreshActiveView();
+  });
 }
 
 // ---------------------------------------------------------
