@@ -243,17 +243,27 @@
         </div>
 
         <section class="annual-section">
-          <div class="annual-section-heading">
+          <div class="annual-section-heading annual-chart-heading">
             <div>
               <h3>Evolução mensal</h3>
-              <p>Valores totais por mês do ano selecionado.</p>
+              <p id="anual-grafico-descricao">Valores totais por mês do ano selecionado.</p>
+            </div>
+            <div class="annual-metric-switch" role="group" aria-label="Métrica do gráfico anual">
+              <button type="button" class="annual-metric-btn is-active" data-annual-metric="total">Totais</button>
+              <button type="button" class="annual-metric-btn" data-annual-metric="rateado">Rateados</button>
+              <button type="button" class="annual-metric-btn" data-annual-metric="litros">Litros</button>
             </div>
           </div>
-          <div class="annual-legend" aria-hidden="true">
+          <div class="annual-legend" id="anual-grafico-legenda" aria-hidden="true">
             <span><i class="annual-legend-contas"></i> Contas</span>
             <span><i class="annual-legend-fuel"></i> Combustível</span>
           </div>
-          <div id="anual-bars" class="annual-bars" aria-label="Evolução mensal de contas e combustível"></div>
+          <div id="anual-bars" class="annual-bars" aria-label="Evolução mensal"></div>
+          <div class="annual-chart-reading">
+            <span>Leitura do período</span>
+            <strong id="anual-grafico-destaque">—</strong>
+            <small id="anual-grafico-destaque-note">—</small>
+          </div>
         </section>
 
         <section class="annual-section">

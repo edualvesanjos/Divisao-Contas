@@ -1,3 +1,16 @@
+## v0.8.4 DEV
+
+- Evolui a leitura histórica da aba **Anual**.
+- Adiciona alternância do gráfico entre **Totais**, **Rateados** e **Litros**.
+- Em Totais, compara mensalmente Contas e Combustível.
+- Em Rateados, compara mensalmente os valores rateados de Contas e Combustível.
+- Em Litros, separa mensalmente Gasolina e Etanol, sem estimar dados ausentes.
+- Adiciona leitura automática do maior e do menor mês com dados para a métrica selecionada.
+- Mantém os comparativos anuais, detalhamento por categoria e indicadores de combustível já validados.
+- Melhora o comportamento do gráfico em telas menores, com controles adaptáveis e rolagem horizontal quando necessária.
+- Não requer nova migration no Supabase.
+- Cache do PWA atualizado para v0.8.4.
+
 ## v0.8.3.2.1 DEV
 
 - Corrige erro de sintaxe `await is a reserved identifier` ao abrir a aplicação.

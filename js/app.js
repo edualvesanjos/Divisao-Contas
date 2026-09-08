@@ -83,6 +83,11 @@ const els = {
   anualTotalRateadoVariacao: document.getElementById('anual-total-rateado-variacao'),
   anualTotalGeralVariacao: document.getElementById('anual-total-geral-variacao'),
   anualBars: document.getElementById('anual-bars'),
+  anualGraficoDescricao: document.getElementById('anual-grafico-descricao'),
+  anualGraficoLegenda: document.getElementById('anual-grafico-legenda'),
+  anualGraficoDestaque: document.getElementById('anual-grafico-destaque'),
+  anualGraficoDestaqueNote: document.getElementById('anual-grafico-destaque-note'),
+  anualMetricButtons: document.querySelectorAll('[data-annual-metric]'),
   anualTbody: document.getElementById('anual-tbody'),
   anualTfoot: document.getElementById('anual-tfoot'),
   anualComparacaoLabel: document.getElementById('anual-comparacao-label'),
@@ -180,6 +185,7 @@ let isSignUpMode = false;
 let editingId = null;
 let settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50, postos_gerenciados: null };
 let importAnalysis = null;
+let annualMetric = 'total';
 let fuelEnrichAnalysis = null;
 
 if (els.environmentBadge) {
@@ -1380,6 +1386,8 @@ function consolidarAno(contas, abastecimentos, ano) {
     combustivel: 0,
     combustivelRateado: 0,
     litros: 0,
+    litrosGasolina: 0,
+    litrosEtanol: 0,
   }));
 
   for (const row of contas) {
@@ -1396,7 +1404,10 @@ function consolidarAno(contas, abastecimentos, ano) {
     if (mes == null) continue;
     meses[mes].combustivel += Number(row.valor_total) || 0;
     meses[mes].combustivelRateado += Number(row.valor_rateado) || 0;
-    meses[mes].litros += Number(row.litros) || 0;
+    const litros = Number(row.litros) || 0;
+    meses[mes].litros += litros;
+    if (row.tipo_combustivel === 'gasolina') meses[mes].litrosGasolina += litros;
+    if (row.tipo_combustivel === 'etanol') meses[mes].litrosEtanol += litros;
   }
 
   const totalContas = meses.reduce((a, m) => a + m.contas, 0);
@@ -1529,6 +1540,104 @@ function setAnnualVariation(element, atual, anterior, anoComparacao) {
   if (cls) element.classList.add(cls);
 }
 
+
+function formatAnnualMetricValue(valor, metric) {
+  if (metric === 'litros') return formatLitros(valor);
+  return formatMoeda(valor);
+}
+
+function annualMetricSeries(meses, metric) {
+  if (metric === 'rateado') {
+    return {
+      descricao: 'Valores rateados por mês do ano selecionado.',
+      legendaA: 'Contas rateadas',
+      legendaB: 'Combustível rateado',
+      aria: 'Evolução mensal dos valores rateados',
+      series: meses.map((m) => ({
+        mes: m.mes,
+        a: m.contasRateado,
+        b: m.combustivelRateado,
+      })),
+    };
+  }
+
+  if (metric === 'litros') {
+    return {
+      descricao: 'Litros abastecidos por mês, separados entre Gasolina e Etanol.',
+      legendaA: 'Gasolina',
+      legendaB: 'Etanol',
+      aria: 'Evolução mensal dos litros de gasolina e etanol',
+      series: meses.map((m) => ({
+        mes: m.mes,
+        a: m.litrosGasolina,
+        b: m.litrosEtanol,
+      })),
+    };
+  }
+
+  return {
+    descricao: 'Valores totais por mês do ano selecionado.',
+    legendaA: 'Contas',
+    legendaB: 'Combustível',
+    aria: 'Evolução mensal de contas e combustível',
+    series: meses.map((m) => ({
+      mes: m.mes,
+      a: m.contas,
+      b: m.combustivel,
+    })),
+  };
+}
+
+function renderAnnualChart(atual) {
+  if (!els.anualBars) return;
+
+  const chart = annualMetricSeries(atual.meses, annualMetric);
+  if (els.anualGraficoDescricao) els.anualGraficoDescricao.textContent = chart.descricao;
+  if (els.anualGraficoLegenda) {
+    els.anualGraficoLegenda.innerHTML = `
+      <span><i class="annual-legend-contas"></i> ${chart.legendaA}</span>
+      <span><i class="annual-legend-fuel"></i> ${chart.legendaB}</span>`;
+  }
+
+  const maxMensal = Math.max(1, ...chart.series.map((m) => Math.max(m.a, m.b)));
+  els.anualBars.setAttribute('aria-label', chart.aria);
+  els.anualBars.innerHTML = chart.series.map((m) => {
+    const aPct = (m.a / maxMensal) * 100;
+    const bPct = (m.b / maxMensal) * 100;
+    return `
+      <div class="annual-bar-month" title="${NOMES_MESES[m.mes]} — ${chart.legendaA} ${formatAnnualMetricValue(m.a, annualMetric)} · ${chart.legendaB} ${formatAnnualMetricValue(m.b, annualMetric)}">
+        <div class="annual-bar-pair">
+          <span class="annual-bar annual-bar-contas" style="height:${aPct.toFixed(2)}%"></span>
+          <span class="annual-bar annual-bar-fuel" style="height:${bPct.toFixed(2)}%"></span>
+        </div>
+        <span>${NOMES_MESES[m.mes].slice(0, 3)}</span>
+      </div>`;
+  }).join('');
+
+  const totais = chart.series.map((m) => ({ mes: m.mes, total: m.a + m.b }));
+  const ativos = totais.filter((m) => m.total > 0);
+  const maior = ativos.reduce((best, item) => !best || item.total > best.total ? item : best, null);
+  const menor = ativos.reduce((best, item) => !best || item.total < best.total ? item : best, null);
+
+  if (els.anualGraficoDestaque) {
+    els.anualGraficoDestaque.textContent = maior
+      ? `${NOMES_MESES[maior.mes]} · ${formatAnnualMetricValue(maior.total, annualMetric)}`
+      : 'Sem dados para esta métrica';
+  }
+  if (els.anualGraficoDestaqueNote) {
+    els.anualGraficoDestaqueNote.textContent = maior && menor && maior.mes !== menor.mes
+      ? `Menor mês com dados: ${NOMES_MESES[menor.mes]} · ${formatAnnualMetricValue(menor.total, annualMetric)}`
+      : maior
+        ? 'Somente um mês possui dados para esta métrica.'
+        : 'Nenhum mês possui dados suficientes.';
+  }
+
+  els.anualMetricButtons?.forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.annualMetric === annualMetric);
+    btn.setAttribute('aria-pressed', btn.dataset.annualMetric === annualMetric ? 'true' : 'false');
+  });
+}
+
 async function renderVisaoAnual() {
   if (!currentUser) return;
 
@@ -1553,19 +1662,7 @@ async function renderVisaoAnual() {
   setAnnualVariation(els.anualTotalRateadoVariacao, atual.totalRateado, comparacao.totalRateado, anoComparacao);
   setAnnualVariation(els.anualTotalGeralVariacao, atual.totalGeral, comparacao.totalGeral, anoComparacao);
 
-  const maxMensal = Math.max(1, ...atual.meses.map((m) => Math.max(m.contas, m.combustivel)));
-  els.anualBars.innerHTML = atual.meses.map((m) => {
-    const contaPct = (m.contas / maxMensal) * 100;
-    const combustivelPct = (m.combustivel / maxMensal) * 100;
-    return `
-      <div class="annual-bar-month" title="${NOMES_MESES[m.mes]} — Contas ${formatMoeda(m.contas)} · Combustível ${formatMoeda(m.combustivel)}">
-        <div class="annual-bar-pair">
-          <span class="annual-bar annual-bar-contas" style="height:${contaPct.toFixed(2)}%"></span>
-          <span class="annual-bar annual-bar-fuel" style="height:${combustivelPct.toFixed(2)}%"></span>
-        </div>
-        <span>${NOMES_MESES[m.mes].slice(0, 3)}</span>
-      </div>`;
-  }).join('');
+  renderAnnualChart(atual);
 
   els.anualTbody.innerHTML = atual.meses.map((m) => `
     <tr>
@@ -1770,6 +1867,14 @@ if (els.anualAno) {
 if (els.anualAnoComparacao) {
   els.anualAnoComparacao.addEventListener('change', () => renderVisaoAnual());
 }
+els.anualMetricButtons?.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const metric = btn.dataset.annualMetric;
+    if (!['total', 'rateado', 'litros'].includes(metric)) return;
+    annualMetric = metric;
+    renderVisaoAnual();
+  });
+});
 
 async function renderResumo() {
   const mesCombustivel = mesAnterior(mesAtivo);
