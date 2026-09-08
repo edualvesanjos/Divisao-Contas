@@ -1921,7 +1921,7 @@ function renderCombustivelItem(a) {
 // Modais de criação/edição
 // ---------------------------------------------------------
 
-els.btnNovo.addEventListener('click', () => {
+els.btnNovo.addEventListener('click', async () => {
   editingId = null;
   if (activeTab === 'contas') {
     els.formConta.reset();

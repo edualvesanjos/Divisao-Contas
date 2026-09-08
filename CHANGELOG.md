@@ -1,3 +1,10 @@
+## v0.8.3.2.1 DEV
+
+- Corrige erro de sintaxe `await is a reserved identifier` ao abrir a aplicação.
+- Torna assíncrono o manipulador de **Novo**, permitindo aguardar o carregamento dos postos antes de abrir Novo Abastecimento.
+- Mantém as correções da v0.8.3.2 para fechamento independente do Gerenciador de Postos e seleção explícita de postos.
+- Não requer nova migration no Supabase.
+
 ## v0.8.3.2 DEV
 
 - Corrige o fechamento do Gerenciador de Postos para não fechar o modal de Novo Abastecimento.
