@@ -1,3 +1,14 @@
+## v0.8.3 DEV
+
+- Adiciona **Indicadores de combustível** à Visão Anual.
+- Exibe litros no ano, média mensal de litros, gasto médio por abastecimento e preço médio ponderado por litro quando há dados suficientes.
+- Separa Gasolina e Etanol em tabela anual com quantidade de abastecimentos, litros, gasto e preço médio por litro; registros sem tipo informado aparecem em linha própria quando existirem.
+- Os cálculos de litros e preço por litro consideram somente registros com quantidade de litros válida, evitando estimativas sobre dados históricos incompletos.
+- Mantém o combustível anual associado ao mês real do abastecimento, sem alterar a regra especial do Resumo Mensal.
+- Garante referência explícita ao `favicon.ico` no `index.html` e adiciona o ícone ao cache do PWA.
+- Ambiente permanece em desenvolvimento.
+- Não requer nova migration do Supabase.
+
 ## v0.8.2 DEV
 
 - Adicionado detalhamento anual das contas por categoria: Água, Luz, Internet e Nivel 6 Mercado Livre.

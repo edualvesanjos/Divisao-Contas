@@ -6,6 +6,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 ## Versão atual
 
+- **v0.8.3 DEV** — indicadores anuais de combustível: litros, médias, gasto médio, preço médio por litro e separação Gasolina/Etanol.
 - **v0.8.2 DEV** — detalhamento anual por categoria, totais, médias mensais, participação e comparação entre anos; correção do favicon.
 - **v0.8.1 DEV** — comparativos anuais avançados, seleção de dois anos, diferenças em R$/%, detalhamento mensal e destaques de maior aumento/redução.
 - **v0.8.0 DEV** — pré-visualização e validação detalhadas da importação XLSX, com resumo por ano e conferência separada de contas, combustível e fechamentos.

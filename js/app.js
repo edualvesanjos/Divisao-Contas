@@ -105,6 +105,17 @@ const els = {
   anualCategoriasCompHead: document.getElementById('anual-categorias-comp-head'),
   anualCategoriasTbody: document.getElementById('anual-categorias-tbody'),
   anualCategoriasTfoot: document.getElementById('anual-categorias-tfoot'),
+  anualCombustivelPeriodo: document.getElementById('anual-combustivel-periodo'),
+  anualLitrosTotal: document.getElementById('anual-litros-total'),
+  anualLitrosTotalNote: document.getElementById('anual-litros-total-note'),
+  anualLitrosMedia: document.getElementById('anual-litros-media'),
+  anualLitrosMediaNote: document.getElementById('anual-litros-media-note'),
+  anualGastoMedioAbastecimento: document.getElementById('anual-gasto-medio-abastecimento'),
+  anualGastoMedioAbastecimentoNote: document.getElementById('anual-gasto-medio-abastecimento-note'),
+  anualPrecoMedioLitro: document.getElementById('anual-preco-medio-litro'),
+  anualPrecoMedioLitroNote: document.getElementById('anual-preco-medio-litro-note'),
+  anualCombustivelTbody: document.getElementById('anual-combustivel-tbody'),
+  anualCombustivelTfoot: document.getElementById('anual-combustivel-tfoot'),
   anualVazio: document.getElementById('anual-vazio'),
 
   listaPostos: document.getElementById('lista-postos'),
@@ -1197,6 +1208,73 @@ function consolidarCategoriasContas(contas, ano) {
   });
 }
 
+
+function formatLitros(valor) {
+  const numero = Number(valor) || 0;
+  return `${numero.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} L`;
+}
+
+function consolidarIndicadoresCombustivel(abastecimentos, ano) {
+  const rows = abastecimentos.filter((row) => anoDoAbastecimento(row) === ano);
+  const mesesComLitros = new Set();
+  let totalGasto = 0;
+  let totalLitros = 0;
+  let gastoComLitros = 0;
+  let litrosComPreco = 0;
+  let registrosComLitros = 0;
+
+  const grupos = {
+    gasolina: { tipo: 'gasolina', label: 'Gasolina', quantidade: 0, litros: 0, gasto: 0, gastoComLitros: 0, litrosComPreco: 0 },
+    etanol: { tipo: 'etanol', label: 'Etanol', quantidade: 0, litros: 0, gasto: 0, gastoComLitros: 0, litrosComPreco: 0 },
+    nao_informado: { tipo: 'nao_informado', label: 'Não informado', quantidade: 0, litros: 0, gasto: 0, gastoComLitros: 0, litrosComPreco: 0 },
+  };
+
+  for (const row of rows) {
+    const gasto = Number(row.valor_total) || 0;
+    const litros = Number(row.litros) || 0;
+    const tipo = row.tipo_combustivel === 'gasolina' || row.tipo_combustivel === 'etanol'
+      ? row.tipo_combustivel
+      : 'nao_informado';
+    const grupo = grupos[tipo];
+
+    totalGasto += gasto;
+    grupo.quantidade += 1;
+    grupo.gasto += gasto;
+
+    if (litros > 0) {
+      totalLitros += litros;
+      registrosComLitros += 1;
+      grupo.litros += litros;
+      const mes = mesDoAbastecimento(row);
+      if (mes != null) mesesComLitros.add(mes);
+      if (gasto >= 0) {
+        gastoComLitros += gasto;
+        litrosComPreco += litros;
+        grupo.gastoComLitros += gasto;
+        grupo.litrosComPreco += litros;
+      }
+    }
+  }
+
+  const gruposVisiveis = [grupos.gasolina, grupos.etanol];
+  if (grupos.nao_informado.quantidade > 0) gruposVisiveis.push(grupos.nao_informado);
+
+  return {
+    quantidade: rows.length,
+    totalGasto,
+    totalLitros,
+    registrosComLitros,
+    mesesComLitros: mesesComLitros.size,
+    mediaMensalLitros: mesesComLitros.size ? totalLitros / mesesComLitros.size : 0,
+    gastoMedioAbastecimento: rows.length ? totalGasto / rows.length : 0,
+    precoMedioLitro: litrosComPreco > 0 ? gastoComLitros / litrosComPreco : null,
+    grupos: gruposVisiveis.map((grupo) => ({
+      ...grupo,
+      precoMedioLitro: grupo.litrosComPreco > 0 ? grupo.gastoComLitros / grupo.litrosComPreco : null,
+    })),
+  };
+}
+
 function setAnnualVariation(element, atual, anterior, anoComparacao) {
   if (!element) return;
   element.textContent = textoVariacaoAnual(atual, anterior, anoComparacao);
@@ -1358,6 +1436,62 @@ async function renderVisaoAnual() {
         <th>—</th>
         <th>${atual.totalContas > 0 ? '100%' : '0%'}</th>
         <th>${textoVariacaoAnual(atual.totalContas, comparacao.totalContas, anoComparacao)}</th>
+      </tr>`;
+  }
+
+
+  const indicadoresCombustivel = consolidarIndicadoresCombustivel(abastecimentos, ano);
+  if (els.anualCombustivelPeriodo) {
+    els.anualCombustivelPeriodo.textContent = `Consumo e custo dos abastecimentos de ${ano}, pelo mês real de cada lançamento.`;
+  }
+  if (els.anualLitrosTotal) els.anualLitrosTotal.textContent = formatLitros(indicadoresCombustivel.totalLitros);
+  if (els.anualLitrosTotalNote) {
+    els.anualLitrosTotalNote.textContent = indicadoresCombustivel.quantidade
+      ? `${indicadoresCombustivel.registrosComLitros} de ${indicadoresCombustivel.quantidade} abastecimento(s) com litros informados`
+      : 'Sem abastecimentos no ano';
+  }
+  if (els.anualLitrosMedia) els.anualLitrosMedia.textContent = formatLitros(indicadoresCombustivel.mediaMensalLitros);
+  if (els.anualLitrosMediaNote) {
+    els.anualLitrosMediaNote.textContent = indicadoresCombustivel.mesesComLitros
+      ? `Média sobre ${indicadoresCombustivel.mesesComLitros} mês(es) com litros informados`
+      : 'Sem litros informados no ano';
+  }
+  if (els.anualGastoMedioAbastecimento) {
+    els.anualGastoMedioAbastecimento.textContent = formatMoeda(indicadoresCombustivel.gastoMedioAbastecimento);
+  }
+  if (els.anualGastoMedioAbastecimentoNote) {
+    els.anualGastoMedioAbastecimentoNote.textContent = indicadoresCombustivel.quantidade
+      ? `${indicadoresCombustivel.quantidade} abastecimento(s) considerado(s)`
+      : 'Sem abastecimentos no ano';
+  }
+  if (els.anualPrecoMedioLitro) {
+    els.anualPrecoMedioLitro.textContent = indicadoresCombustivel.precoMedioLitro == null
+      ? '—'
+      : `${formatMoeda(indicadoresCombustivel.precoMedioLitro)}/L`;
+  }
+  if (els.anualPrecoMedioLitroNote) {
+    els.anualPrecoMedioLitroNote.textContent = indicadoresCombustivel.registrosComLitros
+      ? `Média ponderada pelos litros informados`
+      : 'Dados insuficientes para calcular';
+  }
+  if (els.anualCombustivelTbody) {
+    els.anualCombustivelTbody.innerHTML = indicadoresCombustivel.grupos.map((grupo) => `
+      <tr>
+        <td>${grupo.label}</td>
+        <td>${grupo.quantidade}</td>
+        <td>${formatLitros(grupo.litros)}</td>
+        <td>${formatMoeda(grupo.gasto)}</td>
+        <td>${grupo.precoMedioLitro == null ? '—' : `${formatMoeda(grupo.precoMedioLitro)}/L`}</td>
+      </tr>`).join('');
+  }
+  if (els.anualCombustivelTfoot) {
+    els.anualCombustivelTfoot.innerHTML = `
+      <tr>
+        <th>Total</th>
+        <th>${indicadoresCombustivel.quantidade}</th>
+        <th>${formatLitros(indicadoresCombustivel.totalLitros)}</th>
+        <th>${formatMoeda(indicadoresCombustivel.totalGasto)}</th>
+        <th>${indicadoresCombustivel.precoMedioLitro == null ? '—' : `${formatMoeda(indicadoresCombustivel.precoMedioLitro)}/L`}</th>
       </tr>`;
   }
 

@@ -6,6 +6,7 @@
   <title>Registro de Contas &amp; Combustível</title>
   <meta name="theme-color" content="#16302D" />
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="./favicon.ico" sizes="any" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -338,6 +339,55 @@
               </thead>
               <tbody id="anual-categorias-tbody"></tbody>
               <tfoot id="anual-categorias-tfoot"></tfoot>
+            </table>
+          </div>
+        </section>
+
+
+        <section class="annual-section">
+          <div class="annual-section-heading">
+            <div>
+              <h3>Indicadores de combustível</h3>
+              <p id="anual-combustivel-periodo">Consumo e custo dos abastecimentos do ano selecionado.</p>
+            </div>
+          </div>
+
+          <div class="annual-insight-grid annual-fuel-insights">
+            <article class="annual-insight">
+              <span>Litros no ano</span>
+              <strong id="anual-litros-total">0 L</strong>
+              <small id="anual-litros-total-note">—</small>
+            </article>
+            <article class="annual-insight">
+              <span>Média mensal de litros</span>
+              <strong id="anual-litros-media">0 L</strong>
+              <small id="anual-litros-media-note">—</small>
+            </article>
+            <article class="annual-insight">
+              <span>Gasto médio por abastecimento</span>
+              <strong id="anual-gasto-medio-abastecimento">R$ 0,00</strong>
+              <small id="anual-gasto-medio-abastecimento-note">—</small>
+            </article>
+            <article class="annual-insight">
+              <span>Preço médio por litro</span>
+              <strong id="anual-preco-medio-litro">—</strong>
+              <small id="anual-preco-medio-litro-note">—</small>
+            </article>
+          </div>
+
+          <div class="annual-table-wrap annual-fuel-table-wrap">
+            <table class="annual-table annual-fuel-table">
+              <thead>
+                <tr>
+                  <th>Combustível</th>
+                  <th>Abastecimentos</th>
+                  <th>Litros</th>
+                  <th>Gasto</th>
+                  <th>Preço médio/L</th>
+                </tr>
+              </thead>
+              <tbody id="anual-combustivel-tbody"></tbody>
+              <tfoot id="anual-combustivel-tfoot"></tfoot>
             </table>
           </div>
         </section>
