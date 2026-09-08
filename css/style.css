@@ -1404,3 +1404,132 @@ button, input, select {
     padding-bottom: 4px;
   }
 }
+
+
+/* =========================================================
+   Relatórios e compartilhamento — v0.8.5
+   ========================================================= */
+.summary-share-actions,
+.annual-report-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.summary-share-actions > div:first-child,
+.annual-report-actions > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.summary-share-actions span,
+.annual-report-actions span {
+  color: var(--color-ink-muted);
+  font-size: .74rem;
+}
+
+.summary-share-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.annual-report-actions {
+  margin: 0 0 16px;
+}
+
+@media (max-width: 620px) {
+  .summary-share-actions,
+  .annual-report-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .summary-share-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .summary-share-buttons .btn,
+  .annual-report-actions .btn {
+    width: 100%;
+  }
+}
+
+@media print {
+  body {
+    background: #fff !important;
+  }
+
+  #view-auth,
+  .app-header,
+  .bottom-nav,
+  .month-nav,
+  #btn-novo,
+  .annual-report-actions,
+  .summary-share-actions,
+  .toast-container,
+  .modal {
+    display: none !important;
+  }
+
+  #view-app,
+  .app-main,
+  #tab-anual {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #tab-contas,
+  #tab-combustivel,
+  #tab-resumo,
+  #tab-config {
+    display: none !important;
+  }
+
+  #tab-anual {
+    color: #111;
+  }
+
+  .annual-section,
+  .annual-kpi,
+  .annual-insight {
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  .annual-section {
+    border: 1px solid #ddd;
+    margin-top: 12px;
+  }
+
+  .annual-metric-switch {
+    display: none !important;
+  }
+
+  .annual-table-wrap {
+    overflow: visible !important;
+  }
+
+  .annual-table,
+  .annual-comparison-table,
+  .annual-category-table {
+    min-width: 0 !important;
+    font-size: 9pt;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+}

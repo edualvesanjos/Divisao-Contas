@@ -1,3 +1,15 @@
+## v0.8.5 DEV
+
+- Adiciona **Compartilhar resumo** na aba Resumo Mensal.
+- Gera uma imagem PNG limpa do mês, sem menus ou campos de edição, pronta para encaminhamento ao segundo participante.
+- A imagem inclui competência, totais de contas e combustível, valores rateados, litros, valor a transferir e situação do fechamento.
+- Adiciona compartilhamento nativo da imagem quando suportado pelo dispositivo/navegador, com fallback automático para download do PNG.
+- Adiciona botão **Baixar PNG** para salvar diretamente a imagem do resumo.
+- Adiciona **Imprimir / Salvar PDF** na Visão Anual, com layout específico para impressão.
+- O relatório anual preserva totais, comparativos, evolução mensal, categorias e indicadores de combustível.
+- Não requer nova migration no Supabase.
+- Cache do PWA atualizado para v0.8.5.
+
 ## v0.8.4 DEV
 
 - Evolui a leitura histórica da aba **Anual**.

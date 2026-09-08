@@ -64,6 +64,9 @@ const els = {
   resumoVazio: document.getElementById('resumo-vazio'),
   resumoTotalLitros: document.getElementById('resumo-total-litros'),
   resumoLitrosPorTipo: document.getElementById('resumo-litros-por-tipo'),
+  btnCompartilharResumo: document.getElementById('btn-compartilhar-resumo'),
+  btnBaixarResumo: document.getElementById('btn-baixar-resumo'),
+  btnImprimirAnual: document.getElementById('btn-imprimir-anual'),
 
   formFechamento: document.getElementById('form-fechamento'),
   fechamentoContasPago: document.getElementById('fechamento-contas-pago'),
@@ -1875,6 +1878,187 @@ els.anualMetricButtons?.forEach((btn) => {
     renderVisaoAnual();
   });
 });
+
+
+function roundedRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+async function dadosResumoCompartilhavel() {
+  const mesCombustivel = mesAnterior(mesAtivo);
+  const [contasRaw, abastecimentosRaw, fechamento] = await Promise.all([
+    localDb.listAll('contas_consumo'),
+    localDb.listAll('abastecimentos'),
+    localDb.get('fechamentos_mensais', fechamentoId(currentUser.id, mesAtivo.ano, mesAtivo.mes)),
+  ]);
+  const contas = contasRaw.filter((r) => r.user_id === currentUser.id && isNoMesAtivo(r.data_ordenacao));
+  const abastecimentos = abastecimentosRaw.filter((r) =>
+    r.user_id === currentUser.id && isNoMes(r.data_ordenacao, mesCombustivel.ano, mesCombustivel.mes)
+  );
+  const somar = (rows, campo) => rows.reduce((acc, r) => acc + (Number(r[campo]) || 0), 0);
+  return {
+    competencia: `${NOMES_MESES[mesAtivo.mes]} de ${mesAtivo.ano}`,
+    combustivelReferencia: `${NOMES_MESES[mesCombustivel.mes]} de ${mesCombustivel.ano}`,
+    totalContas: somar(contas, 'valor_total'),
+    totalCombustivel: somar(abastecimentos, 'valor_total'),
+    contasRateado: somar(contas, 'valor_rateado'),
+    combustivelRateado: somar(abastecimentos, 'valor_rateado'),
+    totalLitros: somar(abastecimentos, 'litros'),
+    fechamento,
+  };
+}
+
+async function gerarImagemResumoBlob() {
+  if (!currentUser) throw new Error('Usuário não autenticado.');
+  const dados = await dadosResumoCompartilhavel();
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1120;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas indisponível.');
+
+  const ink = '#102a43';
+  const muted = '#627d98';
+  const primary = '#1261a0';
+  const soft = '#eef6fb';
+  const border = '#d9e2ec';
+  const highlight = '#e9f7ef';
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = primary;
+  ctx.fillRect(0, 0, canvas.width, 150);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 48px system-ui, sans-serif';
+  ctx.fillText('Contas & Combustível', 64, 68);
+  ctx.font = '400 28px system-ui, sans-serif';
+  ctx.fillText(`Resumo · ${dados.competencia}`, 64, 112);
+
+  const card = (x, y, w, h, label, value, note = '', destaque = false) => {
+    ctx.fillStyle = destaque ? highlight : soft;
+    roundedRect(ctx, x, y, w, h, 20);
+    ctx.fill();
+    ctx.strokeStyle = destaque ? '#b7dfc4' : border;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = muted;
+    ctx.font = '500 24px system-ui, sans-serif';
+    ctx.fillText(label, x + 28, y + 42);
+    ctx.fillStyle = destaque ? '#146c43' : ink;
+    ctx.font = '700 38px system-ui, sans-serif';
+    ctx.fillText(value, x + 28, y + 92);
+    if (note) {
+      ctx.fillStyle = muted;
+      ctx.font = '400 20px system-ui, sans-serif';
+      ctx.fillText(note, x + 28, y + 126);
+    }
+  };
+
+  card(64, 190, 452, 150, 'Contas de consumo', formatMoeda(dados.totalContas));
+  card(564, 190, 452, 150, 'Contas rateadas', formatMoeda(dados.contasRateado));
+  card(64, 370, 452, 170, 'Combustível', formatMoeda(dados.totalCombustivel), `Referência: ${dados.combustivelReferencia}`);
+  card(564, 370, 452, 170, 'Combustível rateado', formatMoeda(dados.combustivelRateado), `${dados.totalLitros.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} L no período`);
+
+  const totalRateado = dados.contasRateado + dados.combustivelRateado;
+  card(64, 580, 952, 180, 'Valor a transferir', formatMoeda(totalRateado), 'Total rateado de contas + combustível', true);
+
+  ctx.fillStyle = ink;
+  ctx.font = '700 27px system-ui, sans-serif';
+  ctx.fillText('Situação do mês', 64, 825);
+  ctx.fillStyle = muted;
+  ctx.font = '400 23px system-ui, sans-serif';
+  const fechado = Boolean(dados.fechamento && !dados.fechamento.deleted);
+  ctx.fillText(fechado ? 'Mês fechado' : 'Mês ainda não fechado', 64, 868);
+  if (dados.fechamento?.contas_data_pagamento) {
+    ctx.fillText(`Pagamento das contas: ${formatData(dados.fechamento.contas_data_pagamento)}`, 64, 908);
+  }
+  const dataRateio = dados.fechamento?.contas_data_rateio || dados.fechamento?.combustivel_data_rateio;
+  if (dataRateio) ctx.fillText(`Transferência do rateio: ${formatData(dataRateio)}`, 64, 948);
+
+  ctx.strokeStyle = border;
+  ctx.beginPath();
+  ctx.moveTo(64, 1000);
+  ctx.lineTo(1016, 1000);
+  ctx.stroke();
+  ctx.fillStyle = muted;
+  ctx.font = '400 19px system-ui, sans-serif';
+  ctx.fillText('Resumo gerado pelo Contas & Combustível', 64, 1042);
+  ctx.textAlign = 'right';
+  ctx.fillText(new Date().toLocaleString('pt-BR'), 1016, 1042);
+  ctx.textAlign = 'left';
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Não foi possível gerar a imagem.')), 'image/png');
+  });
+}
+
+function nomeArquivoResumo() {
+  return `resumo-${mesAtivo.ano}-${String(mesAtivo.mes + 1).padStart(2, '0')}.png`;
+}
+
+async function baixarImagemResumo() {
+  try {
+    const blob = await gerarImagemResumoBlob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeArquivoResumo();
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('Imagem do resumo gerada.');
+  } catch (error) {
+    console.error('[resumo-imagem]', error);
+    showToast('Não foi possível gerar a imagem.', 'error');
+  }
+}
+
+async function compartilharImagemResumo() {
+  try {
+    const blob = await gerarImagemResumoBlob();
+    const file = new File([blob], nomeArquivoResumo(), { type: 'image/png' });
+    if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+      await navigator.share({
+        files: [file],
+        title: `Resumo ${NOMES_MESES[mesAtivo.mes]}/${mesAtivo.ano}`,
+        text: 'Resumo de contas e combustível.',
+      });
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeArquivoResumo();
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('Compartilhamento direto indisponível. A imagem foi baixada.');
+  } catch (error) {
+    if (error?.name === 'AbortError') return;
+    console.error('[resumo-compartilhar]', error);
+    showToast('Não foi possível compartilhar a imagem.', 'error');
+  }
+}
+
+
+if (els.btnBaixarResumo) {
+  els.btnBaixarResumo.addEventListener('click', baixarImagemResumo);
+}
+if (els.btnCompartilharResumo) {
+  els.btnCompartilharResumo.addEventListener('click', compartilharImagemResumo);
+}
+if (els.btnImprimirAnual) {
+  els.btnImprimirAnual.addEventListener('click', () => {
+    if (activeTab !== 'anual') return;
+    window.print();
+  });
+}
 
 async function renderResumo() {
   const mesCombustivel = mesAnterior(mesAtivo);
