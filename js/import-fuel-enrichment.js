@@ -1,6 +1,6 @@
 // =========================================================
 // Complementação de abastecimentos a partir de planilha XLS/XLSX
-// v0.8.3.1 — não cria lançamentos: apenas localiza por data + valor
+// v0.8.3.2 — não cria lançamentos: apenas localiza por data + valor
 // =========================================================
 
 function texto(value) {

@@ -1,3 +1,10 @@
+## v0.8.3.2 DEV
+
+- Corrige o fechamento do Gerenciador de Postos para não fechar o modal de Novo Abastecimento.
+- Substitui a sugestão via `datalist` por uma seleção explícita de postos, tornando a lista visível e selecionável de forma consistente entre navegadores.
+- Atualiza a lista ao abrir ou editar um abastecimento e preserva postos históricos que não estejam mais na lista gerenciada.
+- Mantém a migration 007, sem nova alteração de schema.
+
 ## v0.8.3.1 DEV
 
 - Adiciona importação complementar de abastecimentos por **data + valor total**, sem criar novos lançamentos.

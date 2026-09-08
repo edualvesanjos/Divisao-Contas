@@ -619,10 +619,11 @@
         <label class="field">
           <span class="field-label">Posto</span>
           <span class="station-input-row">
-            <input type="text" id="combustivel-posto" list="lista-postos" autocomplete="off" />
+            <select id="combustivel-posto" aria-label="Posto">
+              <option value="">Selecione um posto</option>
+            </select>
             <button type="button" id="btn-gerenciar-postos" class="btn btn-ghost station-manage-btn" aria-label="Gerenciar postos" title="Gerenciar postos">+</button>
           </span>
-          <datalist id="lista-postos"></datalist>
         </label>
 
         <div class="modal-actions">

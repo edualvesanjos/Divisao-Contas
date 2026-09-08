@@ -119,7 +119,7 @@ const els = {
   anualCombustivelTfoot: document.getElementById('anual-combustivel-tfoot'),
   anualVazio: document.getElementById('anual-vazio'),
 
-  listaPostos: document.getElementById('lista-postos'),
+  campoPosto: document.getElementById('combustivel-posto'),
   btnGerenciarPostos: document.getElementById('btn-gerenciar-postos'),
   modalPostos: document.getElementById('modal-postos'),
   formNovoPosto: document.getElementById('form-novo-posto'),
@@ -1018,13 +1018,26 @@ async function salvarPostosGerenciados(postos) {
 }
 
 async function atualizarListaPostos() {
-  if (!els.listaPostos) return;
-  if (!Array.isArray(settings.postos_gerenciados)) {
-    els.listaPostos.innerHTML = '';
-    return;
+  if (!els.campoPosto) return;
+
+  const valorAtual = els.campoPosto.value || '';
+  const postos = Array.isArray(settings.postos_gerenciados) ? settings.postos_gerenciados : [];
+  const opcoes = [...postos];
+
+  // Preserva um posto histórico ao editar um abastecimento, mesmo que ele
+  // não faça mais parte da lista gerenciada.
+  if (valorAtual && !opcoes.some((p) => p.toLowerCase() === valorAtual.toLowerCase())) {
+    opcoes.push(valorAtual);
   }
-  els.listaPostos.innerHTML = settings.postos_gerenciados
-    .map((p) => `<option value="${escapeHtml(p)}"></option>`).join('');
+
+  els.campoPosto.innerHTML = [
+    '<option value="">Selecione um posto</option>',
+    ...opcoes
+      .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+      .map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`),
+  ].join('');
+
+  els.campoPosto.value = valorAtual;
 }
 
 function renderGerenciadorPostos() {
@@ -1920,6 +1933,8 @@ els.btnNovo.addEventListener('click', () => {
   } else {
     els.formCombustivel.reset();
     document.getElementById('combustivel-percentual').value = settings.percentual_combustivel_padrao;
+    await garantirPostosGerenciados();
+    await atualizarListaPostos();
     atualizarPreviewCombustivel();
     els.modalCombustivelTitle.textContent = 'Novo abastecimento';
     els.btnExcluirCombustivel.hidden = true;
@@ -1929,10 +1944,16 @@ els.btnNovo.addEventListener('click', () => {
 
 document.querySelectorAll('[data-close-modal]').forEach((btn) => {
   btn.addEventListener('click', () => {
-    editingId = null;
-    els.modalConta.hidden = true;
-    els.modalCombustivel.hidden = true;
-    if (els.modalPostos) els.modalPostos.hidden = true;
+    const modal = btn.closest('.modal');
+    if (!modal) return;
+
+    // Fecha somente o modal ao qual o botão pertence. Assim, ao fechar o
+    // Gerenciador de Postos, o formulário de Novo Abastecimento permanece aberto.
+    modal.hidden = true;
+
+    if (modal === els.modalConta || modal === els.modalCombustivel) {
+      editingId = null;
+    }
   });
 });
 
@@ -2002,7 +2023,14 @@ async function abrirEdicao(storeName, id) {
       record.percentual_rateado ?? settings.percentual_combustivel_padrao;
     document.getElementById('combustivel-litros').value = record.litros ?? '';
     document.getElementById('combustivel-tipo').value = record.tipo_combustivel ?? 'gasolina';
-    document.getElementById('combustivel-posto').value = record.posto ?? '';
+    await garantirPostosGerenciados();
+    await atualizarListaPostos();
+    const campoPosto = document.getElementById('combustivel-posto');
+    const postoAtual = record.posto ?? '';
+    if (postoAtual && ![...campoPosto.options].some((option) => option.value === postoAtual)) {
+      campoPosto.add(new Option(postoAtual, postoAtual));
+    }
+    campoPosto.value = postoAtual;
     atualizarPreviewCombustivel();
 
     els.modalCombustivelTitle.textContent = 'Editar abastecimento';
