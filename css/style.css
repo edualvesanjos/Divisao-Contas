@@ -1297,3 +1297,29 @@ button, input, select {
     min-width: 680px;
   }
 }
+
+
+/* =========================================================
+   Complementação de combustível + Gerenciador de Postos — v0.8.3.1
+   ========================================================= */
+.station-input-row { display: flex; gap: 8px; align-items: center; }
+.station-input-row input { flex: 1; min-width: 0; }
+.station-manage-btn { flex: 0 0 42px; padding-inline: 0; font-size: 1.2rem; font-weight: 700; }
+.station-manager-sheet { max-width: 560px; }
+.station-add-form { display: flex; gap: 8px; margin: 14px 0; }
+.station-add-form input { flex: 1; min-width: 0; }
+.station-manager-list { display: grid; gap: 8px; max-height: 360px; overflow-y: auto; }
+.station-manager-item { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--color-border); }
+.station-manager-item > span { overflow-wrap: anywhere; }
+.station-manager-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.btn-small { padding: 6px 9px; min-height: 32px; font-size: .8rem; }
+.fuel-enrich-table { min-width: 760px; }
+.import-badge-atualizar { background: #e8f5e9; color: #1b5e20; }
+.import-badge-ja_atualizado { background: #e3f2fd; color: #0d47a1; }
+.import-badge-nao_localizado { background: #fff3e0; color: #8d4b00; }
+.import-badge-ambiguo { background: #ffebee; color: #b71c1c; }
+@media (max-width: 600px) {
+  .station-add-form { flex-direction: column; }
+  .station-manager-item { align-items: flex-start; flex-direction: column; }
+  .station-manager-actions { width: 100%; }
+}

@@ -487,6 +487,30 @@
             <div id="import-xlsx-preview" class="import-preview"></div>
           </div>
         </section>
+
+        <hr class="config-divider" />
+
+        <section class="import-section" aria-labelledby="fuel-enrich-title">
+          <h2 class="config-section-title" id="fuel-enrich-title">Complementar dados dos abastecimentos</h2>
+          <p class="config-hint">
+            Use a planilha de abastecimentos para preencher <strong>tipo de combustível, litros e posto</strong> nos lançamentos já existentes.
+            A correspondência exige <strong>mesma data e mesmo valor total</strong>; nenhum novo abastecimento é criado.
+          </p>
+          <label class="field">
+            <span class="field-label">Arquivo XLS/XLSX de abastecimentos</span>
+            <input type="file" id="fuel-enrich-file" accept=".xlsx,.xls" />
+          </label>
+          <div class="import-actions">
+            <button type="button" id="btn-analisar-fuel-enrich" class="btn btn-ghost">Analisar complementação</button>
+            <button type="button" id="btn-aplicar-fuel-enrich" class="btn btn-primary" disabled>Atualizar correspondências</button>
+          </div>
+          <div id="fuel-enrich-result" class="import-result" hidden aria-live="polite">
+            <div id="fuel-enrich-status" class="import-status"></div>
+            <div id="fuel-enrich-summary" class="import-summary"></div>
+            <div id="fuel-enrich-warnings" class="import-warnings" hidden></div>
+            <div id="fuel-enrich-preview" class="import-preview"></div>
+          </div>
+        </section>
       </section>
 
     </main>
@@ -594,7 +618,10 @@
 
         <label class="field">
           <span class="field-label">Posto</span>
-          <input type="text" id="combustivel-posto" list="lista-postos" autocomplete="off" />
+          <span class="station-input-row">
+            <input type="text" id="combustivel-posto" list="lista-postos" autocomplete="off" />
+            <button type="button" id="btn-gerenciar-postos" class="btn btn-ghost station-manage-btn" aria-label="Gerenciar postos" title="Gerenciar postos">+</button>
+          </span>
           <datalist id="lista-postos"></datalist>
         </label>
 
@@ -604,6 +631,22 @@
           <button type="submit" class="btn btn-primary">Salvar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal: gerenciar postos -->
+  <div id="modal-postos" class="modal" hidden>
+    <div class="modal-sheet station-manager-sheet">
+      <h2 class="modal-title">Gerenciar postos</h2>
+      <p class="config-hint">A lista facilita novos lançamentos. Renomear ou excluir um posto não altera abastecimentos antigos.</p>
+      <form id="form-novo-posto" class="station-add-form">
+        <input type="text" id="novo-posto-nome" maxlength="100" placeholder="Nome do posto" required autocomplete="off" />
+        <button type="submit" class="btn btn-primary">Adicionar</button>
+      </form>
+      <div id="lista-postos-gerenciados" class="station-manager-list"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal>Fechar</button>
+      </div>
     </div>
   </div>
 

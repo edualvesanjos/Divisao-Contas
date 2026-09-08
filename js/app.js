@@ -8,6 +8,7 @@ import { supabase } from './supabase-client.js';
 import { syncAll, watchConnectivity, isOnline } from './sync.js';
 import { APP_ENVIRONMENT, isDevelopment } from './environment.js';
 import { analisarPlanilhaHistorica } from './import-xlsx.js';
+import { lerPlanilhaComplementarCombustivel, classificarComplementoCombustivel } from './import-fuel-enrichment.js';
 
 const els = {
   viewAuth: document.getElementById('view-auth'),
@@ -119,6 +120,11 @@ const els = {
   anualVazio: document.getElementById('anual-vazio'),
 
   listaPostos: document.getElementById('lista-postos'),
+  btnGerenciarPostos: document.getElementById('btn-gerenciar-postos'),
+  modalPostos: document.getElementById('modal-postos'),
+  formNovoPosto: document.getElementById('form-novo-posto'),
+  novoPostoNome: document.getElementById('novo-posto-nome'),
+  listaPostosGerenciados: document.getElementById('lista-postos-gerenciados'),
 
   listaContas: document.getElementById('lista-contas'),
   listaContasVazia: document.getElementById('lista-contas-vazia'),
@@ -157,14 +163,24 @@ const els = {
   importXlsxErrors: document.getElementById('import-xlsx-errors'),
   importXlsxWarnings: document.getElementById('import-xlsx-warnings'),
   importXlsxPreview: document.getElementById('import-xlsx-preview'),
+
+  fuelEnrichFile: document.getElementById('fuel-enrich-file'),
+  btnAnalisarFuelEnrich: document.getElementById('btn-analisar-fuel-enrich'),
+  btnAplicarFuelEnrich: document.getElementById('btn-aplicar-fuel-enrich'),
+  fuelEnrichResult: document.getElementById('fuel-enrich-result'),
+  fuelEnrichStatus: document.getElementById('fuel-enrich-status'),
+  fuelEnrichSummary: document.getElementById('fuel-enrich-summary'),
+  fuelEnrichWarnings: document.getElementById('fuel-enrich-warnings'),
+  fuelEnrichPreview: document.getElementById('fuel-enrich-preview'),
 };
 
 let currentUser = null;
 let activeTab = 'contas';
 let isSignUpMode = false;
 let editingId = null;
-let settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50 };
+let settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50, postos_gerenciados: null };
 let importAnalysis = null;
+let fuelEnrichAnalysis = null;
 
 if (els.environmentBadge) {
   els.environmentBadge.hidden = !isDevelopment;
@@ -251,10 +267,18 @@ async function enterApp(user) {
   }
 
   syncAll(currentUser.id)
-    .then(() => refreshActiveView())
+    .then(async () => {
+      await loadSettings();
+      await garantirPostosGerenciados();
+      await atualizarListaPostos();
+      await refreshActiveView();
+    })
     .catch((err) => console.error('[sync] falha na sincronização inicial:', err));
 
-  watchConnectivity(() => currentUser?.id, () => refreshActiveView());
+  watchConnectivity(() => currentUser?.id, async () => {
+    await atualizarListaPostos();
+    await refreshActiveView();
+  });
 }
 
 async function loadSettings() {
@@ -264,9 +288,10 @@ async function loadSettings() {
     settings = {
       numero_participantes_padrao: record.numero_participantes_padrao ?? 2,
       percentual_combustivel_padrao: record.percentual_combustivel_padrao ?? 50,
+      postos_gerenciados: Array.isArray(record.postos_gerenciados) ? record.postos_gerenciados : null,
     };
   } else {
-    settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50 };
+    settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50, postos_gerenciados: null };
   }
   els.configParticipantes.value = settings.numero_participantes_padrao;
   els.configPercentual.value = settings.percentual_combustivel_padrao;
@@ -277,6 +302,7 @@ els.formConfig.addEventListener('submit', async (event) => {
   if (!currentUser) return;
 
   settings = {
+    ...settings,
     numero_participantes_padrao: Number(els.configParticipantes.value),
     percentual_combustivel_padrao: Number(els.configPercentual.value),
   };
@@ -301,6 +327,9 @@ els.btnForcarSync.addEventListener('click', async () => {
     await localDb.markAllForResync('configuracoes');
     await localDb.markAllForResync('fechamentos_mensais');
     await syncAll(currentUser.id);
+    await loadSettings();
+    await garantirPostosGerenciados();
+    await atualizarListaPostos();
     await refreshActiveView();
     showToast('Sincronização forçada concluída.');
   } catch (err) {
@@ -669,7 +698,7 @@ async function importarDadosAnalisados() {
   showToast(`${novos} novo(s) importado(s); ${duplicados} duplicado(s) ignorado(s); ${conflitos} conflito(s) preservado(s).`);
   await refreshActiveView();
   triggerBackgroundSync();
-  atualizarListaPostos();
+  await atualizarListaPostos();
 }
 
 if (els.importXlsxFile) els.importXlsxFile.addEventListener('change', resetImportAnalysis);
@@ -718,13 +747,108 @@ if (els.btnImportarXlsx) {
       if (els.importXlsxFile) els.importXlsxFile.value = '';
     } catch (err) {
       console.error('[import] falha ao importar XLSX:', err);
-      showToast('Falha ao importar. Verifique os avisos da análise e a configuração do Supabase DEV.', 'error');
+      showToast('Falha ao importar. Verifique os avisos da análise e a configuração do Supabase.', 'error');
       els.btnImportarXlsx.disabled = false;
     } finally {
       els.btnImportarXlsx.textContent = 'Importar dados analisados';
     }
   });
 }
+
+
+function renderFuelEnrichAnalysis(analysis) {
+  if (!els.fuelEnrichResult) return;
+  const s = analysis.summary;
+  els.fuelEnrichResult.hidden = false;
+  els.fuelEnrichStatus.innerHTML = `<strong>${s.atualizar} correspondência(s) pronta(s) para atualização.</strong> A chave usada é exclusivamente data + valor total.`;
+  els.fuelEnrichSummary.innerHTML = `
+    <div><strong>${s.total}</strong><span>registros analisados</span></div>
+    <div><strong>${s.atualizar}</strong><span>atualizar</span></div>
+    <div><strong>${s.ja_atualizado}</strong><span>já completos</span></div>
+    <div><strong>${s.nao_localizado}</strong><span>não localizados</span></div>
+    <div><strong>${s.ambiguo}</strong><span>ambiguidades</span></div>`;
+  const warnings = [...(analysis.warnings || [])];
+  els.fuelEnrichWarnings.hidden = warnings.length === 0;
+  els.fuelEnrichWarnings.innerHTML = warnings.length ? `<strong>Avisos</strong><ul>${warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join('')}</ul>` : '';
+
+  const statusLabel = { atualizar: 'Atualizar', ja_atualizado: 'Já completo', nao_localizado: 'Não localizado', ambiguo: 'Ambíguo' };
+  els.fuelEnrichPreview.innerHTML = `
+    <div class="table-scroll"><table class="preview-table fuel-enrich-table">
+      <thead><tr><th>Status</th><th>Data</th><th>Valor</th><th>Tipo</th><th>Litros</th><th>Posto</th></tr></thead>
+      <tbody>${analysis.rows.map((r) => `<tr>
+        <td><span class="import-badge import-badge-${r._status}">${statusLabel[r._status]}</span></td>
+        <td>${formatData(r.data)}</td><td>${formatMoeda(r.valor_total)}</td>
+        <td>${escapeHtml(r.tipo_combustivel === 'etanol' ? 'Etanol' : r.tipo_combustivel === 'gasolina' ? 'Gasolina' : '—')}</td>
+        <td>${r.litros == null ? '—' : `${Number(r.litros).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 3})} L`}</td>
+        <td>${escapeHtml(r.posto || '—')}</td></tr>`).join('')}</tbody>
+    </table></div>`;
+  els.btnAplicarFuelEnrich.disabled = s.atualizar === 0;
+}
+
+function resetFuelEnrichAnalysis() {
+  fuelEnrichAnalysis = null;
+  if (els.fuelEnrichResult) els.fuelEnrichResult.hidden = true;
+  if (els.btnAplicarFuelEnrich) els.btnAplicarFuelEnrich.disabled = true;
+}
+
+if (els.fuelEnrichFile) els.fuelEnrichFile.addEventListener('change', resetFuelEnrichAnalysis);
+
+if (els.btnAnalisarFuelEnrich) els.btnAnalisarFuelEnrich.addEventListener('click', async () => {
+  const file = els.fuelEnrichFile?.files?.[0];
+  if (!file) { showToast('Selecione primeiro a planilha de abastecimentos.', 'error'); return; }
+  els.btnAnalisarFuelEnrich.disabled = true;
+  els.btnAnalisarFuelEnrich.textContent = 'Analisando...';
+  try {
+    const parsed = await lerPlanilhaComplementarCombustivel(file);
+    const existentes = (await localDb.listAll('abastecimentos')).filter((r) => r.user_id === currentUser.id);
+    fuelEnrichAnalysis = classificarComplementoCombustivel(parsed, existentes);
+    renderFuelEnrichAnalysis(fuelEnrichAnalysis);
+    showToast('Complementação analisada. Confira as correspondências.');
+  } catch (err) {
+    console.error('[fuel-enrich] falha na análise:', err);
+    resetFuelEnrichAnalysis();
+    showToast(err.message || 'Não foi possível analisar a planilha.', 'error');
+  } finally {
+    els.btnAnalisarFuelEnrich.disabled = false;
+    els.btnAnalisarFuelEnrich.textContent = 'Analisar complementação';
+  }
+});
+
+if (els.btnAplicarFuelEnrich) els.btnAplicarFuelEnrich.addEventListener('click', async () => {
+  if (!fuelEnrichAnalysis || !currentUser) return;
+  const rows = fuelEnrichAnalysis.rows.filter((r) => r._status === 'atualizar');
+  if (!rows.length) return;
+  if (!window.confirm(`Atualizar tipo de combustível, litros e posto de ${rows.length} lançamento(s) correspondentes? Data, valor e rateio serão preservados.`)) return;
+  els.btnAplicarFuelEnrich.disabled = true;
+  els.btnAplicarFuelEnrich.textContent = 'Atualizando...';
+  try {
+    for (const row of rows) {
+      const fields = {};
+      if (row.tipo_combustivel) fields.tipo_combustivel = row.tipo_combustivel;
+      if (row.litros != null) fields.litros = row.litros;
+      if (row.posto) fields.posto = row.posto;
+      await localDb.update('abastecimentos', row._existingId, fields);
+    }
+    // Incorpora os postos encontrados à lista gerenciada sem alterar históricos antigos.
+    await garantirPostosGerenciados();
+    const novosPostos = rows.map((r) => r.posto).filter(Boolean);
+    if (novosPostos.length) await salvarPostosGerenciados([...(settings.postos_gerenciados || []), ...novosPostos]);
+    if (isOnline()) await syncAll(currentUser.id);
+    await atualizarListaPostos();
+    await refreshActiveView();
+    showToast(`${rows.length} abastecimento(s) complementado(s) com sucesso.`);
+    // Reclassifica para mostrar que agora já estão completos.
+    const existentes = (await localDb.listAll('abastecimentos')).filter((r) => r.user_id === currentUser.id);
+    fuelEnrichAnalysis = classificarComplementoCombustivel(fuelEnrichAnalysis, existentes);
+    renderFuelEnrichAnalysis(fuelEnrichAnalysis);
+  } catch (err) {
+    console.error('[fuel-enrich] falha ao aplicar:', err);
+    showToast('Falha ao complementar abastecimentos. Verifique o console e a sincronização.', 'error');
+  } finally {
+    els.btnAplicarFuelEnrich.textContent = 'Atualizar correspondências';
+    els.btnAplicarFuelEnrich.disabled = !fuelEnrichAnalysis?.summary?.atualizar;
+  }
+});
 
 async function excluirDadosImportados() {
   if (!currentUser) return;
@@ -852,11 +976,120 @@ async function refreshActiveView() {
   }
 }
 
-async function atualizarListaPostos() {
-  const rows = await localDb.listAll('abastecimentos');
-  const postos = [...new Set(rows.map((r) => r.posto).filter(Boolean))].sort();
-  els.listaPostos.innerHTML = postos.map((p) => `<option value="${p}"></option>`).join('');
+function normalizarNomePosto(nome) {
+  const clean = String(nome ?? '').trim().replace(/\s+/g, ' ');
+  if (clean.toLowerCase() === 'posto big') return 'Posto Big Atibaia';
+  return clean;
 }
+
+async function postosDosAbastecimentos() {
+  const rows = await localDb.listAll('abastecimentos');
+  return [...new Set(rows
+    .filter((r) => r.user_id === currentUser?.id && !r.deleted)
+    .map((r) => normalizarNomePosto(r.posto))
+    .filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+
+async function garantirPostosGerenciados() {
+  if (!currentUser || Array.isArray(settings.postos_gerenciados)) return;
+  settings.postos_gerenciados = await postosDosAbastecimentos();
+  await localDb.putWithId('configuracoes', currentUser.id, {
+    user_id: currentUser.id,
+    numero_participantes_padrao: settings.numero_participantes_padrao,
+    percentual_combustivel_padrao: settings.percentual_combustivel_padrao,
+    postos_gerenciados: settings.postos_gerenciados,
+  });
+  if (isOnline()) await syncAll(currentUser.id);
+}
+
+async function salvarPostosGerenciados(postos) {
+  if (!currentUser) return;
+  settings.postos_gerenciados = [...new Set(postos.map(normalizarNomePosto).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  await localDb.putWithId('configuracoes', currentUser.id, {
+    user_id: currentUser.id,
+    numero_participantes_padrao: settings.numero_participantes_padrao,
+    percentual_combustivel_padrao: settings.percentual_combustivel_padrao,
+    postos_gerenciados: settings.postos_gerenciados,
+  });
+  await atualizarListaPostos();
+  renderGerenciadorPostos();
+  if (isOnline()) await syncAll(currentUser.id);
+}
+
+async function atualizarListaPostos() {
+  if (!els.listaPostos) return;
+  if (!Array.isArray(settings.postos_gerenciados)) {
+    els.listaPostos.innerHTML = '';
+    return;
+  }
+  els.listaPostos.innerHTML = settings.postos_gerenciados
+    .map((p) => `<option value="${escapeHtml(p)}"></option>`).join('');
+}
+
+function renderGerenciadorPostos() {
+  if (!els.listaPostosGerenciados) return;
+  const postos = Array.isArray(settings.postos_gerenciados) ? settings.postos_gerenciados : [];
+  els.listaPostosGerenciados.innerHTML = postos.length
+    ? postos.map((posto, index) => `
+      <div class="station-manager-item">
+        <span>${escapeHtml(posto)}</span>
+        <div class="station-manager-actions">
+          <button type="button" class="btn btn-ghost btn-small" data-posto-renomear="${index}">Renomear</button>
+          <button type="button" class="btn btn-ghost btn-small" data-posto-excluir="${index}">Excluir</button>
+        </div>
+      </div>`).join('')
+    : '<p class="config-hint">Nenhum posto cadastrado na lista.</p>';
+}
+
+if (els.btnGerenciarPostos) els.btnGerenciarPostos.addEventListener('click', async () => {
+  await garantirPostosGerenciados();
+  renderGerenciadorPostos();
+  els.modalPostos.hidden = false;
+  els.novoPostoNome?.focus();
+});
+
+if (els.formNovoPosto) els.formNovoPosto.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const nome = normalizarNomePosto(els.novoPostoNome.value);
+  if (!nome) return;
+  const postos = Array.isArray(settings.postos_gerenciados) ? [...settings.postos_gerenciados] : [];
+  if (postos.some((p) => p.toLowerCase() === nome.toLowerCase())) {
+    showToast('Esse posto já está cadastrado.', 'error');
+    return;
+  }
+  postos.push(nome);
+  await salvarPostosGerenciados(postos);
+  els.novoPostoNome.value = '';
+  showToast('Posto adicionado.');
+});
+
+if (els.listaPostosGerenciados) els.listaPostosGerenciados.addEventListener('click', async (event) => {
+  const renameButton = event.target.closest('[data-posto-renomear]');
+  const deleteButton = event.target.closest('[data-posto-excluir]');
+  const postos = Array.isArray(settings.postos_gerenciados) ? [...settings.postos_gerenciados] : [];
+  if (renameButton) {
+    const index = Number(renameButton.dataset.postoRenomear);
+    const atual = postos[index];
+    const novo = normalizarNomePosto(window.prompt('Novo nome do posto:', atual));
+    if (!novo || novo === atual) return;
+    if (postos.some((p, i) => i !== index && p.toLowerCase() === novo.toLowerCase())) {
+      showToast('Já existe um posto com esse nome.', 'error');
+      return;
+    }
+    postos[index] = novo;
+    await salvarPostosGerenciados(postos);
+    showToast('Posto renomeado na lista. O histórico foi preservado.');
+  }
+  if (deleteButton) {
+    const index = Number(deleteButton.dataset.postoExcluir);
+    const nome = postos[index];
+    if (!window.confirm(`Excluir “${nome}” da lista de postos? Os abastecimentos antigos não serão alterados.`)) return;
+    postos.splice(index, 1);
+    await salvarPostosGerenciados(postos);
+    showToast('Posto excluído da lista. O histórico foi preservado.');
+  }
+});
 
 function isNoMes(dataOrdenacao, ano, mes) {
   if (!dataOrdenacao) return false;
@@ -1699,6 +1932,7 @@ document.querySelectorAll('[data-close-modal]').forEach((btn) => {
     editingId = null;
     els.modalConta.hidden = true;
     els.modalCombustivel.hidden = true;
+    if (els.modalPostos) els.modalPostos.hidden = true;
   });
 });
 
@@ -1876,7 +2110,10 @@ function parseOptionalText(id) {
 }
 
 function triggerBackgroundSync() {
-  if (currentUser) syncAll(currentUser.id).then(() => refreshActiveView());
+  if (currentUser) syncAll(currentUser.id).then(async () => {
+    await atualizarListaPostos();
+    await refreshActiveView();
+  });
 }
 
 // ---------------------------------------------------------

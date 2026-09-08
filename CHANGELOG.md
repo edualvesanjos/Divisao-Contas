@@ -1,3 +1,14 @@
+## v0.8.3.1 DEV
+
+- Adiciona importação complementar de abastecimentos por **data + valor total**, sem criar novos lançamentos.
+- A complementação atualiza somente tipo de combustível, litros e posto; valor, percentual, rateio e data existentes são preservados.
+- Normaliza `Dt Clean` para Gasolina e `Posto Big` para `Posto Big Atibaia`.
+- Exibe análise prévia com registros a atualizar, já completos, não localizados e ambiguidades.
+- Adiciona **Gerenciar postos** no cadastro de combustível, com inclusão, renomeação e exclusão da lista sem alterar abastecimentos históricos.
+- Corrige o carregamento da lista de postos após sincronização inicial e sincronização forçada.
+- Adiciona `007_postos_gerenciados.sql` para sincronizar a lista gerenciada de postos entre dispositivos.
+- Mantém ambiente de desenvolvimento.
+
 ## v0.8.3 DEV
 
 - Adiciona **Indicadores de combustível** à Visão Anual.
