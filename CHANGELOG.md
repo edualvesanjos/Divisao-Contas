@@ -1,3 +1,14 @@
+## v0.8.6 DEV
+
+- Consolida a série v0.8.x antes do próximo fechamento de produção.
+- Não adiciona novas funcionalidades de negócio.
+- Atualiza `supabase/schema.sql` para refletir o schema completo atualmente exigido pelo aplicativo.
+- Adiciona `supabase/verificar_release.sql`, consulta somente leitura para comparar DEV/PROD antes de releases e detectar colunas, RLS, políticas e constraints ausentes.
+- Adiciona `docs/TESTES_v0.8.6.md` com checklist de regressão de autenticação, sincronização, lançamentos, fechamento, importações, postos, imagem do resumo, visão anual e PWA.
+- Mantém todas as funcionalidades validadas até a v0.8.5.
+- Não requer nova migration no Supabase para ambientes já atualizados pelas migrations 002–007.
+- Cache do PWA atualizado para v0.8.6.
+
 ## v0.8.5 DEV
 
 - Adiciona **Compartilhar resumo** na aba Resumo Mensal.
