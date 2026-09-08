@@ -1,10 +1,17 @@
-## v0.8.6 PROD
+## v0.9.0 DEV
 
-- Fecha em produção a série v0.8.x a partir da v0.8.6 DEV validada.
-- Altera o ambiente da aplicação para `production`.
-- Mantém integralmente as funcionalidades e correções validadas na v0.8.6 DEV.
-- Não requer nova migration no Supabase.
-- Recomenda-se executar `supabase/verificar_release.sql` no Supabase PROD antes da publicação.
+- Inicia a série de modernização visual e responsividade multidispositivo.
+- Adota como referência visual obrigatória o dashboard aprovado pelo usuário: barra superior azul-marinho, navegação lateral, área central clara, cartões suaves e hierarquia visual limpa.
+- **Resumo** passa a ser a tela inicial do sistema.
+- Em desktop/notebook, a navegação principal passa para uma barra lateral fixa; em tablet/celular, permanece como navegação inferior adaptada.
+- Reorganiza visualmente o Resumo Mensal para aproximá-lo da referência aprovada, preservando apenas as funcionalidades já existentes.
+- Integra o seletor de mês/ano visualmente ao cabeçalho em telas maiores.
+- Reposiciona o status de sincronização no rodapé da navegação lateral em desktop.
+- Mantém a área de compartilhamento do Resumo com destaque visual compatível com a nova linguagem.
+- Os importadores históricos e de complementação passam a ser ferramentas exclusivas de DEV: visíveis em `development` e ocultos em `production`.
+- Não altera regras de negócio, cálculos, importações, sincronização ou schema do Supabase.
+- Não requer nova migration.
+- Cache do PWA atualizado para v0.9.0.
 
 ## v0.8.6 DEV
 

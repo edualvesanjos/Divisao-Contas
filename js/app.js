@@ -183,7 +183,7 @@ const els = {
 };
 
 let currentUser = null;
-let activeTab = 'contas';
+let activeTab = 'resumo';
 let isSignUpMode = false;
 let editingId = null;
 let settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50, postos_gerenciados: null };
@@ -195,6 +195,10 @@ if (els.environmentBadge) {
   els.environmentBadge.hidden = !isDevelopment;
   els.environmentBadge.title = `Ambiente: ${APP_ENVIRONMENT}`;
 }
+
+document.querySelectorAll('.dev-only-tool').forEach((element) => {
+  element.hidden = !isDevelopment;
+});
 
 const hoje = new Date();
 let mesAtivo = { ano: hoje.getFullYear(), mes: hoje.getMonth() }; // mes: 0-11
@@ -2440,7 +2444,7 @@ function triggerBackgroundSync() {
 function updateConnectionStatus() {
   const online = isOnline();
   els.statusIndicator.classList.toggle('is-offline', !online);
-  els.statusLabel.textContent = online ? 'online' : 'offline';
+  els.statusLabel.textContent = online ? 'Sincronizado' : 'Offline';
 }
 
 window.addEventListener('online', updateConnectionStatus);

@@ -42,12 +42,14 @@
   <div id="view-app" class="app" hidden>
 
     <header class="app-header">
-      <div class="app-header-title">
-        <span id="tab-title">Contas</span>
-        <span id="app-version" class="app-version"></span>
-        <span id="environment-badge" class="environment-badge" hidden>DEV</span>
+      <div class="app-brand" aria-label="Contas e Combustível">
+        <span class="app-brand-icon" aria-hidden="true">⛽</span>
+        <strong>Contas &amp; Combustível</strong>
       </div>
       <div class="app-header-actions">
+        <span id="tab-title" class="app-current-view">Resumo</span>
+        <span id="app-version" class="app-version"></span>
+        <span id="environment-badge" class="environment-badge" hidden>DEV</span>
         <div class="status" id="status-indicator" title="Status de conexão">
           <span class="status-dot" id="status-dot"></span>
           <span class="status-label" id="status-label">online</span>
@@ -81,7 +83,7 @@
     <main class="app-main">
 
       <!-- Aba: Contas de consumo -->
-      <section id="tab-contas" class="tab-panel">
+      <section id="tab-contas" class="tab-panel" hidden>
         <div class="month-check-grid" aria-label="Conferência mensal de contas">
           <div class="month-check-card month-check-card-subtotal">
             <span class="month-check-label">Subtotal das contas</span>
@@ -137,11 +139,30 @@
       </section>
 
       <!-- Aba: Resumo Mensal -->
-      <section id="tab-resumo" class="tab-panel" hidden>
+      <section id="tab-resumo" class="tab-panel">
+        <div class="page-heading page-heading-resumo">
+          <div>
+            <h1>Resumo</h1>
+            <p>Visão consolidada do mês selecionado</p>
+          </div>
+        </div>
+
         <div id="resumo-fechado-banner" class="month-closed-banner" hidden>
           <strong>Mês já fechado</strong>
           <span id="resumo-percentual-fechado"></span>
         </div>
+
+        <div class="summary-share-actions">
+          <div>
+            <strong>Compartilhar resumo</strong>
+            <span>Gere uma imagem limpa do mês para encaminhar ao outro participante.</span>
+          </div>
+          <div class="summary-share-buttons">
+            <button type="button" class="btn btn-primary" id="btn-compartilhar-resumo">Compartilhar imagem</button>
+            <button type="button" class="btn btn-secondary" id="btn-baixar-resumo">Baixar PNG</button>
+          </div>
+        </div>
+
 
         <div class="resumo-grid">
           <div class="resumo-card">
@@ -176,17 +197,6 @@
         <p class="empty-state" id="resumo-vazio" hidden>
           Nenhum lançamento neste mês ainda.
         </p>
-
-        <div class="summary-share-actions">
-          <div>
-            <strong>Compartilhar resumo</strong>
-            <span>Gere uma imagem limpa do mês para encaminhar ao outro participante.</span>
-          </div>
-          <div class="summary-share-buttons">
-            <button type="button" class="btn btn-primary" id="btn-compartilhar-resumo">Compartilhar imagem</button>
-            <button type="button" class="btn btn-secondary" id="btn-baixar-resumo">Baixar PNG</button>
-          </div>
-        </div>
 
         <hr class="config-divider" />
 
@@ -484,7 +494,7 @@
 
         <hr class="config-divider" />
 
-        <section class="import-section" aria-labelledby="import-title">
+        <section class="import-section dev-only-tool" aria-labelledby="import-title">
           <h2 class="config-section-title" id="import-title">Importar histórico da planilha</h2>
           <p class="config-hint">
             Perfil inicial compatível com a planilha “Contas de Consumo”: abas de Contas Consumo e Combustivel por ano.
@@ -519,7 +529,7 @@
 
         <hr class="config-divider" />
 
-        <section class="import-section" aria-labelledby="fuel-enrich-title">
+        <section class="import-section dev-only-tool" aria-labelledby="fuel-enrich-title">
           <h2 class="config-section-title" id="fuel-enrich-title">Complementar dados dos abastecimentos</h2>
           <p class="config-hint">
             Use a planilha de abastecimentos para preencher <strong>tipo de combustível, litros e posto</strong> nos lançamentos já existentes.
@@ -546,26 +556,26 @@
 
     <button id="btn-novo" class="fab" aria-label="Novo registro">+</button>
 
-    <nav class="tab-bar">
-      <button class="tab-btn is-active" data-tab="contas">
-        <span class="tab-icon" aria-hidden="true">💧</span>
+    <nav class="tab-bar" aria-label="Navegação principal">
+      <button class="tab-btn is-active" data-tab="resumo">
+        <span class="tab-icon" aria-hidden="true">▣</span>
+        <span>Resumo</span>
+      </button>
+      <button class="tab-btn" data-tab="contas">
+        <span class="tab-icon" aria-hidden="true">▤</span>
         <span>Contas</span>
       </button>
       <button class="tab-btn" data-tab="combustivel">
         <span class="tab-icon" aria-hidden="true">⛽</span>
         <span>Combustível</span>
       </button>
-      <button class="tab-btn" data-tab="resumo">
-        <span class="tab-icon" aria-hidden="true">📊</span>
-        <span>Resumo</span>
-      </button>
       <button class="tab-btn" data-tab="anual">
-        <span class="tab-icon" aria-hidden="true">📈</span>
+        <span class="tab-icon" aria-hidden="true">▦</span>
         <span>Anual</span>
       </button>
       <button class="tab-btn" data-tab="config">
-        <span class="tab-icon" aria-hidden="true">⚙️</span>
-        <span>Config</span>
+        <span class="tab-icon" aria-hidden="true">⚙</span>
+        <span>Configurações</span>
       </button>
     </nav>
   </div>
