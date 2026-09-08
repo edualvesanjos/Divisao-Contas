@@ -1,3 +1,11 @@
+## v0.8.6 PROD
+
+- Fecha em produção a série v0.8.x a partir da v0.8.6 DEV validada.
+- Altera o ambiente da aplicação para `production`.
+- Mantém integralmente as funcionalidades e correções validadas na v0.8.6 DEV.
+- Não requer nova migration no Supabase.
+- Recomenda-se executar `supabase/verificar_release.sql` no Supabase PROD antes da publicação.
+
 ## v0.8.6 DEV
 
 - Consolida a série v0.8.x antes do próximo fechamento de produção.
