@@ -1,26 +1,11 @@
-// =========================================================
-// Ambiente e conexão com Supabase
-//
-// develop  -> APP_ENVIRONMENT = 'development'
-// main     -> APP_ENVIRONMENT = 'production'
-//
-// A publishable/anon key do Supabase pode ficar no frontend;
-// a proteção dos dados depende das políticas RLS.
-// Nunca coloque service_role aqui.
-// =========================================================
-
+// v0.9.1 DEV: somente SuperDB de desenvolvimento.
+// Copie do painel o slug e a chave anon. Nunca use service_role.
 export const APP_ENVIRONMENT = 'development';
-
-const SUPABASE_CONFIG = {
-  development: {
-    url: 'https://cihzervgauvahpnmvjmq.supabase.co',
-    key: 'sb_publishable_GA_4UlhVkjSJgnKQBaMWdA_tLZ1yxZQ',
-  },
-  production: {
-    url: 'https://vzuaqtsqdaxdapcgqyol.supabase.co',
-    key: 'sb_publishable_t9OGx28wwGL0rrLXBK6bGw_Mmt8yijQ',
-  },
+export const isDevelopment = true;
+export const superdbConfig = {
+  url: 'https://auth.superdb.com.br',
+  project: 'COLE_SLUG_DO_PROJETO_DEV',
+  key: 'COLE_CHAVE_ANON_DO_PROJETO_DEV',
+  // Libere somente após conferir usuários, dados e RLS no DEV.
+  migrationReady: false,
 };
-
-export const supabaseConfig = SUPABASE_CONFIG[APP_ENVIRONMENT];
-export const isDevelopment = APP_ENVIRONMENT === 'development';

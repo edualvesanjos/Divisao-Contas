@@ -1,3 +1,13 @@
+## v0.9.1 DEV — preparação SuperDB
+
+- Cliente SuperDB configurável para DEV, com slug e chave anon pendentes.
+- Sessão com renovação preventiva e escuta de saída, sem `onAuthStateChange`.
+- Cache IndexedDB separado do Supabase e sincronização bloqueada até validação da migração.
+- Cadastro bloqueado durante a preservação dos UUIDs dos usuários.
+- Serviço PWA atualizado; consulta e exclusão direta migram para o cliente SuperDB.
+- Instruções de transferência e validação em `superdb/MIGRACAO_DEV.md`.
+- Sem alteração em regras de negócio ou layout. Nenhum dado foi transferido nesta entrega.
+
 ## v0.9.0 DEV
 
 - Inicia a série de modernização visual e responsividade multidispositivo.

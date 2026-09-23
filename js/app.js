@@ -4,7 +4,8 @@
 
 import { getSession, signIn, signUp, signOut, onAuthChange } from './auth.js';
 import { localDb } from './db-local.js';
-import { supabase } from './supabase-client.js';
+import { superdb } from './superdb-client.js';
+import { superdbConfig } from './environment.js';
 import { syncAll, watchConnectivity, isOnline } from './sync.js';
 import { APP_ENVIRONMENT, isDevelopment } from './environment.js';
 import { analisarPlanilhaHistorica } from './import-xlsx.js';
@@ -207,6 +208,7 @@ let mesAtivo = { ano: hoje.getFullYear(), mes: hoje.getMonth() }; // mes: 0-11
 // Autenticação
 // ---------------------------------------------------------
 
+els.authToggle.hidden = true; // Cadastro bloqueado até concluir migração dos usuários.
 els.authToggle.addEventListener('click', () => {
   isSignUpMode = !isSignUpMode;
   els.authSubmit.textContent = isSignUpMode ? 'Criar conta' : 'Entrar';
@@ -331,6 +333,10 @@ els.formConfig.addEventListener('submit', async (event) => {
 
 els.btnForcarSync.addEventListener('click', async () => {
   if (!currentUser) return;
+  if (!superdbConfig.migrationReady) {
+    showToast('Sincronização DEV bloqueada até a migração ser conferida.', 'error');
+    return;
+  }
   els.btnForcarSync.disabled = true;
   els.btnForcarSync.textContent = 'Sincronizando...';
 
@@ -864,6 +870,7 @@ if (els.btnAplicarFuelEnrich) els.btnAplicarFuelEnrich.addEventListener('click',
 });
 
 async function excluirDadosImportados() {
+  if (!superdbConfig.migrationReady) throw new Error('Migração DEV ainda não liberada para exclusão remota.');
   if (!currentUser) return;
 
   const stores = ['contas_consumo', 'abastecimentos', 'fechamentos_mensais'];
@@ -877,19 +884,19 @@ async function excluirDadosImportados() {
 
     if (!importados.length) continue;
 
-    // Exclui por ID no Supabase. Assim a limpeza funciona inclusive para registros
+    // Exclui por ID no SuperDB. Assim a limpeza funciona inclusive para registros
     // importados em versões anteriores e não depende do campo origem_importacao
     // existir/estar preenchido remotamente.
     const ids = importados.map((row) => row.id).filter(Boolean);
     if (ids.length && isOnline()) {
-      const { error } = await supabase
+      const { error } = await superdb
         .from(store)
         .delete()
         .eq('user_id', currentUser.id)
         .in('id', ids);
 
       if (error) {
-        throw new Error(`Falha ao excluir ${store} no Supabase: ${error.message}`);
+        throw new Error(`Falha ao excluir ${store} no SuperDB: ${error.message}`);
       }
     }
 
@@ -2468,7 +2475,12 @@ els.btnLogout.addEventListener('click', async () => {
 // Início
 // ---------------------------------------------------------
 
-checkExistingSession();
+checkExistingSession().catch((error) => {
+  console.error('[auth] falha ao recuperar sessão:', error);
+  els.viewAuth.hidden = false;
+  els.authError.textContent = 'Não foi possível validar a sessão. Tente entrar novamente.';
+  els.authError.hidden = false;
+});
 loadAppVersion();
 atualizarLabelMes();
 

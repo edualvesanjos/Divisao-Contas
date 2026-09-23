@@ -8,7 +8,7 @@
 // espera a rede para responder ao usuário.
 // =========================================================
 
-const DB_NAME = 'contas-combustivel';
+const DB_NAME = 'contas-combustivel-superdb-dev';
 const DB_VERSION = 3;
 const STORES = ['contas_consumo', 'abastecimentos', 'configuracoes', 'fechamentos_mensais'];
 

@@ -1,3 +1,5 @@
+> **v0.9.1 DEV — preparação da migração para SuperDB.** Consulte `superdb/MIGRACAO_DEV.md` antes de configurar ou publicar. Esta versão ainda exige exportação/importação dos dados e credenciais DEV; não execute as instruções Supabase abaixo para configurar o SuperDB.
+
 # Contas & Combustível
 
 Registro pessoal de contas de consumo (água, luz, internet) e abastecimentos de
