@@ -208,7 +208,10 @@ let mesAtivo = { ano: hoje.getFullYear(), mes: hoje.getMonth() }; // mes: 0-11
 // Autenticação
 // ---------------------------------------------------------
 
-els.authToggle.hidden = true; // Cadastro bloqueado até concluir migração dos usuários.
+els.authToggle.hidden = false;
+document.getElementById('btn-copy-user-id')?.addEventListener('click', () => {
+  if (currentUser?.id) window.prompt('UUID da sua conta no SuperDB DEV (copie o valor):', currentUser.id);
+});
 els.authToggle.addEventListener('click', () => {
   isSignUpMode = !isSignUpMode;
   els.authSubmit.textContent = isSignUpMode ? 'Criar conta' : 'Entrar';
@@ -1011,7 +1014,7 @@ async function postosDosAbastecimentos() {
 }
 
 async function garantirPostosGerenciados() {
-  if (!currentUser || Array.isArray(settings.postos_gerenciados)) return;
+  if (!currentUser || !isOnline() || Array.isArray(settings.postos_gerenciados)) return;
   settings.postos_gerenciados = await postosDosAbastecimentos();
   await localDb.putWithId('configuracoes', currentUser.id, {
     user_id: currentUser.id,
@@ -2441,7 +2444,7 @@ function triggerBackgroundSync() {
   if (currentUser) syncAll(currentUser.id).then(async () => {
     await atualizarListaPostos();
     await refreshActiveView();
-  });
+  }).catch((error) => console.error('[sync] falha:', error));
 }
 
 // ---------------------------------------------------------

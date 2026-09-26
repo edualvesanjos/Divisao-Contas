@@ -1,5 +1,5 @@
 // =========================================================
-// Sincronização local <-> Supabase
+// Sincronização local <-> SuperDB
 //
 // Estratégia simples de "last write wins" usando updated_at.
 // Isso é suficiente para uso pessoal (um usuário, um dispositivo
@@ -19,12 +19,12 @@ export function isOnline() {
   return navigator.onLine;
 }
 
-/** Envia registros pendentes locais para o Supabase. */
+/** Envia registros pendentes locais para o SuperDB. */
 async function pushPending(storeName) {
   const pending = await localDb.listPendingSync(storeName);
   for (const record of pending) {
     // pending_sync e data_ordenacao são campos só do IndexedDB local —
-    // o Supabase não tem essas colunas, então precisam ser removidos
+    // o SuperDB não tem essas colunas, então precisam ser removidos
     // antes de qualquer insert/update remoto.
     const { pending_sync, data_ordenacao, ...payload } = record;
 
@@ -34,7 +34,7 @@ async function pushPending(storeName) {
 
     if (error) {
       console.error(`[sync] SuperDB recusou ${storeName}/${payload.id}:`, error.message, error);
-      continue; // não limpa o pending_sync — tenta de novo no próximo ciclo
+      throw error; // preserva pending_sync para tentar no próximo ciclo
     }
 
     await localDb.clearPendingFlag(storeName, record.id);
@@ -50,7 +50,7 @@ async function pullRemote(storeName, userId) {
 
   if (error) {
     console.error(`[sync] erro ao buscar ${storeName}:`, error.message);
-    return;
+    throw error;
   }
 
   for (const record of data) {
@@ -70,12 +70,8 @@ export async function syncAll(userId) {
   if (session?.user?.id !== userId) throw new Error('Sessão SuperDB inválida para sincronização.');
 
   for (const table of TABLES) {
-    try {
-      await pushPending(table);
-      await pullRemote(table, userId);
-    } catch (err) {
-      console.error(`[sync] falha ao sincronizar ${table}:`, err);
-    }
+    await pushPending(table);
+    await pullRemote(table, userId);
   }
 }
 
@@ -83,7 +79,7 @@ export async function syncAll(userId) {
 export function watchConnectivity(getUserId, onSync) {
   const trigger = () => {
     const userId = getUserId();
-    if (userId) syncAll(userId).then(onSync);
+    if (userId) syncAll(userId).then(onSync).catch((error) => console.error('[sync] falha:', error));
   };
 
   window.addEventListener('online', trigger);

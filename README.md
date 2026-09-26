@@ -1,4 +1,4 @@
-> **v0.9.1 DEV — preparação da migração para SuperDB.** Consulte `superdb/MIGRACAO_DEV.md` antes de configurar ou publicar. Esta versão ainda exige exportação/importação dos dados e credenciais DEV; não execute as instruções Supabase abaixo para configurar o SuperDB.
+> **v0.9.3 DEV — sincronização de dados no SuperDB.** O slug e a chave anon DEV estão configurados em `js/environment.js`. Use após validar os UUIDs, as quatro chaves estrangeiras e os IDs de configurações e fechamentos. Consulte `superdb/MIGRACAO_DEV.md` antes de publicar.
 
 # Contas & Combustível
 

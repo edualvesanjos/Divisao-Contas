@@ -1,3 +1,17 @@
+## v0.9.3 DEV — primeira sincronização no SuperDB
+
+- Ativa a sincronização após a confirmação da conta DEV e das chaves estrangeiras.
+- Isola um cache IndexedDB novo para não enviar pendências do teste de cadastro.
+- Propaga erros de sincronização, preservando alterações locais pendentes e evitando indicar conclusão falsa.
+- Atualiza versão e cache do PWA.
+
+## v0.9.2 DEV — cadastro pelo aplicativo
+
+- Define o slug do projeto SuperDB DEV e habilita o cadastro por e-mail e senha.
+- A chave anon DEV foi preenchida em `js/environment.js`.
+- Mantém a sincronização remota desabilitada até confirmar UUIDs e integridade dos dados migrados.
+- Atualiza a versão do app e o cache PWA.
+
 ## v0.9.1 DEV — preparação SuperDB
 
 - Cliente SuperDB configurável para DEV, com slug e chave anon pendentes.

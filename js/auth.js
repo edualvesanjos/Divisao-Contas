@@ -37,8 +37,12 @@ export async function signIn(email, password) {
   return data.session;
 }
 
-export async function signUp() {
-  throw new Error('Cadastro temporariamente indisponível durante a migração DEV.');
+export async function signUp(email, password) {
+  const { data, error } = await superdb.auth.signUp({ email, password });
+  if (error) throw error;
+  const session = data?.session ?? null;
+  if (session) notify(session);
+  return session;
 }
 
 export async function signOut() {
