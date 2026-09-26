@@ -28,9 +28,10 @@ async function pushPending(storeName) {
     // antes de qualquer insert/update remoto.
     const { pending_sync, data_ordenacao, ...payload } = record;
 
-    const { error } = payload.deleted
-      ? await superdb.from(storeName).delete().eq('id', payload.id)
-      : await superdb.from(storeName).upsert(payload);
+    // Exclusões são lógicas: o registro permanece no SuperDB com deleted=true.
+    // Isso permite que outras sessões/dispositivos recebam a exclusão como uma
+    // atualização normal, sem inferir exclusões pela ausência do registro remoto.
+    const { error } = await superdb.from(storeName).upsert(payload);
 
     if (error) {
       console.error(`[sync] SuperDB recusou ${storeName}/${payload.id}:`, error.message, error);

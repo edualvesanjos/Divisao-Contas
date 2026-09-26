@@ -9,7 +9,7 @@
 // =========================================================
 
 // Cache novo após a migração: descarta pendências criadas durante o cadastro de teste.
-const DB_NAME = 'contas-combustivel-superdb-dev-v0.9.3';
+const DB_NAME = 'contas-combustivel-superdb-dev-v0.9.4';
 const DB_VERSION = 3;
 const STORES = ['contas_consumo', 'abastecimentos', 'configuracoes', 'fechamentos_mensais'];
 
@@ -159,7 +159,7 @@ export const localDb = {
     return updated;
   },
 
-  /** Marca como excluído (soft delete) e agenda a exclusão remota. */
+  /** Marca como excluído (soft delete) e agenda a propagação remota. */
   async remove(storeName, id) {
     return this.update(storeName, id, { deleted: true });
   },
