@@ -1,3 +1,12 @@
+## v0.9.4 DEV — exclusão lógica sincronizada
+
+- Substitui a exclusão física remota por exclusão lógica (`deleted = true`) nas quatro tabelas sincronizadas.
+- Mantém registros excluídos no SuperDB para que a exclusão seja propagada entre sessões/dispositivos como uma atualização normal.
+- Preserva o comportamento offline-first e evita apagar registros locais apenas porque não vieram em uma consulta remota.
+- Isola um novo cache IndexedDB DEV para validar a sincronização sem resíduos da v0.9.3.
+- Não requer migration: a coluna `deleted` já existe nas quatro tabelas sincronizadas.
+- Atualiza versão e cache do PWA.
+
 ## v0.9.3 DEV — primeira sincronização no SuperDB
 
 - Ativa a sincronização após a confirmação da conta DEV e das chaves estrangeiras.

@@ -1,4 +1,4 @@
-// v0.9.3 DEV: somente SuperDB de desenvolvimento.
+// v0.9.4 DEV: somente SuperDB de desenvolvimento.
 // Chave anon publica do projeto DEV. Nunca use service_role.
 export const APP_ENVIRONMENT = 'development';
 export const isDevelopment = true;
