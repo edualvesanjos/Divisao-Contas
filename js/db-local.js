@@ -8,7 +8,8 @@
 // espera a rede para responder ao usuário.
 // =========================================================
 
-const DB_NAME = 'contas-combustivel';
+// Cache novo após a migração: descarta pendências criadas durante o cadastro de teste.
+const DB_NAME = 'contas-combustivel-superdb-dev-v0.9.3';
 const DB_VERSION = 3;
 const STORES = ['contas_consumo', 'abastecimentos', 'configuracoes', 'fechamentos_mensais'];
 

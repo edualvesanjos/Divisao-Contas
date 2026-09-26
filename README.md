@@ -1,3 +1,5 @@
+> **v0.9.3 DEV — sincronização de dados no SuperDB.** O slug e a chave anon DEV estão configurados em `js/environment.js`. Use após validar os UUIDs, as quatro chaves estrangeiras e os IDs de configurações e fechamentos. Consulte `superdb/MIGRACAO_DEV.md` antes de publicar.
+
 # Contas & Combustível
 
 Registro pessoal de contas de consumo (água, luz, internet) e abastecimentos de
@@ -6,7 +8,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
 
 ## Versão atual
 
-- **v0.8.6 DEV** — complementação de abastecimentos (tipo, litros e posto), correspondência segura por data + valor e gerenciador sincronizado de postos.
+- **v0.9.0 DEV** — complementação de abastecimentos (tipo, litros e posto), correspondência segura por data + valor e gerenciador sincronizado de postos.
 - **v0.8.3 DEV** — indicadores anuais de combustível: litros, médias, gasto médio, preço médio por litro e separação Gasolina/Etanol.
 - **v0.8.2 DEV** — detalhamento anual por categoria, totais, médias mensais, participação e comparação entre anos; correção do favicon.
 - **v0.8.1 DEV** — comparativos anuais avançados, seleção de dois anos, diferenças em R$/%, detalhamento mensal e destaques de maior aumento/redução.
@@ -50,7 +52,7 @@ para editar e publicar (StackBlitz + GitHub + Supabase).
      a tabela de Configurações e os campos de rateio automático)
    - Depois, rode `supabase/migrations/003_fechamento_mensal.sql` (adiciona
      a tabela de Fechamento Mensal e o tipo de combustível)
-   - Para a v0.8.6 DEV, rode também `supabase/migrations/007_postos_gerenciados.sql`
+   - Para a v0.9.0 DEV, rode também `supabase/migrations/007_postos_gerenciados.sql`
      (adiciona a lista sincronizada usada pelo Gerenciador de Postos)
    - Vá em **Configurações → API** e copie a `Project URL` e a `anon public key`
    - Cadastre essas informações em `js/environment.js`, no bloco do ambiente correspondente (`development` ou `production`)

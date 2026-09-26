@@ -1533,3 +1533,585 @@ button, input, select {
     margin: 10mm;
   }
 }
+
+
+/* =========================================================
+   Nova linguagem visual — v0.9.0 DEV
+   Referência: dashboard limpo, barra superior azul-marinho,
+   navegação lateral e cartões claros.
+   ========================================================= */
+:root {
+  --color-bg: #f4f7fb;
+  --color-surface: #ffffff;
+  --color-ink: #15365f;
+  --color-ink-muted: #6f8299;
+  --color-border: #dbe5ef;
+
+  --color-primary: #1677e8;
+  --color-primary-ink: #ffffff;
+  --color-primary-soft: #eaf3ff;
+  --color-fuel: #0f9d58;
+  --color-alert: #c43b3b;
+  --color-paid: #14924f;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+
+  --shadow-card: 0 2px 10px rgba(28, 63, 100, 0.07);
+  --shadow-modal: 0 18px 46px rgba(13, 40, 72, 0.22);
+
+  --shell-navy: #123d6b;
+  --shell-navy-deep: #0d3159;
+  --sidebar-width: 184px;
+  --topbar-height: 64px;
+}
+
+body {
+  background:
+    linear-gradient(180deg, #f8fbff 0, #f4f7fb 170px, #f4f7fb 100%);
+  color: var(--color-ink);
+}
+
+.app {
+  display: block;
+  min-height: 100dvh;
+  height: auto;
+}
+
+/* Topbar */
+.app-header {
+  position: fixed;
+  z-index: 60;
+  inset: 0 0 auto 0;
+  height: var(--topbar-height);
+  padding: 0 22px;
+  background: linear-gradient(90deg, var(--shell-navy-deep), var(--shell-navy));
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(8, 35, 63, .22);
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-size: 1.35rem;
+  letter-spacing: -.02em;
+}
+
+.app-brand-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 8px;
+  font-size: 1.05rem;
+}
+
+.app-header-actions {
+  color: #fff;
+  gap: 12px;
+}
+
+.app-current-view {
+  display: none;
+}
+
+.app-version {
+  color: rgba(255,255,255,.78);
+  font-size: .72rem;
+}
+
+.environment-badge {
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: #d92d20;
+  color: #fff;
+  font-weight: 800;
+  font-size: .68rem;
+  letter-spacing: .04em;
+}
+
+.btn-logout {
+  color: rgba(255,255,255,.9);
+  border: 1px solid rgba(255,255,255,.26);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+
+.btn-logout:hover {
+  color: #fff;
+  background: rgba(255,255,255,.1);
+}
+
+/* Month control is visually integrated into the dark topbar on desktop */
+.month-nav {
+  position: fixed;
+  z-index: 65;
+  top: 11px;
+  right: 225px;
+  height: 42px;
+  padding: 0;
+  gap: 5px;
+}
+
+.month-nav-btn {
+  width: 30px;
+  height: 30px;
+  background: rgba(255,255,255,.10);
+  color: #fff;
+  box-shadow: none;
+}
+
+.month-nav-label {
+  min-width: 154px;
+  padding: 8px 10px;
+  background: #fff;
+  color: #183b65;
+  border-radius: 8px;
+  text-transform: capitalize;
+  box-shadow: 0 1px 4px rgba(0,0,0,.12);
+}
+
+.month-nav-label:hover,
+.month-nav-label:focus-visible {
+  background: #fff;
+}
+
+.month-picker {
+  top: calc(100% + 7px);
+  box-shadow: 0 14px 34px rgba(18,61,107,.2);
+}
+
+/* Desktop sidebar: reuses the existing tab navigation */
+.tab-bar {
+  position: fixed;
+  z-index: 50;
+  top: var(--topbar-height);
+  bottom: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 18px 8px 120px;
+  border: 0;
+  border-right: 1px solid #e1e9f2;
+  background: rgba(255,255,255,.96);
+  box-shadow: 1px 0 8px rgba(21,54,95,.025);
+}
+
+.tab-btn {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 11px;
+  border-radius: 8px;
+  color: #405a78;
+  font-size: .86rem;
+  text-align: left;
+}
+
+.tab-btn:hover {
+  background: #f4f8fd;
+  color: #1b5fa9;
+}
+
+.tab-btn.is-active {
+  background: #dcecff;
+  color: #0871de;
+  font-weight: 700;
+}
+
+.tab-icon {
+  width: 22px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+/* Connection status appears at the bottom of the sidebar like the reference */
+.status {
+  position: fixed;
+  z-index: 55;
+  left: 16px;
+  bottom: 22px;
+  width: 150px;
+  min-height: 60px;
+  align-items: flex-start;
+  padding: 11px 12px;
+  border: 1px solid #e1e9f2;
+  border-radius: 10px;
+  background: #fff;
+  color: #35536f;
+  box-shadow: var(--shadow-card);
+}
+
+.status-dot {
+  margin-top: 4px;
+  width: 10px;
+  height: 10px;
+}
+
+/* Main content */
+.app-main {
+  min-height: 100dvh;
+  margin-left: var(--sidebar-width);
+  overflow: visible;
+  padding: 92px 28px 48px;
+}
+
+.tab-panel {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+}
+
+.page-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 14px;
+  margin-bottom: 15px;
+}
+
+.page-heading h1 {
+  margin: 0;
+  color: #14365f;
+  font-size: 2rem;
+  line-height: 1.05;
+  letter-spacing: -.035em;
+}
+
+.page-heading p {
+  margin: 5px 0 0;
+  color: #486580;
+  font-size: .98rem;
+}
+
+/* Initial Resumo page */
+#tab-resumo {
+  max-width: 1040px;
+}
+
+#tab-resumo .summary-share-actions {
+  margin: 0 0 14px;
+  padding: 11px 13px;
+  border: 1px solid #dbe6f1;
+  background: #fff;
+  box-shadow: var(--shadow-card);
+}
+
+#tab-resumo .summary-share-actions > div:first-child {
+  display: none;
+}
+
+#tab-resumo .summary-share-buttons {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+#tab-resumo .summary-share-buttons .btn {
+  min-width: 150px;
+  padding: 10px 14px;
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, #2387f3, #0f72df);
+  box-shadow: 0 2px 7px rgba(22,119,232,.18);
+}
+
+.btn-secondary {
+  border: 1px solid #cad8e6;
+  background: #fff;
+  color: #183b65;
+}
+
+.resumo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #dce6f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--shadow-card);
+}
+
+.resumo-card {
+  min-height: 112px;
+  justify-content: center;
+  border: 1px solid #dbe6f1;
+  box-shadow: none;
+  background: linear-gradient(180deg, #fff, #fbfdff);
+}
+
+.resumo-card:nth-child(1)::before {
+  content: "▤  Contas";
+  color: #176a9a;
+  font-size: .9rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.resumo-card:nth-child(2)::before {
+  content: "⛽  Combustível";
+  color: #109453;
+  font-size: .9rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.resumo-card-destaque {
+  grid-column: 1 / -1;
+  min-height: 120px;
+  border: 1px solid #cde9d4;
+  background: linear-gradient(90deg, #effbea, #f5fff2);
+}
+
+.resumo-card-destaque .resumo-label {
+  color: #40764f;
+}
+
+.resumo-card-destaque .resumo-value {
+  color: #087143;
+  font-size: 1.75rem;
+}
+
+.resumo-label {
+  color: #627b94;
+  font-size: .76rem;
+}
+
+.resumo-value {
+  color: #122f56;
+  font-size: 1.38rem;
+}
+
+.month-closed-banner {
+  border-color: #bad9ff;
+  background: #edf6ff;
+  box-shadow: var(--shadow-card);
+}
+
+.config-divider {
+  max-width: none;
+  margin: 20px 0 16px;
+}
+
+#tab-resumo .resumo-subtitulo {
+  margin-top: 2px;
+  color: #17395f;
+}
+
+#tab-resumo .config-form {
+  max-width: none;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr auto;
+  align-items: end;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid #dce6f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--shadow-card);
+}
+
+#tab-resumo .config-form .field-checkbox {
+  align-self: center;
+}
+
+/* Cards/tables throughout the shell already begin following the new visual language */
+.month-check-card,
+.entry-card,
+.annual-kpi,
+.annual-insight,
+.annual-section,
+.import-section {
+  border: 1px solid #dce6f0;
+  box-shadow: var(--shadow-card);
+}
+
+.month-check-card-subtotal,
+.month-check-card-insight {
+  background: #f4f9ff;
+  border-color: #b8d8fa;
+}
+
+/* Floating button: only on input modules */
+.fab {
+  right: 28px;
+  bottom: 28px;
+  background: #1677e8;
+  box-shadow: 0 8px 22px rgba(22,119,232,.28);
+}
+
+/* DEV-only migration tools remain available only on development builds */
+.dev-only-tool[hidden] {
+  display: none !important;
+}
+
+/* Responsive shell */
+@media (max-width: 900px) {
+  :root {
+    --topbar-height: 58px;
+  }
+
+  .app-header {
+    height: var(--topbar-height);
+    padding: 0 14px;
+  }
+
+  .app-brand {
+    font-size: 1.05rem;
+  }
+
+  .app-brand-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .app-version {
+    display: none;
+  }
+
+  .btn-logout {
+    padding: 6px 8px;
+    font-size: .74rem;
+  }
+
+  .month-nav {
+    position: fixed;
+    top: var(--topbar-height);
+    left: 0;
+    right: 0;
+    height: 48px;
+    padding: 7px 12px;
+    background: #f7faff;
+    border-bottom: 1px solid #e0e8f1;
+  }
+
+  .month-nav-btn {
+    background: #fff;
+    color: #146ecb;
+    box-shadow: var(--shadow-card);
+  }
+
+  .month-nav-label {
+    color: #17395f;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .tab-bar {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 66px;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    border-top: 1px solid #dbe5ef;
+    border-right: 0;
+    background: #fff;
+  }
+
+  .tab-btn {
+    flex: 1;
+    min-height: 0;
+    padding: 8px 3px 7px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    border-radius: 0;
+    font-size: .68rem;
+    text-align: center;
+  }
+
+  .tab-btn.is-active {
+    background: #eff6ff;
+  }
+
+  .tab-icon {
+    width: auto;
+  }
+
+  .status {
+    position: static;
+    width: auto;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: rgba(255,255,255,.85);
+  }
+
+  .status-label {
+    display: none;
+  }
+
+  .app-main {
+    margin-left: 0;
+    padding: 126px 14px 88px;
+  }
+
+  .tab-panel {
+    width: 100%;
+  }
+
+  .page-heading h1 {
+    font-size: 1.65rem;
+  }
+
+  #tab-resumo .config-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fab {
+    right: 16px;
+    bottom: 82px;
+  }
+}
+
+@media (max-width: 620px) {
+  .app-brand strong {
+    font-size: .98rem;
+  }
+
+  .environment-badge {
+    display: none;
+  }
+
+  .resumo-grid {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  .resumo-card-destaque {
+    grid-column: auto;
+  }
+
+  #tab-resumo .summary-share-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #tab-resumo .summary-share-buttons .btn {
+    min-width: 0;
+    width: 100%;
+  }
+
+  #tab-resumo .config-form {
+    grid-template-columns: 1fr;
+  }
+
+  .page-heading {
+    align-items: flex-start;
+  }
+}

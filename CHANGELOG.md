@@ -1,10 +1,41 @@
-## v0.8.6 PROD
+## v0.9.3 DEV — primeira sincronização no SuperDB
 
-- Fecha em produção a série v0.8.x a partir da v0.8.6 DEV validada.
-- Altera o ambiente da aplicação para `production`.
-- Mantém integralmente as funcionalidades e correções validadas na v0.8.6 DEV.
-- Não requer nova migration no Supabase.
-- Recomenda-se executar `supabase/verificar_release.sql` no Supabase PROD antes da publicação.
+- Ativa a sincronização após a confirmação da conta DEV e das chaves estrangeiras.
+- Isola um cache IndexedDB novo para não enviar pendências do teste de cadastro.
+- Propaga erros de sincronização, preservando alterações locais pendentes e evitando indicar conclusão falsa.
+- Atualiza versão e cache do PWA.
+
+## v0.9.2 DEV — cadastro pelo aplicativo
+
+- Define o slug do projeto SuperDB DEV e habilita o cadastro por e-mail e senha.
+- A chave anon DEV foi preenchida em `js/environment.js`.
+- Mantém a sincronização remota desabilitada até confirmar UUIDs e integridade dos dados migrados.
+- Atualiza a versão do app e o cache PWA.
+
+## v0.9.1 DEV — preparação SuperDB
+
+- Cliente SuperDB configurável para DEV, com slug e chave anon pendentes.
+- Sessão com renovação preventiva e escuta de saída, sem `onAuthStateChange`.
+- Cache IndexedDB separado do Supabase e sincronização bloqueada até validação da migração.
+- Cadastro bloqueado durante a preservação dos UUIDs dos usuários.
+- Serviço PWA atualizado; consulta e exclusão direta migram para o cliente SuperDB.
+- Instruções de transferência e validação em `superdb/MIGRACAO_DEV.md`.
+- Sem alteração em regras de negócio ou layout. Nenhum dado foi transferido nesta entrega.
+
+## v0.9.0 DEV
+
+- Inicia a série de modernização visual e responsividade multidispositivo.
+- Adota como referência visual obrigatória o dashboard aprovado pelo usuário: barra superior azul-marinho, navegação lateral, área central clara, cartões suaves e hierarquia visual limpa.
+- **Resumo** passa a ser a tela inicial do sistema.
+- Em desktop/notebook, a navegação principal passa para uma barra lateral fixa; em tablet/celular, permanece como navegação inferior adaptada.
+- Reorganiza visualmente o Resumo Mensal para aproximá-lo da referência aprovada, preservando apenas as funcionalidades já existentes.
+- Integra o seletor de mês/ano visualmente ao cabeçalho em telas maiores.
+- Reposiciona o status de sincronização no rodapé da navegação lateral em desktop.
+- Mantém a área de compartilhamento do Resumo com destaque visual compatível com a nova linguagem.
+- Os importadores históricos e de complementação passam a ser ferramentas exclusivas de DEV: visíveis em `development` e ocultos em `production`.
+- Não altera regras de negócio, cálculos, importações, sincronização ou schema do Supabase.
+- Não requer nova migration.
+- Cache do PWA atualizado para v0.9.0.
 
 ## v0.8.6 DEV
 

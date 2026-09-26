@@ -1,26 +1,11 @@
-// =========================================================
-// Ambiente e conexão com Supabase
-//
-// develop  -> APP_ENVIRONMENT = 'development'
-// main     -> APP_ENVIRONMENT = 'production'
-//
-// A publishable/anon key do Supabase pode ficar no frontend;
-// a proteção dos dados depende das políticas RLS.
-// Nunca coloque service_role aqui.
-// =========================================================
-
-export const APP_ENVIRONMENT = 'production';
-
-const SUPABASE_CONFIG = {
-  development: {
-    url: 'https://cihzervgauvahpnmvjmq.supabase.co',
-    key: 'sb_publishable_GA_4UlhVkjSJgnKQBaMWdA_tLZ1yxZQ',
-  },
-  production: {
-    url: 'https://vzuaqtsqdaxdapcgqyol.supabase.co',
-    key: 'sb_publishable_t9OGx28wwGL0rrLXBK6bGw_Mmt8yijQ',
-  },
+// v0.9.3 DEV: somente SuperDB de desenvolvimento.
+// Chave anon publica do projeto DEV. Nunca use service_role.
+export const APP_ENVIRONMENT = 'development';
+export const isDevelopment = true;
+export const superdbConfig = {
+  url: 'https://auth.superdb.com.br',
+  project: 'p_bfd593d881',
+  key: 'eyJhbGciOiJFUzI1NiIsImtpZCI6ImRwa18yNjA2XzY1NzMwNTM2IiwidHlwIjoiSldUIn0.eyJyb2xlIjoiYW5vbiIsInByb2plY3RfaWQiOiJkZmFmZWI4OS1mOTRkLTQ4OWEtYWI1MC0xZDU0YmQxOTExOGIiLCJwcm9qZWN0X3NjaGVtYSI6InByb2pfcF9iZmQ1OTNkODgxIiwia3YiOjEsInN1YiI6ImFwaWtleTphbm9uIiwiaWF0IjoxNzkwMTI3NzE3LCJpc3MiOiJodHRwczovL2F1dGguc3VwZXJkYi5jb20uYnIiLCJhdWQiOiJodHRwczovL2FwaS5zdXBlcmRiLmNvbS5iciJ9.wZ5BkE1Zh6y8zFjQ_tM4c7ylHxfkpEWIcJAU2SewwUVMH4fJCPjZgass1ovL9pfNhTq06jurVQl7QX-FAXwH7w',
+  // Usuario e chaves estrangeiras conferidos no SuperDB DEV.
+  migrationReady: true,
 };
-
-export const supabaseConfig = SUPABASE_CONFIG[APP_ENVIRONMENT];
-export const isDevelopment = APP_ENVIRONMENT === 'development';
