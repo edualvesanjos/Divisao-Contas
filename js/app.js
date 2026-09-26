@@ -4,8 +4,7 @@
 
 import { getSession, signIn, signUp, signOut, onAuthChange } from './auth.js';
 import { localDb } from './db-local.js';
-import { superdb } from './superdb-client.js';
-import { superdbConfig } from './environment.js';
+import { supabase } from './supabase-client.js';
 import { syncAll, watchConnectivity, isOnline } from './sync.js';
 import { APP_ENVIRONMENT, isDevelopment } from './environment.js';
 import { analisarPlanilhaHistorica } from './import-xlsx.js';
@@ -184,7 +183,7 @@ const els = {
 };
 
 let currentUser = null;
-let activeTab = 'resumo';
+let activeTab = 'contas';
 let isSignUpMode = false;
 let editingId = null;
 let settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50, postos_gerenciados: null };
@@ -197,10 +196,6 @@ if (els.environmentBadge) {
   els.environmentBadge.title = `Ambiente: ${APP_ENVIRONMENT}`;
 }
 
-document.querySelectorAll('.dev-only-tool').forEach((element) => {
-  element.hidden = !isDevelopment;
-});
-
 const hoje = new Date();
 let mesAtivo = { ano: hoje.getFullYear(), mes: hoje.getMonth() }; // mes: 0-11
 
@@ -208,10 +203,6 @@ let mesAtivo = { ano: hoje.getFullYear(), mes: hoje.getMonth() }; // mes: 0-11
 // Autenticação
 // ---------------------------------------------------------
 
-els.authToggle.hidden = false;
-document.getElementById('btn-copy-user-id')?.addEventListener('click', () => {
-  if (currentUser?.id) window.prompt('UUID da sua conta no SuperDB DEV (copie o valor):', currentUser.id);
-});
 els.authToggle.addEventListener('click', () => {
   isSignUpMode = !isSignUpMode;
   els.authSubmit.textContent = isSignUpMode ? 'Criar conta' : 'Entrar';
@@ -336,10 +327,6 @@ els.formConfig.addEventListener('submit', async (event) => {
 
 els.btnForcarSync.addEventListener('click', async () => {
   if (!currentUser) return;
-  if (!superdbConfig.migrationReady) {
-    showToast('Sincronização DEV bloqueada até a migração ser conferida.', 'error');
-    return;
-  }
   els.btnForcarSync.disabled = true;
   els.btnForcarSync.textContent = 'Sincronizando...';
 
@@ -873,7 +860,6 @@ if (els.btnAplicarFuelEnrich) els.btnAplicarFuelEnrich.addEventListener('click',
 });
 
 async function excluirDadosImportados() {
-  if (!superdbConfig.migrationReady) throw new Error('Migração DEV ainda não liberada para exclusão remota.');
   if (!currentUser) return;
 
   const stores = ['contas_consumo', 'abastecimentos', 'fechamentos_mensais'];
@@ -887,19 +873,19 @@ async function excluirDadosImportados() {
 
     if (!importados.length) continue;
 
-    // Exclui por ID no SuperDB. Assim a limpeza funciona inclusive para registros
+    // Exclui por ID no Supabase. Assim a limpeza funciona inclusive para registros
     // importados em versões anteriores e não depende do campo origem_importacao
     // existir/estar preenchido remotamente.
     const ids = importados.map((row) => row.id).filter(Boolean);
     if (ids.length && isOnline()) {
-      const { error } = await superdb
+      const { error } = await supabase
         .from(store)
         .delete()
         .eq('user_id', currentUser.id)
         .in('id', ids);
 
       if (error) {
-        throw new Error(`Falha ao excluir ${store} no SuperDB: ${error.message}`);
+        throw new Error(`Falha ao excluir ${store} no Supabase: ${error.message}`);
       }
     }
 
@@ -1014,7 +1000,7 @@ async function postosDosAbastecimentos() {
 }
 
 async function garantirPostosGerenciados() {
-  if (!currentUser || !isOnline() || Array.isArray(settings.postos_gerenciados)) return;
+  if (!currentUser || Array.isArray(settings.postos_gerenciados)) return;
   settings.postos_gerenciados = await postosDosAbastecimentos();
   await localDb.putWithId('configuracoes', currentUser.id, {
     user_id: currentUser.id,
@@ -2444,7 +2430,7 @@ function triggerBackgroundSync() {
   if (currentUser) syncAll(currentUser.id).then(async () => {
     await atualizarListaPostos();
     await refreshActiveView();
-  }).catch((error) => console.error('[sync] falha:', error));
+  });
 }
 
 // ---------------------------------------------------------
@@ -2454,7 +2440,7 @@ function triggerBackgroundSync() {
 function updateConnectionStatus() {
   const online = isOnline();
   els.statusIndicator.classList.toggle('is-offline', !online);
-  els.statusLabel.textContent = online ? 'Sincronizado' : 'Offline';
+  els.statusLabel.textContent = online ? 'online' : 'offline';
 }
 
 window.addEventListener('online', updateConnectionStatus);
@@ -2478,12 +2464,7 @@ els.btnLogout.addEventListener('click', async () => {
 // Início
 // ---------------------------------------------------------
 
-checkExistingSession().catch((error) => {
-  console.error('[auth] falha ao recuperar sessão:', error);
-  els.viewAuth.hidden = false;
-  els.authError.textContent = 'Não foi possível validar a sessão. Tente entrar novamente.';
-  els.authError.hidden = false;
-});
+checkExistingSession();
 loadAppVersion();
 atualizarLabelMes();
 

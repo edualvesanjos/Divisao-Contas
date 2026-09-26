@@ -1,7 +1,7 @@
 // Service worker mínimo: cacheia o "app shell" para abrir offline.
 // A sincronização de dados em si é feita por js/sync.js, não aqui.
 
-const CACHE_NAME = 'contas-combustivel-v0.9.3-superdb-dev';
+const CACHE_NAME = 'contas-combustivel-v0.8.6';
 const APP_SHELL = [
   './',
   './index.html',
@@ -13,7 +13,7 @@ const APP_SHELL = [
   './js/db-local.js',
   './js/sync.js',
   './js/environment.js',
-  './js/superdb-client.js',
+  './js/supabase-client.js',
   './manifest.json',
   './favicon.ico',
   './package.json',
@@ -37,9 +37,8 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   // Nunca cachear chamadas ao Supabase — só o app shell.
-  if (event.request.url.includes('superdb.com.br') || event.request.url.includes('supabase.co')) return;
+  if (event.request.url.includes('supabase.co')) return;
 
-  if (new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(
     caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
