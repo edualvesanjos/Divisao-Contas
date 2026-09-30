@@ -1651,7 +1651,7 @@ body {
   position: fixed;
   z-index: 65;
   top: 11px;
-  right: 225px;
+  right: 430px;
   height: 42px;
   padding: 0;
   gap: 5px;
@@ -1954,6 +1954,12 @@ body {
   display: none !important;
 }
 
+/* Reserva espaço entre o seletor do mês e as ações da conta. */
+@media (min-width: 901px) and (max-width: 1180px) {
+  .month-nav { right: 360px; }
+  .connected-user { max-width: 115px; }
+}
+
 /* Responsive shell */
 @media (max-width: 900px) {
   :root {
@@ -2116,7 +2122,7 @@ body {
   }
 }
 
-/* v0.9.7 DEV — identificação e feedback de UX */
+/* v0.9.8 DEV — identificação e feedback de UX */
 .brand-version {
   margin-left: .35rem;
   font-size: .72rem;

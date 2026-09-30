@@ -1,4 +1,4 @@
-// v0.9.7 DEV: projeto SuperDB novo e vazio.
+// v0.9.8 DEV: projeto SuperDB novo e vazio.
 // Preencha SOMENTE o slug e a chave anon do NOVO projeto DEV.
 // Nunca use service_role/management key no frontend.
 export const APP_ENVIRONMENT = 'development';

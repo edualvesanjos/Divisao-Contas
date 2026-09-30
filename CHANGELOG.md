@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.9.8 DEV — ajuste do cabeçalho
+
+- Corrige a sobreposição do usuário conectado com o seletor de mês no desktop.
+- Reserva uma área própria para as ações da conta no cabeçalho.
+- Mantém o e-mail truncado com reticências em larguras menores e o endereço completo no tooltip.
+- Preserva as funcionalidades e a sincronização validadas nas versões anteriores.
+
 ## v0.9.7 DEV — melhorias de identificação e UX
 
 - Exibe a versão ao lado de “Contas & Combustível”.
