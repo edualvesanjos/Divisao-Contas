@@ -1,3 +1,12 @@
+# Changelog
+
+## v1.0.2 DEV
+- Centraliza as configurações dos ambientes DEV e PROD.
+- Mantém as duas chaves anon públicas no frontend e seleciona o ambiente por uma única constante.
+- Adiciona validação de consistência entre ambiente e projeto SuperDB.
+- Mantém armazenamento local isolado por ambiente e projeto.
+- Atualiza o cache do Service Worker para DEV.
+
 ## v1.0.1 PROD - 2026-09-30
 
 - Promove para produção as alterações aprovadas nos testes da v1.0.1 DEV.
