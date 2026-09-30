@@ -1,4 +1,4 @@
-// Armazenamento local offline-first — v0.9.5 DEV.
+// Armazenamento local offline-first — v0.9.6 DEV.
 // O nome do IndexedDB inclui ambiente + slug do projeto, impedindo reaproveitar
 // o cache do banco DEV anterior. As leituras e pendências também ficam limitadas
 // ao usuário autenticado neste navegador.
@@ -6,7 +6,7 @@
 import { APP_ENVIRONMENT, superdbConfig } from './environment.js';
 
 const safeProject = String(superdbConfig.project || 'nao-configurado').replace(/[^a-z0-9_-]/gi, '_');
-const DB_NAME = `contas-combustivel-${APP_ENVIRONMENT}-${safeProject}-v0.9.5`;
+const DB_NAME = `contas-combustivel-${APP_ENVIRONMENT}-${safeProject}-v0.9.5`; // preserva o cache validado da v0.9.5
 const DB_VERSION = 1;
 const STORES = ['contas_consumo', 'abastecimentos', 'configuracoes', 'fechamentos_mensais'];
 
@@ -91,7 +91,7 @@ export const localDb = {
     const userId = assertUser();
     if (fields?.user_id !== userId) throw new Error('Tentativa de gravar registro para outro usuário.');
     const now = new Date().toISOString();
-    const record = { id: uuid(), ...fields, updated_at: now, created_at: now, deleted: false, pending_sync: 1 };
+    const record = { id: uuid(), ...fields, updated_at: now, created_at: now, deleted: false, pending_sync: 1, _sync_base_updated_at: null };
     await withStore(storeName, 'readwrite', (store) => store.put(record));
     return record;
   },
@@ -102,7 +102,7 @@ export const localDb = {
     if (rows.some((row) => row?.user_id !== userId)) throw new Error('Lote contém registro de outro usuário.');
     const db = await openDb();
     const now = new Date().toISOString();
-    const records = rows.map((fields) => ({ id: uuid(), ...fields, updated_at: now, created_at: now, deleted: false, pending_sync: 1 }));
+    const records = rows.map((fields) => ({ id: uuid(), ...fields, updated_at: now, created_at: now, deleted: false, pending_sync: 1, _sync_base_updated_at: null }));
     await new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
       const store = tx.objectStore(storeName);
@@ -118,7 +118,8 @@ export const localDb = {
     if (fields?.user_id !== userId) throw new Error('Tentativa de gravar registro para outro usuário.');
     const now = new Date().toISOString();
     const existing = await this.get(storeName, id);
-    const record = { ...existing, id, ...fields, updated_at: now, created_at: existing?.created_at || now, deleted: false, pending_sync: 1 };
+    const baseUpdatedAt = existing?._sync_base_updated_at ?? (existing && !existing.pending_sync ? existing.updated_at : null);
+    const record = { ...existing, id, ...fields, updated_at: now, created_at: existing?.created_at || now, deleted: false, pending_sync: 1, _sync_base_updated_at: baseUpdatedAt };
     await withStore(storeName, 'readwrite', (store) => store.put(record));
     return record;
   },
@@ -128,7 +129,8 @@ export const localDb = {
     const existing = await this.get(storeName, id);
     if (!existing) throw new Error(`Registro ${id} não encontrado em ${storeName}`);
     if (fields?.user_id && fields.user_id !== userId) throw new Error('Tentativa de transferir registro para outro usuário.');
-    const updated = { ...existing, ...fields, user_id: userId, updated_at: new Date().toISOString(), pending_sync: 1 };
+    const baseUpdatedAt = existing?._sync_base_updated_at ?? (!existing.pending_sync ? existing.updated_at : null);
+    const updated = { ...existing, ...fields, user_id: userId, updated_at: new Date().toISOString(), pending_sync: 1, _sync_base_updated_at: baseUpdatedAt };
     await withStore(storeName, 'readwrite', (store) => store.put(updated));
     return updated;
   },
@@ -175,8 +177,22 @@ export const localDb = {
     if (existing && Number.isFinite(localUpdatedAt) && Number.isFinite(remoteUpdatedAt) && localUpdatedAt > remoteUpdatedAt) {
       return { applied: false, reason: 'local_newer' };
     }
-    await withStore(storeName, 'readwrite', (store) => store.put({ ...record, pending_sync: 0 }));
+    await withStore(storeName, 'readwrite', (store) => store.put({ ...record, pending_sync: 0, _sync_base_updated_at: record.updated_at || null }));
     return { applied: true };
+  },
+
+  async acceptRemoteVersion(storeName, record) {
+    const userId = assertUser();
+    if (record?.user_id !== userId) throw new Error('Resposta remota contém registro de outro usuário.');
+    const dataOrdenacao = storeName === 'contas_consumo'
+      ? record.competencia || record.data_vencimento || record.created_at?.slice(0, 10)
+      : record.data || record.created_at?.slice(0, 10);
+    await withStore(storeName, 'readwrite', (store) => store.put({
+      ...record,
+      data_ordenacao: dataOrdenacao,
+      pending_sync: 0,
+      _sync_base_updated_at: record.updated_at || null,
+    }));
   },
 
   // Só confirma o envio se o registro não tiver sido editado enquanto a requisição estava em andamento.

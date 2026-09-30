@@ -1,4 +1,4 @@
-> **v0.9.5 DEV — preparação para projeto SuperDB novo e vazio.** Não reutiliza o slug, a anon key, usuários, dados ou cache do DEV anterior. Antes de abrir o app, siga `superdb/INSTALACAO_BANCO_NOVO.md`.
+> **v0.9.6 DEV — resolução segura de conflitos.** Mantém o novo projeto SuperDB e o schema já validados na v0.9.5, sem Realtime. Antes de sobrescrever uma alteração concorrente do mesmo registro, o app exige escolha explícita entre a versão local e a versão do SuperDB.
 
 # Contas & Combustíveis
 

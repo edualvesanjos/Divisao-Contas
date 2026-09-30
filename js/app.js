@@ -6,7 +6,7 @@ import { getSession, signIn, signUp, signOut, onAuthChange } from './auth.js';
 import { localDb } from './db-local.js';
 import { superdb } from './superdb-client.js';
 import { superdbConfig } from './environment.js';
-import { syncAll, watchConnectivity, isOnline, onSyncStateChange, getSyncState } from './sync.js';
+import { syncAll, watchConnectivity, isOnline, onSyncStateChange, getSyncState, setConflictResolver } from './sync.js';
 import { APP_ENVIRONMENT, isDevelopment } from './environment.js';
 import { analisarPlanilhaHistorica } from './import-xlsx.js';
 import { lerPlanilhaComplementarCombustivel, classificarComplementoCombustivel } from './import-fuel-enrichment.js';
@@ -2433,6 +2433,27 @@ function updateConnectionStatus(state = getSyncState()) {
   els.statusLabel.textContent = labels[status] || 'Aguardando sincronização';
   els.statusLabel.title = state.error || '';
 }
+
+setConflictResolver(async ({ storeName, local, remote }) => {
+  const tabela = {
+    contas_consumo: 'Conta',
+    abastecimentos: 'Abastecimento',
+    configuracoes: 'Configuração',
+    fechamentos_mensais: 'Fechamento mensal',
+  }[storeName] || storeName;
+
+  const remoteInfo = remote
+    ? `A versão do SuperDB foi alterada em ${new Date(remote.updated_at).toLocaleString('pt-BR')}.`
+    : 'O registro não existe mais no SuperDB.';
+
+  const manterLocal = window.confirm(
+    `${tabela}: foi detectada uma alteração concorrente.\n\n` +
+    `${remoteInfo}\n\n` +
+    'OK = manter a alteração deste dispositivo e enviar ao SuperDB.\n' +
+    'Cancelar = descartar esta alteração e usar a versão do SuperDB.'
+  );
+  return manterLocal ? 'local' : 'remote';
+});
 
 onSyncStateChange(updateConnectionStatus);
 window.addEventListener('online', () => updateConnectionStatus());

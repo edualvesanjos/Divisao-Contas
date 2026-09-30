@@ -1,3 +1,14 @@
+# Changelog
+
+## v0.9.6 DEV — conflitos de sincronização
+
+- Detecta alteração concorrente do mesmo registro antes do `upsert`.
+- Guarda localmente a versão remota que originou a edição.
+- Exige escolha explícita entre manter a edição local ou usar a versão do SuperDB.
+- Metadados de conflito permanecem somente no IndexedDB e não são enviados ao banco.
+- Após envio, relê `updated_at` do SuperDB para usar o relógio/trigger do servidor como referência.
+- Mantém sincronização sem Realtime e preserva o schema validado na v0.9.5.
+
 ## v0.9.5 DEV — banco SuperDB novo e sincronização segura
 
 - Prepara instalação em projeto SuperDB novo e vazio, sem importar dados ou usuários do DEV anterior.

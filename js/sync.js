@@ -1,4 +1,4 @@
-// Sincronização local <-> SuperDB — v0.9.5 DEV.
+// Sincronização local <-> SuperDB — v0.9.6 DEV.
 // Sem Realtime: fila local por registro, push de pendências e pull paginado.
 
 import { superdb } from './superdb-client.js';
@@ -12,6 +12,33 @@ let syncInProgress = null;
 let watcherCleanup = null;
 let syncState = { status: 'idle', pending: 0, error: null, lastSyncAt: null };
 const stateListeners = new Set();
+let conflictResolver = null;
+
+export function setConflictResolver(resolver) {
+  conflictResolver = typeof resolver === 'function' ? resolver : null;
+}
+
+async function fetchRemoteRecord(storeName, userId, id) {
+  const { data, error } = await superdb
+    .from(storeName)
+    .select('*')
+    .eq('user_id', userId)
+    .eq('id', id)
+    .range(0, 0);
+  if (error) throw error;
+  return (data || [])[0] || null;
+}
+
+function stripLocalMetadata(record) {
+  const {
+    pending_sync,
+    data_ordenacao,
+    _sync_base_updated_at,
+    ...payload
+  } = record;
+  return payload;
+}
+
 
 export function isOnline() { return navigator.onLine; }
 export function getSyncState() { return { ...syncState }; }
@@ -33,13 +60,46 @@ async function refreshPending(userId) {
 async function pushPending(storeName, userId) {
   const pending = await localDb.listPendingSync(storeName, userId);
   for (const record of pending) {
-    const { pending_sync, data_ordenacao, ...payload } = record;
+    const payload = stripLocalMetadata(record);
+    const remote = await fetchRemoteRecord(storeName, userId, record.id);
+    const baseUpdatedAt = record._sync_base_updated_at ?? null;
+    const remoteUpdatedAt = remote?.updated_at ?? null;
+
+    const conflict = remote
+      ? (baseUpdatedAt === null || remoteUpdatedAt !== baseUpdatedAt)
+      : baseUpdatedAt !== null;
+
+    if (conflict) {
+      if (!conflictResolver) {
+        const error = new Error(`Conflito de sincronização em ${storeName}/${record.id}.`);
+        error.code = 'SYNC_CONFLICT';
+        throw error;
+      }
+      const choice = await conflictResolver({ storeName, local: record, remote });
+      if (choice === 'remote') {
+        if (remote) await localDb.acceptRemoteVersion(storeName, remote);
+        else await localDb.hardDelete(storeName, record.id);
+        continue;
+      }
+      if (choice !== 'local') {
+        const error = new Error(`Conflito pendente em ${storeName}/${record.id}.`);
+        error.code = 'SYNC_CONFLICT';
+        throw error;
+      }
+    }
+
     const { error } = await superdb.from(storeName).upsert(payload);
     if (error) {
       console.error(`[sync] SuperDB recusou ${storeName}/${payload.id}:`, error.message, error);
       throw error;
     }
-    await localDb.clearPendingFlagIfUnchanged(storeName, record.id, record.updated_at);
+    const cleared = await localDb.clearPendingFlagIfUnchanged(storeName, record.id, record.updated_at);
+    if (cleared) {
+      // O trigger do banco é a fonte autoritativa de updated_at.
+      // Releia a linha após o upsert para não depender do relógio do navegador.
+      const confirmedRemote = await fetchRemoteRecord(storeName, userId, record.id);
+      if (confirmedRemote) await localDb.acceptRemoteVersion(storeName, confirmedRemote);
+    }
   }
 }
 
