@@ -7,6 +7,8 @@
   <meta name="theme-color" content="#16302D" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="./favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
+  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -42,12 +44,15 @@
   <div id="view-app" class="app" hidden>
 
     <header class="app-header">
-      <div class="app-header-title">
-        <span id="tab-title">Contas</span>
-        <span id="app-version" class="app-version"></span>
-        <span id="environment-badge" class="environment-badge" hidden>DEV</span>
+      <div class="app-brand" aria-label="Contas e Combustível">
+        <span class="app-brand-icon" aria-hidden="true">⛽</span>
+        <strong>Contas &amp; Combustível <span id="brand-version" class="brand-version"></span></strong>
       </div>
       <div class="app-header-actions">
+        <span id="tab-title" class="app-current-view">Resumo</span>
+        <span id="environment-badge" class="environment-badge" hidden>DEV</span>
+        <span id="connected-user" class="connected-user" title="Usuário conectado"></span>
+        <button type="button" id="btn-copy-user-id" class="btn-logout" title="Exibir o UUID da conta conectada">Ver meu ID</button>
         <div class="status" id="status-indicator" title="Status de conexão">
           <span class="status-dot" id="status-dot"></span>
           <span class="status-label" id="status-label">online</span>
@@ -81,7 +86,7 @@
     <main class="app-main">
 
       <!-- Aba: Contas de consumo -->
-      <section id="tab-contas" class="tab-panel">
+      <section id="tab-contas" class="tab-panel" hidden>
         <div class="month-check-grid" aria-label="Conferência mensal de contas">
           <div class="month-check-card month-check-card-subtotal">
             <span class="month-check-label">Subtotal das contas</span>
@@ -137,11 +142,30 @@
       </section>
 
       <!-- Aba: Resumo Mensal -->
-      <section id="tab-resumo" class="tab-panel" hidden>
+      <section id="tab-resumo" class="tab-panel">
+        <div class="page-heading page-heading-resumo">
+          <div>
+            <h1>Resumo</h1>
+            <p>Visão consolidada do mês selecionado</p>
+          </div>
+        </div>
+
         <div id="resumo-fechado-banner" class="month-closed-banner" hidden>
           <strong>Mês já fechado</strong>
           <span id="resumo-percentual-fechado"></span>
         </div>
+
+        <div class="summary-share-actions">
+          <div>
+            <strong>Compartilhar resumo</strong>
+            <span>Gere uma imagem limpa do mês para encaminhar ao outro participante.</span>
+          </div>
+          <div class="summary-share-buttons">
+            <button type="button" class="btn btn-primary" id="btn-compartilhar-resumo">Compartilhar imagem</button>
+            <button type="button" class="btn btn-secondary" id="btn-baixar-resumo">Baixar PNG</button>
+          </div>
+        </div>
+
 
         <div class="resumo-grid">
           <div class="resumo-card">
@@ -177,17 +201,6 @@
           Nenhum lançamento neste mês ainda.
         </p>
 
-        <div class="summary-share-actions">
-          <div>
-            <strong>Compartilhar resumo</strong>
-            <span>Gere uma imagem limpa do mês para encaminhar ao outro participante.</span>
-          </div>
-          <div class="summary-share-buttons">
-            <button type="button" class="btn btn-primary" id="btn-compartilhar-resumo">Compartilhar imagem</button>
-            <button type="button" class="btn btn-secondary" id="btn-baixar-resumo">Baixar PNG</button>
-          </div>
-        </div>
-
         <hr class="config-divider" />
 
         <h3 class="resumo-subtitulo">Fechamento do mês</h3>
@@ -207,6 +220,7 @@
             <input type="date" id="fechamento-data-rateio" />
           </label>
 
+          <p id="fechamento-unsaved" class="unsaved-notice" hidden>Alterações não salvas</p>
           <button type="submit" class="btn btn-primary">Salvar fechamento do mês</button>
         </form>
       </section>
@@ -476,15 +490,15 @@
         <hr class="config-divider" />
 
         <button type="button" id="btn-forcar-sync" class="btn btn-ghost btn-block">
-          Forçar sincronização de tudo
+          Sincronizar agora
         </button>
         <p class="config-hint">
-          Use se algum lançamento estiver salvo só no aparelho e não aparecer no Supabase.
+          Use se algum lançamento estiver salvo só no aparelho e não aparecer no serviço de dados.
         </p>
 
         <hr class="config-divider" />
 
-        <section class="import-section" aria-labelledby="import-title">
+        <section class="import-section dev-only-tool" aria-labelledby="import-title">
           <h2 class="config-section-title" id="import-title">Importar histórico da planilha</h2>
           <p class="config-hint">
             Perfil inicial compatível com a planilha “Contas de Consumo”: abas de Contas Consumo e Combustivel por ano.
@@ -519,7 +533,7 @@
 
         <hr class="config-divider" />
 
-        <section class="import-section" aria-labelledby="fuel-enrich-title">
+        <section class="import-section dev-only-tool" aria-labelledby="fuel-enrich-title">
           <h2 class="config-section-title" id="fuel-enrich-title">Complementar dados dos abastecimentos</h2>
           <p class="config-hint">
             Use a planilha de abastecimentos para preencher <strong>tipo de combustível, litros e posto</strong> nos lançamentos já existentes.
@@ -546,26 +560,26 @@
 
     <button id="btn-novo" class="fab" aria-label="Novo registro">+</button>
 
-    <nav class="tab-bar">
-      <button class="tab-btn is-active" data-tab="contas">
-        <span class="tab-icon" aria-hidden="true">💧</span>
+    <nav class="tab-bar" aria-label="Navegação principal">
+      <button class="tab-btn is-active" data-tab="resumo">
+        <span class="tab-icon" aria-hidden="true">▣</span>
+        <span>Resumo</span>
+      </button>
+      <button class="tab-btn" data-tab="contas">
+        <span class="tab-icon" aria-hidden="true">▤</span>
         <span>Contas</span>
       </button>
       <button class="tab-btn" data-tab="combustivel">
         <span class="tab-icon" aria-hidden="true">⛽</span>
         <span>Combustível</span>
       </button>
-      <button class="tab-btn" data-tab="resumo">
-        <span class="tab-icon" aria-hidden="true">📊</span>
-        <span>Resumo</span>
-      </button>
       <button class="tab-btn" data-tab="anual">
-        <span class="tab-icon" aria-hidden="true">📈</span>
+        <span class="tab-icon" aria-hidden="true">▦</span>
         <span>Anual</span>
       </button>
       <button class="tab-btn" data-tab="config">
-        <span class="tab-icon" aria-hidden="true">⚙️</span>
-        <span>Config</span>
+        <span class="tab-icon" aria-hidden="true">⚙</span>
+        <span>Configurações</span>
       </button>
     </nav>
   </div>
@@ -665,6 +679,25 @@
   </div>
 
   <!-- Modal: gerenciar postos -->
+  <div id="modal-conflito" class="modal" hidden>
+    <div class="modal-sheet conflict-sheet" role="dialog" aria-modal="true" aria-labelledby="conflito-title">
+      <h2 class="modal-title" id="conflito-title">Conflito de sincronização</h2>
+      <p class="config-hint">Este registro foi alterado neste dispositivo e também no SuperDB. Escolha qual versão deseja manter.</p>
+      <div class="conflict-grid">
+        <section class="conflict-option">
+          <h3>Este dispositivo</h3>
+          <div id="conflito-local" class="conflict-details"></div>
+          <button type="button" id="conflito-manter-local" class="btn btn-primary">Manter este dispositivo</button>
+        </section>
+        <section class="conflict-option">
+          <h3>SuperDB</h3>
+          <div id="conflito-remoto" class="conflict-details"></div>
+          <button type="button" id="conflito-usar-remoto" class="btn btn-ghost">Usar versão do SuperDB</button>
+        </section>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-postos" class="modal" hidden>
     <div class="modal-sheet station-manager-sheet">
       <h2 class="modal-title">Gerenciar postos</h2>

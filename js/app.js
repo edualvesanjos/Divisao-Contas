@@ -4,8 +4,9 @@
 
 import { getSession, signIn, signUp, signOut, onAuthChange } from './auth.js';
 import { localDb } from './db-local.js';
-import { supabase } from './supabase-client.js';
-import { syncAll, watchConnectivity, isOnline } from './sync.js';
+import { superdb } from './superdb-client.js';
+import { superdbConfig } from './environment.js';
+import { syncAll, watchConnectivity, isOnline, onSyncStateChange, getSyncState, setConflictResolver } from './sync.js';
 import { APP_ENVIRONMENT, isDevelopment } from './environment.js';
 import { analisarPlanilhaHistorica } from './import-xlsx.js';
 import { lerPlanilhaComplementarCombustivel, classificarComplementoCombustivel } from './import-fuel-enrichment.js';
@@ -21,7 +22,8 @@ const els = {
   authToggle: document.getElementById('auth-toggle'),
 
   tabTitle: document.getElementById('tab-title'),
-  appVersion: document.getElementById('app-version'),
+  brandVersion: document.getElementById('brand-version'),
+  connectedUser: document.getElementById('connected-user'),
   environmentBadge: document.getElementById('environment-badge'),
   tabButtons: document.querySelectorAll('.tab-btn'),
   tabPanels: {
@@ -74,6 +76,7 @@ const els = {
   fechamentoDataRateio: document.getElementById('fechamento-data-rateio'),
   resumoFechadoBanner: document.getElementById('resumo-fechado-banner'),
   resumoPercentualFechado: document.getElementById('resumo-percentual-fechado'),
+  fechamentoUnsaved: document.getElementById('fechamento-unsaved'),
 
   anualAno: document.getElementById('anual-ano'),
   anualAnoComparacao: document.getElementById('anual-ano-comparacao'),
@@ -152,6 +155,11 @@ const els = {
   statusIndicator: document.getElementById('status-indicator'),
   statusLabel: document.getElementById('status-label'),
   btnLogout: document.getElementById('btn-logout'),
+  modalConflito: document.getElementById('modal-conflito'),
+  conflitoLocal: document.getElementById('conflito-local'),
+  conflitoRemoto: document.getElementById('conflito-remoto'),
+  conflitoManterLocal: document.getElementById('conflito-manter-local'),
+  conflitoUsarRemoto: document.getElementById('conflito-usar-remoto'),
 
   formConfig: document.getElementById('form-config'),
   configParticipantes: document.getElementById('config-participantes'),
@@ -183,7 +191,7 @@ const els = {
 };
 
 let currentUser = null;
-let activeTab = 'contas';
+let activeTab = 'resumo';
 let isSignUpMode = false;
 let editingId = null;
 let settings = { numero_participantes_padrao: 2, percentual_combustivel_padrao: 50, postos_gerenciados: null };
@@ -196,6 +204,10 @@ if (els.environmentBadge) {
   els.environmentBadge.title = `Ambiente: ${APP_ENVIRONMENT}`;
 }
 
+document.querySelectorAll('.dev-only-tool').forEach((element) => {
+  element.hidden = !isDevelopment;
+});
+
 const hoje = new Date();
 let mesAtivo = { ano: hoje.getFullYear(), mes: hoje.getMonth() }; // mes: 0-11
 
@@ -203,6 +215,10 @@ let mesAtivo = { ano: hoje.getFullYear(), mes: hoje.getMonth() }; // mes: 0-11
 // Autenticação
 // ---------------------------------------------------------
 
+els.authToggle.hidden = false;
+document.getElementById('btn-copy-user-id')?.addEventListener('click', () => {
+  if (currentUser?.id) window.prompt('UUID da sua conta no SuperDB (copie o valor):', currentUser.id);
+});
 els.authToggle.addEventListener('click', () => {
   isSignUpMode = !isSignUpMode;
   els.authSubmit.textContent = isSignUpMode ? 'Criar conta' : 'Entrar';
@@ -261,6 +277,11 @@ function traduzErroAuth(message) {
 
 async function enterApp(user) {
   currentUser = user;
+  localDb.setUserContext(user.id);
+  if (els.connectedUser) {
+    els.connectedUser.textContent = user.email || 'Usuário conectado';
+    els.connectedUser.title = user.email ? `Usuário conectado: ${user.email}` : 'Usuário conectado';
+  }
   els.viewAuth.hidden = true;
   els.viewApp.hidden = false;
 
@@ -327,26 +348,26 @@ els.formConfig.addEventListener('submit', async (event) => {
 
 els.btnForcarSync.addEventListener('click', async () => {
   if (!currentUser) return;
+  if (!superdbConfig.schemaReady) {
+    showToast('Sincronização bloqueada até o banco ser conferido.', 'error');
+    return;
+  }
   els.btnForcarSync.disabled = true;
   els.btnForcarSync.textContent = 'Sincronizando...';
 
   try {
-    await localDb.markAllForResync('contas_consumo');
-    await localDb.markAllForResync('abastecimentos');
-    await localDb.markAllForResync('configuracoes');
-    await localDb.markAllForResync('fechamentos_mensais');
     await syncAll(currentUser.id);
     await loadSettings();
     await garantirPostosGerenciados();
     await atualizarListaPostos();
     await refreshActiveView();
-    showToast('Sincronização forçada concluída.');
+    showToast('Sincronização manual concluída.');
   } catch (err) {
     console.error('[sync] falha ao forçar sincronização:', err);
     showToast('Falha ao forçar sincronização — veja o console.', 'error');
   } finally {
     els.btnForcarSync.disabled = false;
-    els.btnForcarSync.textContent = 'Forçar sincronização de tudo';
+    els.btnForcarSync.textContent = 'Sincronizar agora';
   }
 });
 
@@ -756,7 +777,7 @@ if (els.btnImportarXlsx) {
       if (els.importXlsxFile) els.importXlsxFile.value = '';
     } catch (err) {
       console.error('[import] falha ao importar XLSX:', err);
-      showToast('Falha ao importar. Verifique os avisos da análise e a configuração do Supabase.', 'error');
+      showToast('Falha ao importar. Verifique os avisos da análise e a configuração do serviço de dados.', 'error');
       els.btnImportarXlsx.disabled = false;
     } finally {
       els.btnImportarXlsx.textContent = 'Importar dados analisados';
@@ -860,54 +881,25 @@ if (els.btnAplicarFuelEnrich) els.btnAplicarFuelEnrich.addEventListener('click',
 });
 
 async function excluirDadosImportados() {
+  if (!superdbConfig.schemaReady) throw new Error('Banco ainda não liberado para sincronização.');
   if (!currentUser) return;
 
   const stores = ['contas_consumo', 'abastecimentos', 'fechamentos_mensais'];
   let removidos = 0;
-
   for (const store of stores) {
     const rows = await localDb.listAll(store);
-    const importados = rows.filter(
-      (row) => row.user_id === currentUser.id && row.origem_importacao === 'xlsx_historico'
-    );
-
-    if (!importados.length) continue;
-
-    // Exclui por ID no Supabase. Assim a limpeza funciona inclusive para registros
-    // importados em versões anteriores e não depende do campo origem_importacao
-    // existir/estar preenchido remotamente.
-    const ids = importados.map((row) => row.id).filter(Boolean);
-    if (ids.length && isOnline()) {
-      const { error } = await supabase
-        .from(store)
-        .delete()
-        .eq('user_id', currentUser.id)
-        .in('id', ids);
-
-      if (error) {
-        throw new Error(`Falha ao excluir ${store} no Supabase: ${error.message}`);
-      }
-    }
-
-    // Só remove definitivamente do IndexedDB depois da exclusão remota.
-    // Se estiver offline, preserva o fluxo de soft delete para sincronização posterior.
+    const importados = rows.filter((row) => row.origem_importacao === 'xlsx_historico');
     for (const row of importados) {
-      if (isOnline()) {
-        await localDb.hardDelete(store, row.id);
-      } else {
-        await localDb.remove(store, row.id);
-      }
+      await localDb.remove(store, row.id);
       removidos += 1;
     }
   }
-
-  if (isOnline()) {
-    await syncAll(currentUser.id);
-  }
+  if (isOnline()) await syncAll(currentUser.id);
   await refreshActiveView();
   atualizarListaPostos();
-  showToast(`${removidos} registro(s) importado(s) excluído(s).`);
+  showToast(`${removidos} registro(s) importado(s) marcado(s) como excluído(s).`);
 }
+
 if (els.btnExcluirImportados) {
   els.btnExcluirImportados.addEventListener('click', async () => {
     const confirmado = window.confirm('Excluir somente os dados originados da importação XLSX? Lançamentos manuais serão preservados.');
@@ -1000,7 +992,7 @@ async function postosDosAbastecimentos() {
 }
 
 async function garantirPostosGerenciados() {
-  if (!currentUser || Array.isArray(settings.postos_gerenciados)) return;
+  if (!currentUser || !isOnline() || Array.isArray(settings.postos_gerenciados)) return;
   settings.postos_gerenciados = await postosDosAbastecimentos();
   await localDb.putWithId('configuracoes', currentUser.id, {
     user_id: currentUser.id,
@@ -2118,6 +2110,7 @@ async function loadFechamentoMes(abastecimentos = null) {
   // legados no Supabase por compatibilidade e aceitamos qualquer um deles ao ler.
   els.fechamentoDataRateio.value =
     record?.contas_data_rateio ?? record?.combustivel_data_rateio ?? '';
+  if (els.fechamentoUnsaved) els.fechamentoUnsaved.hidden = true;
 
   const mesFechado = Boolean(record && !record.deleted);
   els.resumoFechadoBanner.hidden = !mesFechado;
@@ -2145,6 +2138,15 @@ async function loadFechamentoMes(abastecimentos = null) {
   return record;
 }
 
+function marcarFechamentoNaoSalvo() {
+  if (els.fechamentoUnsaved) els.fechamentoUnsaved.hidden = false;
+}
+[els.fechamentoContasPago, els.fechamentoContasDataPagamento, els.fechamentoDataRateio]
+  .forEach((campo) => {
+    campo?.addEventListener('input', marcarFechamentoNaoSalvo);
+    campo?.addEventListener('change', marcarFechamentoNaoSalvo);
+  });
+
 els.formFechamento.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!currentUser) return;
@@ -2165,6 +2167,7 @@ els.formFechamento.addEventListener('submit', async (event) => {
   });
 
   await renderResumo();
+  if (els.fechamentoUnsaved) els.fechamentoUnsaved.hidden = true;
   showToast('Fechamento do mês salvo.');
   triggerBackgroundSync();
 });
@@ -2430,21 +2433,79 @@ function triggerBackgroundSync() {
   if (currentUser) syncAll(currentUser.id).then(async () => {
     await atualizarListaPostos();
     await refreshActiveView();
-  });
+  }).catch((error) => console.error('[sync] falha:', error));
 }
 
 // ---------------------------------------------------------
 // Indicador de conexão
 // ---------------------------------------------------------
 
-function updateConnectionStatus() {
+function updateConnectionStatus(state = getSyncState()) {
   const online = isOnline();
-  els.statusIndicator.classList.toggle('is-offline', !online);
-  els.statusLabel.textContent = online ? 'online' : 'offline';
+  const status = online ? state.status : 'offline';
+  els.statusIndicator.classList.toggle('is-offline', status === 'offline' || status === 'error');
+  const labels = {
+    offline: state.pending ? `Offline · ${state.pending} pendente(s)` : 'Offline',
+    syncing: 'Sincronizando…',
+    pending: `${state.pending} pendente(s)`,
+    error: state.pending ? `Erro · ${state.pending} pendente(s)` : 'Erro de sincronização',
+    synced: 'Sincronizado',
+    idle: superdbConfig.schemaReady ? 'Aguardando sincronização' : 'Banco não configurado',
+  };
+  els.statusLabel.textContent = labels[status] || 'Aguardando sincronização';
+  els.statusLabel.title = state.error || '';
 }
 
-window.addEventListener('online', updateConnectionStatus);
-window.addEventListener('offline', updateConnectionStatus);
+function conflictSummary(record) {
+  if (!record) return '<p>Registro inexistente.</p>';
+  const ignore = new Set(['pending_sync', 'data_ordenacao', '_sync_base_updated_at', 'user_id', 'created_at']);
+  const labels = {
+    tipo: 'Tipo', valor_total: 'Valor total', valor_rateado: 'Valor rateado', data: 'Data',
+    competencia: 'Competência', data_vencimento: 'Vencimento', data_pagamento: 'Pagamento',
+    contas_pago: 'Contas pagas', contas_data_pagamento: 'Pagamento das contas',
+    contas_data_rateio: 'Data do rateio', combustivel_data_rateio: 'Data do rateio',
+    posto: 'Posto', tipo_combustivel: 'Combustível', litros: 'Litros', km_atual: 'Km', deleted: 'Excluído',
+    updated_at: 'Atualizado em', ano: 'Ano', mes: 'Mês', numero_participantes_padrao: 'Participantes',
+    percentual_combustivel_padrao: 'Percentual combustível', postos_gerenciados: 'Postos'
+  };
+  return Object.entries(record)
+    .filter(([key]) => !ignore.has(key) && key !== 'id')
+    .filter(([key, value]) => value !== null && value !== '' && labels[key])
+    .map(([key, value]) => {
+      let shown = value;
+      if (typeof value === 'boolean') shown = value ? 'Sim' : 'Não';
+      if (key === 'updated_at') shown = new Date(value).toLocaleString('pt-BR');
+      if (Array.isArray(value)) shown = value.join(', ');
+      return `<div class="conflict-row"><span>${labels[key]}</span><strong>${escapeHtml(String(shown))}</strong></div>`;
+    }).join('') || '<p>Sem detalhes adicionais.</p>';
+}
+
+function escolherVersaoConflito({ storeName, local, remote }) {
+  const tabela = {
+    contas_consumo: 'Conta', abastecimentos: 'Abastecimento', configuracoes: 'Configuração',
+    fechamentos_mensais: 'Fechamento mensal',
+  }[storeName] || storeName;
+  document.getElementById('conflito-title').textContent = `Conflito de sincronização · ${tabela}`;
+  els.conflitoLocal.innerHTML = conflictSummary(local);
+  els.conflitoRemoto.innerHTML = conflictSummary(remote);
+  els.modalConflito.hidden = false;
+  return new Promise((resolve) => {
+    const finish = (choice) => {
+      els.modalConflito.hidden = true;
+      els.conflitoManterLocal.onclick = null;
+      els.conflitoUsarRemoto.onclick = null;
+      resolve(choice);
+    };
+    els.conflitoManterLocal.onclick = () => finish('local');
+    els.conflitoUsarRemoto.onclick = () => finish('remote');
+  });
+}
+
+setConflictResolver(escolherVersaoConflito);
+
+onSyncStateChange(updateConnectionStatus);
+window.addEventListener('online', () => updateConnectionStatus());
+window.addEventListener('offline', () => updateConnectionStatus());
 
 // ---------------------------------------------------------
 // Logout
@@ -2464,7 +2525,12 @@ els.btnLogout.addEventListener('click', async () => {
 // Início
 // ---------------------------------------------------------
 
-checkExistingSession();
+checkExistingSession().catch((error) => {
+  console.error('[auth] falha ao recuperar sessão:', error);
+  els.viewAuth.hidden = false;
+  els.authError.textContent = 'Não foi possível validar a sessão. Tente entrar novamente.';
+  els.authError.hidden = false;
+});
 loadAppVersion();
 atualizarLabelMes();
 
@@ -2472,7 +2538,7 @@ async function loadAppVersion() {
   try {
     const res = await fetch('./package.json');
     const pkg = await res.json();
-    els.appVersion.textContent = `v${pkg.version}`;
+    if (els.brandVersion) els.brandVersion.textContent = `v${pkg.version}`;
   } catch (err) {
     console.warn('Não foi possível carregar a versão do app:', err);
   }

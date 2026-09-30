@@ -1,0 +1,62 @@
+name: Publicar Homologação
+
+on:
+  push:
+    branches:
+      - homolog
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-homolog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar branch homolog
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Preparar arquivos da homologação
+        run: |
+          mkdir publish
+
+          rsync -av \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='node_modules/' \
+            --exclude='publish/' \
+            ./ publish/
+
+          test -f publish/index.html
+          test -f publish/manifest.json
+          test -f publish/sw.js
+
+          echo "OK: arquivos da homologação preparados."
+
+      - name: Publicar no repositório de homologação
+        env:
+          HOMOLOG_TOKEN: ${{ secrets.HOMOLOG_REPO_TOKEN }}
+        run: |
+          if [ -z "$HOMOLOG_TOKEN" ]; then
+            echo "ERRO: HOMOLOG_REPO_TOKEN não configurado."
+            exit 1
+          fi
+
+          cd publish
+
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          git commit -m "publica homologacao"
+
+          git remote add homolog-pages \
+            https://x-access-token:${HOMOLOG_TOKEN}@github.com/edualvesanjos/Divisao-Contas-Homolog.git
+
+          git push homolog-pages HEAD:main --force

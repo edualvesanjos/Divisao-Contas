@@ -1,10 +1,104 @@
-## v0.8.6 PROD
+## v1.0.1 PROD - 2026-09-30
 
-- Fecha em produção a série v0.8.x a partir da v0.8.6 DEV validada.
-- Altera o ambiente da aplicação para `production`.
-- Mantém integralmente as funcionalidades e correções validadas na v0.8.6 DEV.
-- Não requer nova migration no Supabase.
-- Recomenda-se executar `supabase/verificar_release.sql` no Supabase PROD antes da publicação.
+- Promove para produção as alterações aprovadas nos testes da v1.0.1 DEV.
+- Remove referências ativas ao Supabase da interface e mensagens do aplicativo.
+- Adota nomenclatura genérica “serviço de dados” nas orientações ao usuário.
+- Remove tratamento obsoleto de endpoint Supabase do service worker.
+- Mantém referências ao Supabase apenas no histórico de versões, documentação legada e comentários técnicos de compatibilidade.
+- Atualiza o favicon e os ícones do PWA com identidade visual moderna para contas e combustíveis.
+- Garante favicon explícito na guia do navegador e ícone para dispositivos móveis.
+
+# Changelog
+
+## v1.0.0 PROD - 2026-09-30
+- Configura o aplicativo para o projeto SuperDB de produção.
+- Remove a identificação visual de ambiente DEV.
+- Mantém “Ver meu ID” disponível para conferir o UUID da conta conectada.
+- Isola o cache local pelo ambiente e pelo projeto SuperDB.
+
+## v0.9.8 DEV — ajuste do cabeçalho
+
+- Corrige a sobreposição do usuário conectado com o seletor de mês no desktop.
+- Reserva uma área própria para as ações da conta no cabeçalho.
+- Mantém o e-mail truncado com reticências em larguras menores e o endereço completo no tooltip.
+- Preserva as funcionalidades e a sincronização validadas nas versões anteriores.
+
+## v0.9.7 DEV — melhorias de identificação e UX
+
+- Exibe a versão ao lado de “Contas & Combustível”.
+- Exibe o e-mail do usuário conectado próximo às ferramentas da sessão.
+- Substitui a confirmação simples de conflito por modal comparativo entre dispositivo e SuperDB.
+- Indica alterações não salvas no formulário de fechamento mensal.
+- Mantém a lógica de sincronização e o schema validados na v0.9.6.
+
+## v0.9.6 DEV — conflitos de sincronização
+
+- Detecta alteração concorrente do mesmo registro antes do `upsert`.
+- Guarda localmente a versão remota que originou a edição.
+- Exige escolha explícita entre manter a edição local ou usar a versão do SuperDB.
+- Metadados de conflito permanecem somente no IndexedDB e não são enviados ao banco.
+- Após envio, relê `updated_at` do SuperDB para usar o relógio/trigger do servidor como referência.
+- Mantém sincronização sem Realtime e preserva o schema validado na v0.9.5.
+
+## v0.9.5 DEV — banco SuperDB novo e sincronização segura
+
+- Prepara instalação em projeto SuperDB novo e vazio, sem importar dados ou usuários do DEV anterior.
+- Remove slug/chave antigos do código e mantém placeholders para as credenciais do novo projeto.
+- Cria cache IndexedDB novo identificado por ambiente e slug do projeto e limita leituras/pendências ao usuário autenticado.
+- Impede ciclos simultâneos, adiciona pull paginado e não limpa uma pendência se o registro mudou durante o envio.
+- Evita listeners/timers duplicados e passa o indicador a refletir sincronização, pendências, offline e erro reais.
+- O botão de sincronização manual deixa de remarcar todo o cache para reenvio.
+- A exclusão de dados importados passa a usar soft delete também online.
+- Mantém sincronização por registro e não usa Realtime.
+- Adiciona SQL SuperDB para criação e conferência do banco limpo.
+
+## v0.9.4 DEV — exclusão lógica sincronizada
+
+- Substitui a exclusão física remota por exclusão lógica (`deleted = true`) nas quatro tabelas sincronizadas.
+- Mantém registros excluídos no SuperDB para que a exclusão seja propagada entre sessões/dispositivos como uma atualização normal.
+- Preserva o comportamento offline-first e evita apagar registros locais apenas porque não vieram em uma consulta remota.
+- Isola um novo cache IndexedDB DEV para validar a sincronização sem resíduos da v0.9.3.
+- Não requer migration: a coluna `deleted` já existe nas quatro tabelas sincronizadas.
+- Atualiza versão e cache do PWA.
+
+## v0.9.3 DEV — primeira sincronização no SuperDB
+
+- Ativa a sincronização após a confirmação da conta DEV e das chaves estrangeiras.
+- Isola um cache IndexedDB novo para não enviar pendências do teste de cadastro.
+- Propaga erros de sincronização, preservando alterações locais pendentes e evitando indicar conclusão falsa.
+- Atualiza versão e cache do PWA.
+
+## v0.9.2 DEV — cadastro pelo aplicativo
+
+- Define o slug do projeto SuperDB DEV e habilita o cadastro por e-mail e senha.
+- A chave anon DEV foi preenchida em `js/environment.js`.
+- Mantém a sincronização remota desabilitada até confirmar UUIDs e integridade dos dados migrados.
+- Atualiza a versão do app e o cache PWA.
+
+## v0.9.1 DEV — preparação SuperDB
+
+- Cliente SuperDB configurável para DEV, com slug e chave anon pendentes.
+- Sessão com renovação preventiva e escuta de saída, sem `onAuthStateChange`.
+- Cache IndexedDB separado do Supabase e sincronização bloqueada até validação da migração.
+- Cadastro bloqueado durante a preservação dos UUIDs dos usuários.
+- Serviço PWA atualizado; consulta e exclusão direta migram para o cliente SuperDB.
+- Instruções de transferência e validação em `superdb/MIGRACAO_DEV.md`.
+- Sem alteração em regras de negócio ou layout. Nenhum dado foi transferido nesta entrega.
+
+## v0.9.0 DEV
+
+- Inicia a série de modernização visual e responsividade multidispositivo.
+- Adota como referência visual obrigatória o dashboard aprovado pelo usuário: barra superior azul-marinho, navegação lateral, área central clara, cartões suaves e hierarquia visual limpa.
+- **Resumo** passa a ser a tela inicial do sistema.
+- Em desktop/notebook, a navegação principal passa para uma barra lateral fixa; em tablet/celular, permanece como navegação inferior adaptada.
+- Reorganiza visualmente o Resumo Mensal para aproximá-lo da referência aprovada, preservando apenas as funcionalidades já existentes.
+- Integra o seletor de mês/ano visualmente ao cabeçalho em telas maiores.
+- Reposiciona o status de sincronização no rodapé da navegação lateral em desktop.
+- Mantém a área de compartilhamento do Resumo com destaque visual compatível com a nova linguagem.
+- Os importadores históricos e de complementação passam a ser ferramentas exclusivas de DEV: visíveis em `development` e ocultos em `production`.
+- Não altera regras de negócio, cálculos, importações, sincronização ou schema do Supabase.
+- Não requer nova migration.
+- Cache do PWA atualizado para v0.9.0.
 
 ## v0.8.6 DEV
 
@@ -377,3 +471,9 @@ Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 - Schema inicial do banco (Supabase) com RLS por usuário
 - Botão de logout no cabeçalho do app
 - `package.json` com servidor estático (`serve`) para preview automático no StackBlitz
+
+### v0.9.5 DEV — fechamento do SuperDB novo (30/09/2026)
+- schema DEV validado manualmente no SuperDB e liberado para cadastro/login;
+- instalador limpo consolidado sem acesso a schemas de sistema e sem FKs de autenticação;
+- estrutura alinhada ao contrato da v0.9.4, incluindo campos de abastecimentos;
+- projeto novo permanece sem Realtime e sem dados do ambiente de teste anterior.
