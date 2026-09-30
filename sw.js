@@ -1,7 +1,7 @@
 // Service worker mínimo: cacheia o "app shell" para abrir offline.
 // A sincronização de dados em si é feita por js/sync.js, não aqui.
 
-const CACHE_NAME = 'contas-combustivel-v1.0.1-dev';
+const CACHE_NAME = 'contas-combustivel-v1.0.1-prod';
 const APP_SHELL = [
   './',
   './index.html',
@@ -16,6 +16,9 @@ const APP_SHELL = [
   './js/superdb-client.js',
   './manifest.json',
   './favicon.ico',
+  './icons/favicon-32.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
   './package.json',
 ];
 

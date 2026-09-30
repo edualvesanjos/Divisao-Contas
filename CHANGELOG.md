@@ -1,9 +1,12 @@
-## v1.0.1 DEV
+## v1.0.1 PROD - 2026-09-30
 
+- Promove para produção as alterações aprovadas nos testes da v1.0.1 DEV.
 - Remove referências ativas ao Supabase da interface e mensagens do aplicativo.
 - Adota nomenclatura genérica “serviço de dados” nas orientações ao usuário.
 - Remove tratamento obsoleto de endpoint Supabase do service worker.
 - Mantém referências ao Supabase apenas no histórico de versões, documentação legada e comentários técnicos de compatibilidade.
+- Atualiza o favicon e os ícones do PWA com identidade visual moderna para contas e combustíveis.
+- Garante favicon explícito na guia do navegador e ícone para dispositivos móveis.
 
 # Changelog
 

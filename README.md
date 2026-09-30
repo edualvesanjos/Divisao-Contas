@@ -1,12 +1,12 @@
-> **v0.9.6 DEV — resolução segura de conflitos.** Mantém o novo projeto SuperDB e o schema já validados na v0.9.5, sem Realtime. Antes de sobrescrever uma alteração concorrente do mesmo registro, o app exige escolha explícita entre a versão local e a versão do SuperDB.
+> **v1.0.1 PROD — versão de produção validada.** Sincronização segura sem Realtime, resolução explícita de conflitos e backend SuperDB de produção.
 
 # Contas & Combustíveis
 
 Aplicativo PWA offline-first para contas de consumo, abastecimentos, rateios e fechamentos mensais.
 
-## Backend desta DEV
+## Backend de produção
 
-- SuperDB em projeto DEV novo e vazio;
+- SuperDB em projeto de produção;
 - sem Realtime;
 - sincronização por registro via REST/SDK;
 - RLS por `auth.uid()`;
@@ -20,7 +20,7 @@ Aplicativo PWA offline-first para contas de consumo, abastecimentos, rateios e f
 2. Execute `superdb/02_conferir_banco_limpo.sql` e confirme os resultados.
 3. Preencha somente o slug novo e a anon key nova em `js/environment.js`.
 4. Mude `schemaReady` para `true` depois da conferência do banco.
-5. Abra o app e crie uma conta nova para os testes DEV.
+5. Abra o app e autentique-se com a conta de produção.
 
 Consulte `superdb/INSTALACAO_BANCO_NOVO.md` para a ordem completa.
 
