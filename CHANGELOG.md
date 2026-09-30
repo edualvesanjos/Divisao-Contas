@@ -1,3 +1,15 @@
+## v0.9.5 DEV — banco SuperDB novo e sincronização segura
+
+- Prepara instalação em projeto SuperDB novo e vazio, sem importar dados ou usuários do DEV anterior.
+- Remove slug/chave antigos do código e mantém placeholders para as credenciais do novo projeto.
+- Cria cache IndexedDB novo identificado por ambiente e slug do projeto e limita leituras/pendências ao usuário autenticado.
+- Impede ciclos simultâneos, adiciona pull paginado e não limpa uma pendência se o registro mudou durante o envio.
+- Evita listeners/timers duplicados e passa o indicador a refletir sincronização, pendências, offline e erro reais.
+- O botão de sincronização manual deixa de remarcar todo o cache para reenvio.
+- A exclusão de dados importados passa a usar soft delete também online.
+- Mantém sincronização por registro e não usa Realtime.
+- Adiciona SQL SuperDB para criação e conferência do banco limpo.
+
 ## v0.9.4 DEV — exclusão lógica sincronizada
 
 - Substitui a exclusão física remota por exclusão lógica (`deleted = true`) nas quatro tabelas sincronizadas.
@@ -417,3 +429,9 @@ Convenção de versão: `x.x.x` para novas etapas/mudanças de versão,
 - Schema inicial do banco (Supabase) com RLS por usuário
 - Botão de logout no cabeçalho do app
 - `package.json` com servidor estático (`serve`) para preview automático no StackBlitz
+
+### v0.9.5 DEV — fechamento do SuperDB novo (30/09/2026)
+- schema DEV validado manualmente no SuperDB e liberado para cadastro/login;
+- instalador limpo consolidado sem acesso a schemas de sistema e sem FKs de autenticação;
+- estrutura alinhada ao contrato da v0.9.4, incluindo campos de abastecimentos;
+- projeto novo permanece sem Realtime e sem dados do ambiente de teste anterior.

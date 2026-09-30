@@ -6,7 +6,7 @@ import { getSession, signIn, signUp, signOut, onAuthChange } from './auth.js';
 import { localDb } from './db-local.js';
 import { superdb } from './superdb-client.js';
 import { superdbConfig } from './environment.js';
-import { syncAll, watchConnectivity, isOnline } from './sync.js';
+import { syncAll, watchConnectivity, isOnline, onSyncStateChange, getSyncState } from './sync.js';
 import { APP_ENVIRONMENT, isDevelopment } from './environment.js';
 import { analisarPlanilhaHistorica } from './import-xlsx.js';
 import { lerPlanilhaComplementarCombustivel, classificarComplementoCombustivel } from './import-fuel-enrichment.js';
@@ -270,6 +270,7 @@ function traduzErroAuth(message) {
 
 async function enterApp(user) {
   currentUser = user;
+  localDb.setUserContext(user.id);
   els.viewAuth.hidden = true;
   els.viewApp.hidden = false;
 
@@ -336,30 +337,26 @@ els.formConfig.addEventListener('submit', async (event) => {
 
 els.btnForcarSync.addEventListener('click', async () => {
   if (!currentUser) return;
-  if (!superdbConfig.migrationReady) {
-    showToast('Sincronização DEV bloqueada até a migração ser conferida.', 'error');
+  if (!superdbConfig.schemaReady) {
+    showToast('Sincronização DEV bloqueada até o banco novo ser conferido.', 'error');
     return;
   }
   els.btnForcarSync.disabled = true;
   els.btnForcarSync.textContent = 'Sincronizando...';
 
   try {
-    await localDb.markAllForResync('contas_consumo');
-    await localDb.markAllForResync('abastecimentos');
-    await localDb.markAllForResync('configuracoes');
-    await localDb.markAllForResync('fechamentos_mensais');
     await syncAll(currentUser.id);
     await loadSettings();
     await garantirPostosGerenciados();
     await atualizarListaPostos();
     await refreshActiveView();
-    showToast('Sincronização forçada concluída.');
+    showToast('Sincronização manual concluída.');
   } catch (err) {
     console.error('[sync] falha ao forçar sincronização:', err);
     showToast('Falha ao forçar sincronização — veja o console.', 'error');
   } finally {
     els.btnForcarSync.disabled = false;
-    els.btnForcarSync.textContent = 'Forçar sincronização de tudo';
+    els.btnForcarSync.textContent = 'Sincronizar agora';
   }
 });
 
@@ -873,55 +870,25 @@ if (els.btnAplicarFuelEnrich) els.btnAplicarFuelEnrich.addEventListener('click',
 });
 
 async function excluirDadosImportados() {
-  if (!superdbConfig.migrationReady) throw new Error('Migração DEV ainda não liberada para exclusão remota.');
+  if (!superdbConfig.schemaReady) throw new Error('Banco DEV novo ainda não liberado para sincronização.');
   if (!currentUser) return;
 
   const stores = ['contas_consumo', 'abastecimentos', 'fechamentos_mensais'];
   let removidos = 0;
-
   for (const store of stores) {
     const rows = await localDb.listAll(store);
-    const importados = rows.filter(
-      (row) => row.user_id === currentUser.id && row.origem_importacao === 'xlsx_historico'
-    );
-
-    if (!importados.length) continue;
-
-    // Exclui por ID no SuperDB. Assim a limpeza funciona inclusive para registros
-    // importados em versões anteriores e não depende do campo origem_importacao
-    // existir/estar preenchido remotamente.
-    const ids = importados.map((row) => row.id).filter(Boolean);
-    if (ids.length && isOnline()) {
-      const { error } = await superdb
-        .from(store)
-        .delete()
-        .eq('user_id', currentUser.id)
-        .in('id', ids);
-
-      if (error) {
-        throw new Error(`Falha ao excluir ${store} no SuperDB: ${error.message}`);
-      }
-    }
-
-    // Só remove definitivamente do IndexedDB depois da exclusão remota.
-    // Se estiver offline, preserva o fluxo de soft delete para sincronização posterior.
+    const importados = rows.filter((row) => row.origem_importacao === 'xlsx_historico');
     for (const row of importados) {
-      if (isOnline()) {
-        await localDb.hardDelete(store, row.id);
-      } else {
-        await localDb.remove(store, row.id);
-      }
+      await localDb.remove(store, row.id);
       removidos += 1;
     }
   }
-
-  if (isOnline()) {
-    await syncAll(currentUser.id);
-  }
+  if (isOnline()) await syncAll(currentUser.id);
   await refreshActiveView();
   atualizarListaPostos();
-  showToast(`${removidos} registro(s) importado(s) excluído(s).`);
+  showToast(`${removidos} registro(s) importado(s) marcado(s) como excluído(s).`);
 }
+
 if (els.btnExcluirImportados) {
   els.btnExcluirImportados.addEventListener('click', async () => {
     const confirmado = window.confirm('Excluir somente os dados originados da importação XLSX? Lançamentos manuais serão preservados.');
@@ -2451,14 +2418,25 @@ function triggerBackgroundSync() {
 // Indicador de conexão
 // ---------------------------------------------------------
 
-function updateConnectionStatus() {
+function updateConnectionStatus(state = getSyncState()) {
   const online = isOnline();
-  els.statusIndicator.classList.toggle('is-offline', !online);
-  els.statusLabel.textContent = online ? 'Sincronizado' : 'Offline';
+  const status = online ? state.status : 'offline';
+  els.statusIndicator.classList.toggle('is-offline', status === 'offline' || status === 'error');
+  const labels = {
+    offline: state.pending ? `Offline · ${state.pending} pendente(s)` : 'Offline',
+    syncing: 'Sincronizando…',
+    pending: `${state.pending} pendente(s)`,
+    error: state.pending ? `Erro · ${state.pending} pendente(s)` : 'Erro de sincronização',
+    synced: 'Sincronizado',
+    idle: superdbConfig.schemaReady ? 'Aguardando sincronização' : 'Banco DEV não configurado',
+  };
+  els.statusLabel.textContent = labels[status] || 'Aguardando sincronização';
+  els.statusLabel.title = state.error || '';
 }
 
-window.addEventListener('online', updateConnectionStatus);
-window.addEventListener('offline', updateConnectionStatus);
+onSyncStateChange(updateConnectionStatus);
+window.addEventListener('online', () => updateConnectionStatus());
+window.addEventListener('offline', () => updateConnectionStatus());
 
 // ---------------------------------------------------------
 // Logout

@@ -1,33 +1,13 @@
 import { superdb } from './superdb-client.js';
 
 const listeners = new Set();
-let refreshPromise;
+let authSubscription = null;
 const notify = (session) => listeners.forEach((callback) => callback(session));
-
-async function refreshIfNeeded(session) {
-  if (!session?.expires_at || session.expires_at * 1000 - Date.now() > 10 * 60 * 1000) return session;
-  if (!refreshPromise) {
-    refreshPromise = (async () => {
-      // Evita usar o mesmo refresh token em duas abas simultâneas.
-      const refresh = async () => {
-        const current = (await superdb.auth.getSession()).data?.session;
-        if (current?.expires_at && current.expires_at * 1000 - Date.now() > 10 * 60 * 1000) return current;
-        const { data, error } = await superdb.auth.refreshSession();
-        if (error) throw error;
-        return data.session;
-      };
-      return navigator.locks
-        ? navigator.locks.request('contas-combustivel-superdb-dev-refresh', refresh)
-        : refresh();
-    })().finally(() => { refreshPromise = null; });
-  }
-  return refreshPromise;
-}
 
 export async function getSession() {
   const { data, error } = await superdb.auth.getSession();
   if (error) throw error;
-  return refreshIfNeeded(data.session);
+  return data?.session ?? null;
 }
 
 export async function signIn(email, password) {
@@ -53,12 +33,9 @@ export async function signOut() {
 
 export function onAuthChange(callback) {
   listeners.add(callback);
-  window.addEventListener('storage', async () => {
-    try { notify(await getSession()); } catch (error) { console.warn('[auth] sessão:', error); }
-  });
-  const timer = setInterval(async () => {
-    try { if (!await getSession()) notify(null); }
-    catch (error) { console.warn('[auth] renovação:', error); }
-  }, 5 * 60 * 1000);
-  return () => { clearInterval(timer); listeners.delete(callback); };
+  if (!authSubscription && typeof superdb.auth.onAuthStateChange === 'function') {
+    const result = superdb.auth.onAuthStateChange((_event, session) => notify(session));
+    authSubscription = result?.data?.subscription || result?.subscription || true;
+  }
+  return () => listeners.delete(callback);
 }
