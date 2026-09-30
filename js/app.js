@@ -217,7 +217,7 @@ let mesAtivo = { ano: hoje.getFullYear(), mes: hoje.getMonth() }; // mes: 0-11
 
 els.authToggle.hidden = false;
 document.getElementById('btn-copy-user-id')?.addEventListener('click', () => {
-  if (currentUser?.id) window.prompt('UUID da sua conta no SuperDB DEV (copie o valor):', currentUser.id);
+  if (currentUser?.id) window.prompt('UUID da sua conta no SuperDB (copie o valor):', currentUser.id);
 });
 els.authToggle.addEventListener('click', () => {
   isSignUpMode = !isSignUpMode;
@@ -349,7 +349,7 @@ els.formConfig.addEventListener('submit', async (event) => {
 els.btnForcarSync.addEventListener('click', async () => {
   if (!currentUser) return;
   if (!superdbConfig.schemaReady) {
-    showToast('Sincronização DEV bloqueada até o banco novo ser conferido.', 'error');
+    showToast('Sincronização bloqueada até o banco ser conferido.', 'error');
     return;
   }
   els.btnForcarSync.disabled = true;
@@ -777,7 +777,7 @@ if (els.btnImportarXlsx) {
       if (els.importXlsxFile) els.importXlsxFile.value = '';
     } catch (err) {
       console.error('[import] falha ao importar XLSX:', err);
-      showToast('Falha ao importar. Verifique os avisos da análise e a configuração do Supabase.', 'error');
+      showToast('Falha ao importar. Verifique os avisos da análise e a configuração do serviço de dados.', 'error');
       els.btnImportarXlsx.disabled = false;
     } finally {
       els.btnImportarXlsx.textContent = 'Importar dados analisados';
@@ -881,7 +881,7 @@ if (els.btnAplicarFuelEnrich) els.btnAplicarFuelEnrich.addEventListener('click',
 });
 
 async function excluirDadosImportados() {
-  if (!superdbConfig.schemaReady) throw new Error('Banco DEV novo ainda não liberado para sincronização.');
+  if (!superdbConfig.schemaReady) throw new Error('Banco ainda não liberado para sincronização.');
   if (!currentUser) return;
 
   const stores = ['contas_consumo', 'abastecimentos', 'fechamentos_mensais'];
@@ -2450,7 +2450,7 @@ function updateConnectionStatus(state = getSyncState()) {
     pending: `${state.pending} pendente(s)`,
     error: state.pending ? `Erro · ${state.pending} pendente(s)` : 'Erro de sincronização',
     synced: 'Sincronizado',
-    idle: superdbConfig.schemaReady ? 'Aguardando sincronização' : 'Banco DEV não configurado',
+    idle: superdbConfig.schemaReady ? 'Aguardando sincronização' : 'Banco não configurado',
   };
   els.statusLabel.textContent = labels[status] || 'Aguardando sincronização';
   els.statusLabel.title = state.error || '';

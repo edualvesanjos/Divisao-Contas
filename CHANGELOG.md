@@ -1,4 +1,17 @@
+## v1.0.1 DEV
+
+- Remove referências ativas ao Supabase da interface e mensagens do aplicativo.
+- Adota nomenclatura genérica “serviço de dados” nas orientações ao usuário.
+- Remove tratamento obsoleto de endpoint Supabase do service worker.
+- Mantém referências ao Supabase apenas no histórico de versões, documentação legada e comentários técnicos de compatibilidade.
+
 # Changelog
+
+## v1.0.0 PROD - 2026-09-30
+- Configura o aplicativo para o projeto SuperDB de produção.
+- Remove a identificação visual de ambiente DEV.
+- Mantém “Ver meu ID” disponível para conferir o UUID da conta conectada.
+- Isola o cache local pelo ambiente e pelo projeto SuperDB.
 
 ## v0.9.8 DEV — ajuste do cabeçalho
 
