@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.9.7 DEV — melhorias de identificação e UX
+
+- Exibe a versão ao lado de “Contas & Combustível”.
+- Exibe o e-mail do usuário conectado próximo às ferramentas da sessão.
+- Substitui a confirmação simples de conflito por modal comparativo entre dispositivo e SuperDB.
+- Indica alterações não salvas no formulário de fechamento mensal.
+- Mantém a lógica de sincronização e o schema validados na v0.9.6.
+
 ## v0.9.6 DEV — conflitos de sincronização
 
 - Detecta alteração concorrente do mesmo registro antes do `upsert`.

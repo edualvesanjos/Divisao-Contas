@@ -22,7 +22,8 @@ const els = {
   authToggle: document.getElementById('auth-toggle'),
 
   tabTitle: document.getElementById('tab-title'),
-  appVersion: document.getElementById('app-version'),
+  brandVersion: document.getElementById('brand-version'),
+  connectedUser: document.getElementById('connected-user'),
   environmentBadge: document.getElementById('environment-badge'),
   tabButtons: document.querySelectorAll('.tab-btn'),
   tabPanels: {
@@ -75,6 +76,7 @@ const els = {
   fechamentoDataRateio: document.getElementById('fechamento-data-rateio'),
   resumoFechadoBanner: document.getElementById('resumo-fechado-banner'),
   resumoPercentualFechado: document.getElementById('resumo-percentual-fechado'),
+  fechamentoUnsaved: document.getElementById('fechamento-unsaved'),
 
   anualAno: document.getElementById('anual-ano'),
   anualAnoComparacao: document.getElementById('anual-ano-comparacao'),
@@ -153,6 +155,11 @@ const els = {
   statusIndicator: document.getElementById('status-indicator'),
   statusLabel: document.getElementById('status-label'),
   btnLogout: document.getElementById('btn-logout'),
+  modalConflito: document.getElementById('modal-conflito'),
+  conflitoLocal: document.getElementById('conflito-local'),
+  conflitoRemoto: document.getElementById('conflito-remoto'),
+  conflitoManterLocal: document.getElementById('conflito-manter-local'),
+  conflitoUsarRemoto: document.getElementById('conflito-usar-remoto'),
 
   formConfig: document.getElementById('form-config'),
   configParticipantes: document.getElementById('config-participantes'),
@@ -271,6 +278,10 @@ function traduzErroAuth(message) {
 async function enterApp(user) {
   currentUser = user;
   localDb.setUserContext(user.id);
+  if (els.connectedUser) {
+    els.connectedUser.textContent = user.email || 'Usuário conectado';
+    els.connectedUser.title = user.email ? `Usuário conectado: ${user.email}` : 'Usuário conectado';
+  }
   els.viewAuth.hidden = true;
   els.viewApp.hidden = false;
 
@@ -2099,6 +2110,7 @@ async function loadFechamentoMes(abastecimentos = null) {
   // legados no Supabase por compatibilidade e aceitamos qualquer um deles ao ler.
   els.fechamentoDataRateio.value =
     record?.contas_data_rateio ?? record?.combustivel_data_rateio ?? '';
+  if (els.fechamentoUnsaved) els.fechamentoUnsaved.hidden = true;
 
   const mesFechado = Boolean(record && !record.deleted);
   els.resumoFechadoBanner.hidden = !mesFechado;
@@ -2126,6 +2138,15 @@ async function loadFechamentoMes(abastecimentos = null) {
   return record;
 }
 
+function marcarFechamentoNaoSalvo() {
+  if (els.fechamentoUnsaved) els.fechamentoUnsaved.hidden = false;
+}
+[els.fechamentoContasPago, els.fechamentoContasDataPagamento, els.fechamentoDataRateio]
+  .forEach((campo) => {
+    campo?.addEventListener('input', marcarFechamentoNaoSalvo);
+    campo?.addEventListener('change', marcarFechamentoNaoSalvo);
+  });
+
 els.formFechamento.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!currentUser) return;
@@ -2146,6 +2167,7 @@ els.formFechamento.addEventListener('submit', async (event) => {
   });
 
   await renderResumo();
+  if (els.fechamentoUnsaved) els.fechamentoUnsaved.hidden = true;
   showToast('Fechamento do mês salvo.');
   triggerBackgroundSync();
 });
@@ -2434,26 +2456,52 @@ function updateConnectionStatus(state = getSyncState()) {
   els.statusLabel.title = state.error || '';
 }
 
-setConflictResolver(async ({ storeName, local, remote }) => {
+function conflictSummary(record) {
+  if (!record) return '<p>Registro inexistente.</p>';
+  const ignore = new Set(['pending_sync', 'data_ordenacao', '_sync_base_updated_at', 'user_id', 'created_at']);
+  const labels = {
+    tipo: 'Tipo', valor_total: 'Valor total', valor_rateado: 'Valor rateado', data: 'Data',
+    competencia: 'Competência', data_vencimento: 'Vencimento', data_pagamento: 'Pagamento',
+    contas_pago: 'Contas pagas', contas_data_pagamento: 'Pagamento das contas',
+    contas_data_rateio: 'Data do rateio', combustivel_data_rateio: 'Data do rateio',
+    posto: 'Posto', tipo_combustivel: 'Combustível', litros: 'Litros', km_atual: 'Km', deleted: 'Excluído',
+    updated_at: 'Atualizado em', ano: 'Ano', mes: 'Mês', numero_participantes_padrao: 'Participantes',
+    percentual_combustivel_padrao: 'Percentual combustível', postos_gerenciados: 'Postos'
+  };
+  return Object.entries(record)
+    .filter(([key]) => !ignore.has(key) && key !== 'id')
+    .filter(([key, value]) => value !== null && value !== '' && labels[key])
+    .map(([key, value]) => {
+      let shown = value;
+      if (typeof value === 'boolean') shown = value ? 'Sim' : 'Não';
+      if (key === 'updated_at') shown = new Date(value).toLocaleString('pt-BR');
+      if (Array.isArray(value)) shown = value.join(', ');
+      return `<div class="conflict-row"><span>${labels[key]}</span><strong>${escapeHtml(String(shown))}</strong></div>`;
+    }).join('') || '<p>Sem detalhes adicionais.</p>';
+}
+
+function escolherVersaoConflito({ storeName, local, remote }) {
   const tabela = {
-    contas_consumo: 'Conta',
-    abastecimentos: 'Abastecimento',
-    configuracoes: 'Configuração',
+    contas_consumo: 'Conta', abastecimentos: 'Abastecimento', configuracoes: 'Configuração',
     fechamentos_mensais: 'Fechamento mensal',
   }[storeName] || storeName;
+  document.getElementById('conflito-title').textContent = `Conflito de sincronização · ${tabela}`;
+  els.conflitoLocal.innerHTML = conflictSummary(local);
+  els.conflitoRemoto.innerHTML = conflictSummary(remote);
+  els.modalConflito.hidden = false;
+  return new Promise((resolve) => {
+    const finish = (choice) => {
+      els.modalConflito.hidden = true;
+      els.conflitoManterLocal.onclick = null;
+      els.conflitoUsarRemoto.onclick = null;
+      resolve(choice);
+    };
+    els.conflitoManterLocal.onclick = () => finish('local');
+    els.conflitoUsarRemoto.onclick = () => finish('remote');
+  });
+}
 
-  const remoteInfo = remote
-    ? `A versão do SuperDB foi alterada em ${new Date(remote.updated_at).toLocaleString('pt-BR')}.`
-    : 'O registro não existe mais no SuperDB.';
-
-  const manterLocal = window.confirm(
-    `${tabela}: foi detectada uma alteração concorrente.\n\n` +
-    `${remoteInfo}\n\n` +
-    'OK = manter a alteração deste dispositivo e enviar ao SuperDB.\n' +
-    'Cancelar = descartar esta alteração e usar a versão do SuperDB.'
-  );
-  return manterLocal ? 'local' : 'remote';
-});
+setConflictResolver(escolherVersaoConflito);
 
 onSyncStateChange(updateConnectionStatus);
 window.addEventListener('online', () => updateConnectionStatus());
@@ -2490,7 +2538,7 @@ async function loadAppVersion() {
   try {
     const res = await fetch('./package.json');
     const pkg = await res.json();
-    els.appVersion.textContent = `v${pkg.version}`;
+    if (els.brandVersion) els.brandVersion.textContent = `v${pkg.version}`;
   } catch (err) {
     console.warn('Não foi possível carregar a versão do app:', err);
   }

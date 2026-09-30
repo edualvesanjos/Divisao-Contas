@@ -44,12 +44,12 @@
     <header class="app-header">
       <div class="app-brand" aria-label="Contas e Combustível">
         <span class="app-brand-icon" aria-hidden="true">⛽</span>
-        <strong>Contas &amp; Combustível</strong>
+        <strong>Contas &amp; Combustível <span id="brand-version" class="brand-version"></span></strong>
       </div>
       <div class="app-header-actions">
         <span id="tab-title" class="app-current-view">Resumo</span>
-        <span id="app-version" class="app-version"></span>
         <span id="environment-badge" class="environment-badge" hidden>DEV</span>
+        <span id="connected-user" class="connected-user" title="Usuário conectado"></span>
         <button type="button" id="btn-copy-user-id" class="btn-logout dev-only-tool" hidden title="Exibir o UUID da conta DEV">Ver meu ID</button>
         <div class="status" id="status-indicator" title="Status de conexão">
           <span class="status-dot" id="status-dot"></span>
@@ -218,6 +218,7 @@
             <input type="date" id="fechamento-data-rateio" />
           </label>
 
+          <p id="fechamento-unsaved" class="unsaved-notice" hidden>Alterações não salvas</p>
           <button type="submit" class="btn btn-primary">Salvar fechamento do mês</button>
         </form>
       </section>
@@ -676,6 +677,25 @@
   </div>
 
   <!-- Modal: gerenciar postos -->
+  <div id="modal-conflito" class="modal" hidden>
+    <div class="modal-sheet conflict-sheet" role="dialog" aria-modal="true" aria-labelledby="conflito-title">
+      <h2 class="modal-title" id="conflito-title">Conflito de sincronização</h2>
+      <p class="config-hint">Este registro foi alterado neste dispositivo e também no SuperDB. Escolha qual versão deseja manter.</p>
+      <div class="conflict-grid">
+        <section class="conflict-option">
+          <h3>Este dispositivo</h3>
+          <div id="conflito-local" class="conflict-details"></div>
+          <button type="button" id="conflito-manter-local" class="btn btn-primary">Manter este dispositivo</button>
+        </section>
+        <section class="conflict-option">
+          <h3>SuperDB</h3>
+          <div id="conflito-remoto" class="conflict-details"></div>
+          <button type="button" id="conflito-usar-remoto" class="btn btn-ghost">Usar versão do SuperDB</button>
+        </section>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-postos" class="modal" hidden>
     <div class="modal-sheet station-manager-sheet">
       <h2 class="modal-title">Gerenciar postos</h2>
