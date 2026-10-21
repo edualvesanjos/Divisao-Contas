@@ -600,7 +600,7 @@
 
         <label class="field">
           <span class="field-label">Valor total (R$)</span>
-          <input type="number" id="conta-valor-total" step="0.01" min="0" required inputmode="decimal" />
+          <input type="number" id="conta-valor-total" step="0.01" min="0.01" required inputmode="decimal" />
         </label>
 
         <label class="field">
@@ -608,11 +608,12 @@
           <input type="number" id="conta-participantes" min="1" step="1" required />
         </label>
 
+        <label class="field"><span><input type="checkbox" id="conta-nao-ratear" /> Não ratear esta conta</span></label>
         <p class="computed-value">Rateio: <strong id="conta-valor-rateado-preview">—</strong></p>
 
         <label class="field">
           <span class="field-label">Vencimento</span>
-          <input type="date" id="conta-vencimento" />
+          <input type="date" id="conta-vencimento" required />
         </label>
 
         <div class="modal-actions">
@@ -636,7 +637,7 @@
 
         <label class="field">
           <span class="field-label">Valor total (R$)</span>
-          <input type="number" id="combustivel-valor-total" step="0.01" min="0" required inputmode="decimal" />
+          <input type="number" id="combustivel-valor-total" step="0.01" min="0.01" required inputmode="decimal" />
         </label>
 
         <label class="field">
@@ -644,6 +645,7 @@
           <input type="number" id="combustivel-percentual" min="0" max="100" step="0.01" required />
         </label>
 
+        <label class="field"><span><input type="checkbox" id="combustivel-nao-ratear" /> Não ratear este abastecimento</span></label>
         <p class="computed-value">Rateio: <strong id="combustivel-valor-rateado-preview">—</strong></p>
 
         <label class="field">

@@ -36,7 +36,19 @@ function stripLocalMetadata(record) {
     _sync_base_updated_at,
     ...payload
   } = record;
+  // Campos DATE opcionais nunca devem ser enviados como string vazia.
+  const dateFields = storeNameDateFields(record);
+  for (const field of dateFields) {
+    if (payload[field] === '') payload[field] = null;
+  }
   return payload;
+}
+
+function storeNameDateFields(record) {
+  if ('data_vencimento' in record) return ['data_vencimento', 'competencia', 'data_pagamento', 'data_transferencia_rateio'];
+  if ('contas_data_pagamento' in record) return ['contas_data_pagamento', 'contas_data_rateio', 'combustivel_data_rateio'];
+  if ('percentual_rateado' in record) return ['data_transferencia_rateio'];
+  return [];
 }
 
 

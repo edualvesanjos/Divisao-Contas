@@ -1,3 +1,10 @@
+## v1.0.3 DEV — Validações e rateio
+
+- Valida campos obrigatórios em contas e abastecimentos.
+- Adiciona opção de não ratear, preservando os limites do banco.
+- Normaliza datas opcionais vazias na sincronização, inclusive pendências existentes.
+- Base estável v1.0.2, sem migração de categorias.
+
 # Changelog
 
 ## v1.0.2 DEV

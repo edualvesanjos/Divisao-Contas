@@ -2218,6 +2218,7 @@ els.btnNovo.addEventListener('click', async () => {
   if (activeTab === 'contas') {
     els.formConta.reset();
     document.getElementById('conta-participantes').value = settings.numero_participantes_padrao;
+    document.getElementById('conta-nao-ratear').checked = false;
     atualizarPreviewConta();
     els.modalContaTitle.textContent = 'Nova conta';
     els.btnExcluirConta.hidden = true;
@@ -2227,6 +2228,7 @@ els.btnNovo.addEventListener('click', async () => {
     document.getElementById('combustivel-percentual').value = settings.percentual_combustivel_padrao;
     await garantirPostosGerenciados();
     await atualizarListaPostos();
+    document.getElementById('combustivel-nao-ratear').checked = false;
     atualizarPreviewCombustivel();
     els.modalCombustivelTitle.textContent = 'Novo abastecimento';
     els.btnExcluirCombustivel.hidden = true;
@@ -2270,18 +2272,25 @@ async function handleListClick(event, storeName) {
 function atualizarPreviewConta() {
   const valorTotal = Number(document.getElementById('conta-valor-total').value) || 0;
   const participantes = Number(document.getElementById('conta-participantes').value) || 1;
-  const rateado = valorTotal / participantes;
+  const naoRatear = document.getElementById('conta-nao-ratear').checked;
+  document.getElementById('conta-participantes').disabled = naoRatear;
+  const rateado = naoRatear ? 0 : valorTotal / participantes;
   document.getElementById('conta-valor-rateado-preview').textContent = formatMoeda(rateado);
   return rateado;
 }
 
 function atualizarPreviewCombustivel() {
   const valorTotal = Number(document.getElementById('combustivel-valor-total').value) || 0;
-  const percentual = Number(document.getElementById('combustivel-percentual').value) || 0;
+  const naoRatear = document.getElementById('combustivel-nao-ratear').checked;
+  document.getElementById('combustivel-percentual').disabled = naoRatear;
+  const percentual = naoRatear ? 0 : Number(document.getElementById('combustivel-percentual').value) || 0;
   const rateado = valorTotal * (percentual / 100);
   document.getElementById('combustivel-valor-rateado-preview').textContent = formatMoeda(rateado);
   return rateado;
 }
+
+document.getElementById('conta-nao-ratear').addEventListener('change', atualizarPreviewConta);
+document.getElementById('combustivel-nao-ratear').addEventListener('change', atualizarPreviewCombustivel);
 
 ['conta-valor-total', 'conta-participantes'].forEach((id) => {
   document.getElementById(id).addEventListener('input', atualizarPreviewConta);
@@ -2303,6 +2312,7 @@ async function abrirEdicao(storeName, id) {
     document.getElementById('conta-participantes').value =
       record.numero_participantes ?? settings.numero_participantes_padrao;
     document.getElementById('conta-vencimento').value = record.data_vencimento ?? '';
+    document.getElementById('conta-nao-ratear').checked = Number(record.valor_rateado) === 0 && Number(record.valor_total) > 0;
     atualizarPreviewConta();
 
     els.modalContaTitle.textContent = 'Editar conta';
@@ -2313,6 +2323,7 @@ async function abrirEdicao(storeName, id) {
     document.getElementById('combustivel-valor-total').value = record.valor_total ?? '';
     document.getElementById('combustivel-percentual').value =
       record.percentual_rateado ?? settings.percentual_combustivel_padrao;
+    document.getElementById('combustivel-nao-ratear').checked = Number(record.percentual_rateado) === 0;
     document.getElementById('combustivel-litros').value = record.litros ?? '';
     document.getElementById('combustivel-tipo').value = record.tipo_combustivel ?? 'gasolina';
     await garantirPostosGerenciados();
@@ -2361,13 +2372,18 @@ els.formConta.addEventListener('submit', async (event) => {
   const participantes = Number(document.getElementById('conta-participantes').value);
 
   const dataVencimento = parseOptionalText('conta-vencimento');
+  if (!Number.isFinite(valorTotal) || valorTotal <= 0 || !dataVencimento || (!document.getElementById('conta-nao-ratear').checked && (!Number.isInteger(participantes) || participantes < 1))) {
+    showToast('Informe valor total, vencimento e participantes válidos.');
+    return;
+  }
+  const naoRatearConta = document.getElementById('conta-nao-ratear').checked;
   const competencia = `${mesAtivo.ano}-${String(mesAtivo.mes + 1).padStart(2, '0')}-01`;
   const fields = {
     user_id: currentUser.id,
     tipo: document.getElementById('conta-tipo').value,
     valor_total: valorTotal,
-    numero_participantes: participantes,
-    valor_rateado: valorTotal / participantes,
+    numero_participantes: naoRatearConta ? Math.max(1, participantes || 1) : participantes,
+    valor_rateado: naoRatearConta ? 0 : valorTotal / participantes,
     data_vencimento: dataVencimento,
     competencia,
     origem_importacao: null,
@@ -2392,7 +2408,12 @@ els.formCombustivel.addEventListener('submit', async (event) => {
 
   const data = document.getElementById('combustivel-data').value;
   const valorTotal = Number(document.getElementById('combustivel-valor-total').value);
-  const percentual = Number(document.getElementById('combustivel-percentual').value);
+  const naoRatearCombustivel = document.getElementById('combustivel-nao-ratear').checked;
+  const percentual = naoRatearCombustivel ? 0 : Number(document.getElementById('combustivel-percentual').value);
+  if (!data || !Number.isFinite(valorTotal) || valorTotal <= 0 || !Number.isFinite(percentual) || percentual < 0 || percentual > 100) {
+    showToast('Informe data, valor total e percentual válidos.');
+    return;
+  }
 
   const fields = {
     user_id: currentUser.id,
