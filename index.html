@@ -135,6 +135,11 @@
             <span class="month-check-note" id="combustivel-media-ano-note"></span>
           </div>
         </div>
+        <div id="recuperacao-abastecimentos" class="recovery-panel" hidden>
+          <strong>Abastecimentos pendentes sem data</strong>
+          <p>Estes lançamentos estão salvos neste navegador, mas precisam de uma data para sincronizar. Nenhum dado será excluído.</p>
+          <div id="recuperacao-abastecimentos-itens"></div>
+        </div>
         <ul id="lista-combustivel" class="entry-list"></ul>
         <p id="lista-combustivel-vazia" class="empty-state" hidden>
           Nenhum abastecimento registrado ainda.<br />Toque em “+” para lançar o primeiro.
@@ -600,7 +605,7 @@
 
         <label class="field">
           <span class="field-label">Valor total (R$)</span>
-          <input type="number" id="conta-valor-total" step="0.01" min="0" required inputmode="decimal" />
+          <input type="number" id="conta-valor-total" step="0.01" min="0.01" required inputmode="decimal" />
         </label>
 
         <label class="field">
@@ -608,11 +613,12 @@
           <input type="number" id="conta-participantes" min="1" step="1" required />
         </label>
 
+        <label class="field"><span><input type="checkbox" id="conta-nao-ratear" /> Não ratear esta conta</span></label>
         <p class="computed-value">Rateio: <strong id="conta-valor-rateado-preview">—</strong></p>
 
         <label class="field">
           <span class="field-label">Vencimento</span>
-          <input type="date" id="conta-vencimento" />
+          <input type="date" id="conta-vencimento" required />
         </label>
 
         <div class="modal-actions">
@@ -636,7 +642,7 @@
 
         <label class="field">
           <span class="field-label">Valor total (R$)</span>
-          <input type="number" id="combustivel-valor-total" step="0.01" min="0" required inputmode="decimal" />
+          <input type="number" id="combustivel-valor-total" step="0.01" min="0.01" required inputmode="decimal" />
         </label>
 
         <label class="field">
@@ -644,6 +650,7 @@
           <input type="number" id="combustivel-percentual" min="0" max="100" step="0.01" required />
         </label>
 
+        <label class="field"><span><input type="checkbox" id="combustivel-nao-ratear" /> Não ratear este abastecimento</span></label>
         <p class="computed-value">Rateio: <strong id="combustivel-valor-rateado-preview">—</strong></p>
 
         <label class="field">

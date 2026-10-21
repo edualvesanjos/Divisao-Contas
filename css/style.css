@@ -2160,3 +2160,10 @@ body {
   .connected-user { max-width: 120px; }
   .conflict-grid { grid-template-columns: 1fr; }
 }
+
+/* v1.0.4: mensagem acessível para campos obrigatórios */
+.form-validation-error { padding: 10px 12px; border: 1px solid #c83b3b; border-radius: 8px; color: #a51e1e; background: #fff1f1; font-weight: 600; }
+
+.recovery-panel { margin: 14px 0; padding: 14px; border: 1px solid #d79b2d; border-radius: 10px; background: #fff8e9; color: #4e390b; }
+.recovery-panel p { margin: 8px 0; }
+.recovery-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-top: 1px solid #e4c78b; overflow-wrap: anywhere; }

@@ -36,6 +36,35 @@ function stripLocalMetadata(record) {
     _sync_base_updated_at,
     ...payload
   } = record;
+  // Campos DATE opcionais nunca devem ser enviados como string vazia.
+  // Use o nome da tabela, não a presença de propriedades opcionais:
+  // registros históricos podem não possuir alguns campos.
+  return payload;
+}
+
+const DATE_FIELDS = Object.freeze({
+  contas_consumo: ['data_vencimento', 'competencia', 'data_pagamento', 'data_transferencia_rateio'],
+  abastecimentos: ['data', 'data_transferencia_rateio'],
+  configuracoes: [],
+  fechamentos_mensais: ['contas_data_pagamento', 'contas_data_rateio', 'combustivel_data_rateio'],
+});
+
+function normalizeDatesForSync(storeName, payload) {
+  for (const field of DATE_FIELDS[storeName] || []) {
+    if (typeof payload[field] === 'string' && !payload[field].trim()) {
+      payload[field] = null;
+    }
+  }
+  if (storeName === 'abastecimentos' && !payload.data) {
+    const error = new Error(`Abastecimento ${payload.id} pendente sem Data obrigatória. Corrija o registro local antes de sincronizar.`);
+    error.code = 'SYNC_REQUIRED_DATE';
+    throw error;
+  }
+  if (storeName === 'contas_consumo' && !payload.data_vencimento) {
+    const error = new Error(`Conta ${payload.id} pendente sem Vencimento obrigatório. Corrija o registro local antes de sincronizar.`);
+    error.code = 'SYNC_REQUIRED_DATE';
+    throw error;
+  }
   return payload;
 }
 
@@ -60,7 +89,17 @@ async function refreshPending(userId) {
 async function pushPending(storeName, userId) {
   const pending = await localDb.listPendingSync(storeName, userId);
   for (const record of pending) {
-    const payload = stripLocalMetadata(record);
+    let payload;
+    try {
+      payload = normalizeDatesForSync(storeName, stripLocalMetadata(record));
+    } catch (error) {
+      if (error?.code === 'SYNC_REQUIRED_DATE') {
+        // Mantém a pendência intacta e permite sincronizar os outros registros.
+        console.warn('[sync] pendência aguardando correção:', error.message);
+        continue;
+      }
+      throw error;
+    }
     const remote = await fetchRemoteRecord(storeName, userId, record.id);
     const baseUpdatedAt = record._sync_base_updated_at ?? null;
     const remoteUpdatedAt = remote?.updated_at ?? null;
@@ -145,7 +184,7 @@ async function runSync(userId) {
       await pullRemote(table, userId);
     }
     const pending = await localDb.countPending(userId);
-    setSyncState({ status: pending ? 'pending' : 'synced', pending, error: null, lastSyncAt: new Date().toISOString() });
+    setSyncState({ status: pending ? 'pending' : 'synced', pending, error: pending ? 'Existem registros locais pendentes. Verifique a recuperação de abastecimentos sem data.' : null, lastSyncAt: new Date().toISOString() });
     return true;
   } catch (error) {
     const pending = await localDb.countPending(userId).catch(() => syncState.pending);

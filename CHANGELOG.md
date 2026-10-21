@@ -1,3 +1,42 @@
+## v1.0.6 PROD — Fechamento aprovado
+- Promove a versão DEV v1.0.6 aprovada pelo usuário para o ambiente PROD.
+- Mantém correções de campos obrigatórios, rateio e recuperação de abastecimentos sem data.
+- Aponta para o projeto SuperDB de produção p_988091b229.
+- Preserva o IndexedDB existente do ambiente PROD e não requer migração SQL.
+
+## v1.0.6 DEV — Recuperação de abastecimentos sem data
+- Exibe pendências sem data na aba Abastecimentos, mesmo fora do mês selecionado.
+- Permite abrir a edição da pendência diretamente pelo ID, preservando os dados.
+- Ignora temporariamente registros sem data durante o envio e continua sincronizando os demais.
+- Não apaga pendências nem altera o IndexedDB utilizado nas versões anteriores.
+
+## v1.0.5 DEV — Correção de datas pendentes
+- Normaliza datas por tabela antes de cada envio ao SuperDB, inclusive abastecimentos antigos.
+- Datas opcionais vazias tornam-se null; datas obrigatórias ausentes geram erro específico sem apagar a pendência.
+- Mantém ambiente DEV e PROD inalterada.
+
+## v1.0.4 DEV — Mensagens de validação e restauração do rateio
+- Exibe mensagem de campos obrigatórios em Contas e Abastecimentos.
+- Restaura percentual anterior ao desmarcar Não ratear abastecimento.
+- Reinicializa checkbox e percentual após salvar.
+- Mantém conexão com SuperDB DEV; PROD inalterada.
+
+## v1.0.3 DEV — Validações e rateio
+
+- Valida campos obrigatórios em contas e abastecimentos.
+- Adiciona opção de não ratear, preservando os limites do banco.
+- Normaliza datas opcionais vazias na sincronização, inclusive pendências existentes.
+- Base estável v1.0.2, sem migração de categorias.
+
+# Changelog
+
+## v1.0.2 DEV
+- Centraliza as configurações dos ambientes DEV e PROD.
+- Mantém as duas chaves anon públicas no frontend e seleciona o ambiente por uma única constante.
+- Adiciona validação de consistência entre ambiente e projeto SuperDB.
+- Mantém armazenamento local isolado por ambiente e projeto.
+- Atualiza o cache do Service Worker para DEV.
+
 ## v1.0.1 PROD - 2026-09-30
 
 - Promove para produção as alterações aprovadas nos testes da v1.0.1 DEV.
