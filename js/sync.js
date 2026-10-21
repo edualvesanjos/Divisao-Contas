@@ -89,7 +89,17 @@ async function refreshPending(userId) {
 async function pushPending(storeName, userId) {
   const pending = await localDb.listPendingSync(storeName, userId);
   for (const record of pending) {
-    const payload = normalizeDatesForSync(storeName, stripLocalMetadata(record));
+    let payload;
+    try {
+      payload = normalizeDatesForSync(storeName, stripLocalMetadata(record));
+    } catch (error) {
+      if (error?.code === 'SYNC_REQUIRED_DATE') {
+        // Mantém a pendência intacta e permite sincronizar os outros registros.
+        console.warn('[sync] pendência aguardando correção:', error.message);
+        continue;
+      }
+      throw error;
+    }
     const remote = await fetchRemoteRecord(storeName, userId, record.id);
     const baseUpdatedAt = record._sync_base_updated_at ?? null;
     const remoteUpdatedAt = remote?.updated_at ?? null;
@@ -174,7 +184,7 @@ async function runSync(userId) {
       await pullRemote(table, userId);
     }
     const pending = await localDb.countPending(userId);
-    setSyncState({ status: pending ? 'pending' : 'synced', pending, error: null, lastSyncAt: new Date().toISOString() });
+    setSyncState({ status: pending ? 'pending' : 'synced', pending, error: pending ? 'Existem registros locais pendentes. Verifique a recuperação de abastecimentos sem data.' : null, lastSyncAt: new Date().toISOString() });
     return true;
   } catch (error) {
     const pending = await localDb.countPending(userId).catch(() => syncState.pending);

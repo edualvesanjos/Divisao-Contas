@@ -1,3 +1,9 @@
+## v1.0.6 DEV — Recuperação de abastecimentos sem data
+- Exibe pendências sem data na aba Abastecimentos, mesmo fora do mês selecionado.
+- Permite abrir a edição da pendência diretamente pelo ID, preservando os dados.
+- Ignora temporariamente registros sem data durante o envio e continua sincronizando os demais.
+- Não apaga pendências nem altera o IndexedDB utilizado nas versões anteriores.
+
 ## v1.0.5 DEV — Correção de datas pendentes
 - Normaliza datas por tabela antes de cada envio ao SuperDB, inclusive abastecimentos antigos.
 - Datas opcionais vazias tornam-se null; datas obrigatórias ausentes geram erro específico sem apagar a pendência.

@@ -975,6 +975,7 @@ async function refreshActiveView() {
   } else if (activeTab !== 'config') {
     await renderTab(activeTab);
   }
+  if (activeTab === 'combustivel') await atualizarRecuperacaoAbastecimentos();
 }
 
 function normalizarNomePosto(nome) {
@@ -2335,6 +2336,28 @@ document.getElementById('combustivel-nao-ratear').addEventListener('change', atu
   document.getElementById(id).addEventListener('input', atualizarPreviewCombustivel);
 });
 
+async function atualizarRecuperacaoAbastecimentos() {
+  if (!currentUser) return;
+  const painel = document.getElementById('recuperacao-abastecimentos');
+  const itens = document.getElementById('recuperacao-abastecimentos-itens');
+  const pendentes = await localDb.listPendingSync('abastecimentos', currentUser.id);
+  const invalidos = pendentes.filter(row => !row.deleted && (!row.data || !String(row.data).trim()));
+  painel.hidden = invalidos.length === 0;
+  itens.replaceChildren();
+  for (const registro of invalidos) {
+    const linha = document.createElement('div');
+    linha.className = 'recovery-item';
+    const resumo = document.createElement('span');
+    resumo.textContent = `Valor: ${formatMoeda(registro.valor_total)} · Posto: ${registro.posto || 'não informado'} · ID: ${registro.id}`;
+    const botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = 'btn btn-primary';
+    botao.textContent = 'Corrigir data';
+    botao.addEventListener('click', () => abrirEdicao('abastecimentos', registro.id));
+    linha.append(resumo, botao);
+    itens.append(linha);
+  }
+}
 async function abrirEdicao(storeName, id) {
   const record = await localDb.get(storeName, id);
   if (!record) return;
