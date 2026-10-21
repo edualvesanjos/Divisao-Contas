@@ -1,3 +1,9 @@
+## v1.0.4 DEV — Mensagens de validação e restauração do rateio
+- Exibe mensagem de campos obrigatórios em Contas e Abastecimentos.
+- Restaura percentual anterior ao desmarcar Não ratear abastecimento.
+- Reinicializa checkbox e percentual após salvar.
+- Mantém conexão com SuperDB DEV; PROD inalterada.
+
 ## v1.0.3 DEV — Validações e rateio
 
 - Valida campos obrigatórios em contas e abastecimentos.

@@ -2217,6 +2217,7 @@ els.btnNovo.addEventListener('click', async () => {
   editingId = null;
   if (activeTab === 'contas') {
     els.formConta.reset();
+    limparErroFormulario(els.formConta);
     document.getElementById('conta-participantes').value = settings.numero_participantes_padrao;
     document.getElementById('conta-nao-ratear').checked = false;
     atualizarPreviewConta();
@@ -2225,7 +2226,9 @@ els.btnNovo.addEventListener('click', async () => {
     els.modalConta.hidden = false;
   } else {
     els.formCombustivel.reset();
+    limparErroFormulario(els.formCombustivel);
     document.getElementById('combustivel-percentual').value = settings.percentual_combustivel_padrao;
+    campoPercentualCombustivel.dataset.percentualAnterior = String(settings.percentual_combustivel_padrao ?? 50);
     await garantirPostosGerenciados();
     await atualizarListaPostos();
     document.getElementById('combustivel-nao-ratear').checked = false;
@@ -2289,6 +2292,38 @@ function atualizarPreviewCombustivel() {
   return rateado;
 }
 
+function informarErroFormulario(form, mensagem) {
+  let aviso = form.querySelector('.form-validation-error');
+  if (!aviso) {
+    aviso = document.createElement('p');
+    aviso.className = 'form-validation-error';
+    aviso.setAttribute('role', 'alert');
+    form.prepend(aviso);
+  }
+  aviso.textContent = mensagem;
+  aviso.hidden = false;
+  showToast(mensagem);
+}
+function limparErroFormulario(form) {
+  const aviso = form.querySelector('.form-validation-error');
+  if (aviso) aviso.hidden = true;
+}
+[els.formConta, els.formCombustivel].forEach(form => {
+  form.addEventListener('input', () => limparErroFormulario(form));
+  form.addEventListener('change', () => limparErroFormulario(form));
+});
+const checkboxSemRateioCombustivel = document.getElementById('combustivel-nao-ratear');
+const campoPercentualCombustivel = document.getElementById('combustivel-percentual');
+checkboxSemRateioCombustivel.addEventListener('change', () => {
+  if (checkboxSemRateioCombustivel.checked) {
+    campoPercentualCombustivel.dataset.percentualAnterior = campoPercentualCombustivel.value;
+    campoPercentualCombustivel.value = '0';
+  } else {
+    campoPercentualCombustivel.value =
+      campoPercentualCombustivel.dataset.percentualAnterior || String(settings.percentual_combustivel_padrao ?? 50);
+  }
+  atualizarPreviewCombustivel();
+});
 document.getElementById('conta-nao-ratear').addEventListener('change', atualizarPreviewConta);
 document.getElementById('combustivel-nao-ratear').addEventListener('change', atualizarPreviewCombustivel);
 
@@ -2305,6 +2340,8 @@ async function abrirEdicao(storeName, id) {
   if (!record) return;
 
   editingId = id;
+  limparErroFormulario(els.formConta);
+  limparErroFormulario(els.formCombustivel);
 
   if (storeName === 'contas_consumo') {
     document.getElementById('conta-tipo').value = record.tipo;
@@ -2324,6 +2361,7 @@ async function abrirEdicao(storeName, id) {
     document.getElementById('combustivel-percentual').value =
       record.percentual_rateado ?? settings.percentual_combustivel_padrao;
     document.getElementById('combustivel-nao-ratear').checked = Number(record.percentual_rateado) === 0;
+    campoPercentualCombustivel.dataset.percentualAnterior = String(Number(record.percentual_rateado) > 0 ? record.percentual_rateado : settings.percentual_combustivel_padrao ?? 50);
     document.getElementById('combustivel-litros').value = record.litros ?? '';
     document.getElementById('combustivel-tipo').value = record.tipo_combustivel ?? 'gasolina';
     await garantirPostosGerenciados();
@@ -2373,7 +2411,7 @@ els.formConta.addEventListener('submit', async (event) => {
 
   const dataVencimento = parseOptionalText('conta-vencimento');
   if (!Number.isFinite(valorTotal) || valorTotal <= 0 || !dataVencimento || (!document.getElementById('conta-nao-ratear').checked && (!Number.isInteger(participantes) || participantes < 1))) {
-    showToast('Informe valor total, vencimento e participantes válidos.');
+    informarErroFormulario(els.formConta, 'Preencha os campos obrigatórios: Valor Total e Vencimento. Confira também o número de participantes.');
     return;
   }
   const naoRatearConta = document.getElementById('conta-nao-ratear').checked;
@@ -2397,6 +2435,10 @@ els.formConta.addEventListener('submit', async (event) => {
   }
 
   editingId = null;
+  els.formConta.reset();
+  document.getElementById('conta-nao-ratear').checked = false;
+  atualizarPreviewConta();
+  limparErroFormulario(els.formConta);
   els.modalConta.hidden = true;
   await refreshActiveView();
   triggerBackgroundSync();
@@ -2411,7 +2453,7 @@ els.formCombustivel.addEventListener('submit', async (event) => {
   const naoRatearCombustivel = document.getElementById('combustivel-nao-ratear').checked;
   const percentual = naoRatearCombustivel ? 0 : Number(document.getElementById('combustivel-percentual').value);
   if (!data || !Number.isFinite(valorTotal) || valorTotal <= 0 || !Number.isFinite(percentual) || percentual < 0 || percentual > 100) {
-    showToast('Informe data, valor total e percentual válidos.');
+    informarErroFormulario(els.formCombustivel, 'Preencha os campos obrigatórios: Data e Valor Total. Confira também o percentual rateado.');
     return;
   }
 
@@ -2434,6 +2476,12 @@ els.formCombustivel.addEventListener('submit', async (event) => {
   }
 
   editingId = null;
+  els.formCombustivel.reset();
+  checkboxSemRateioCombustivel.checked = false;
+  campoPercentualCombustivel.value = String(settings.percentual_combustivel_padrao ?? 50);
+  campoPercentualCombustivel.dataset.percentualAnterior = campoPercentualCombustivel.value;
+  atualizarPreviewCombustivel();
+  limparErroFormulario(els.formCombustivel);
   els.modalCombustivel.hidden = true;
   await refreshActiveView();
   triggerBackgroundSync();

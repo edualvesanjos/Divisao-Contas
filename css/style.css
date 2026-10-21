@@ -2160,3 +2160,6 @@ body {
   .connected-user { max-width: 120px; }
   .conflict-grid { grid-template-columns: 1fr; }
 }
+
+/* v1.0.4: mensagem acessível para campos obrigatórios */
+.form-validation-error { padding: 10px 12px; border: 1px solid #c83b3b; border-radius: 8px; color: #a51e1e; background: #fff1f1; font-weight: 600; }
