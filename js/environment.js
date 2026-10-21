@@ -2,7 +2,7 @@
 // As chaves anon são públicas e podem permanecer no frontend.
 // Nunca use service_role/management key no frontend.
 
-const ACTIVE_ENVIRONMENT = 'development';
+const ACTIVE_ENVIRONMENT = 'production';
 
 const ENVIRONMENTS = Object.freeze({
   development: Object.freeze({

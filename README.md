@@ -1,3 +1,5 @@
+**Distribuição atual: v1.0.6 PROD (SuperDB produção).**
+
 > **v1.0.1 PROD — versão de produção validada.** Sincronização segura sem Realtime, resolução explícita de conflitos e backend SuperDB de produção.
 
 # Contas & Combustíveis

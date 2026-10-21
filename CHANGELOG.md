@@ -1,3 +1,9 @@
+## v1.0.6 PROD — Fechamento aprovado
+- Promove a versão DEV v1.0.6 aprovada pelo usuário para o ambiente PROD.
+- Mantém correções de campos obrigatórios, rateio e recuperação de abastecimentos sem data.
+- Aponta para o projeto SuperDB de produção p_988091b229.
+- Preserva o IndexedDB existente do ambiente PROD e não requer migração SQL.
+
 ## v1.0.6 DEV — Recuperação de abastecimentos sem data
 - Exibe pendências sem data na aba Abastecimentos, mesmo fora do mês selecionado.
 - Permite abrir a edição da pendência diretamente pelo ID, preservando os dados.
