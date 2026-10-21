@@ -37,18 +37,35 @@ function stripLocalMetadata(record) {
     ...payload
   } = record;
   // Campos DATE opcionais nunca devem ser enviados como string vazia.
-  const dateFields = storeNameDateFields(record);
-  for (const field of dateFields) {
-    if (payload[field] === '') payload[field] = null;
-  }
+  // Use o nome da tabela, não a presença de propriedades opcionais:
+  // registros históricos podem não possuir alguns campos.
   return payload;
 }
 
-function storeNameDateFields(record) {
-  if ('data_vencimento' in record) return ['data_vencimento', 'competencia', 'data_pagamento', 'data_transferencia_rateio'];
-  if ('contas_data_pagamento' in record) return ['contas_data_pagamento', 'contas_data_rateio', 'combustivel_data_rateio'];
-  if ('percentual_rateado' in record) return ['data_transferencia_rateio'];
-  return [];
+const DATE_FIELDS = Object.freeze({
+  contas_consumo: ['data_vencimento', 'competencia', 'data_pagamento', 'data_transferencia_rateio'],
+  abastecimentos: ['data', 'data_transferencia_rateio'],
+  configuracoes: [],
+  fechamentos_mensais: ['contas_data_pagamento', 'contas_data_rateio', 'combustivel_data_rateio'],
+});
+
+function normalizeDatesForSync(storeName, payload) {
+  for (const field of DATE_FIELDS[storeName] || []) {
+    if (typeof payload[field] === 'string' && !payload[field].trim()) {
+      payload[field] = null;
+    }
+  }
+  if (storeName === 'abastecimentos' && !payload.data) {
+    const error = new Error(`Abastecimento ${payload.id} pendente sem Data obrigatória. Corrija o registro local antes de sincronizar.`);
+    error.code = 'SYNC_REQUIRED_DATE';
+    throw error;
+  }
+  if (storeName === 'contas_consumo' && !payload.data_vencimento) {
+    const error = new Error(`Conta ${payload.id} pendente sem Vencimento obrigatório. Corrija o registro local antes de sincronizar.`);
+    error.code = 'SYNC_REQUIRED_DATE';
+    throw error;
+  }
+  return payload;
 }
 
 
@@ -72,7 +89,7 @@ async function refreshPending(userId) {
 async function pushPending(storeName, userId) {
   const pending = await localDb.listPendingSync(storeName, userId);
   for (const record of pending) {
-    const payload = stripLocalMetadata(record);
+    const payload = normalizeDatesForSync(storeName, stripLocalMetadata(record));
     const remote = await fetchRemoteRecord(storeName, userId, record.id);
     const baseUpdatedAt = record._sync_base_updated_at ?? null;
     const remoteUpdatedAt = remote?.updated_at ?? null;

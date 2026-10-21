@@ -1,6 +1,6 @@
 {
   "name": "contas-combustivel",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "description": "Registro pessoal de contas de consumo e abastecimentos",
   "scripts": {
